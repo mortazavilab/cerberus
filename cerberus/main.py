@@ -5,7 +5,7 @@ from cerberus.cerberus import *
 def cli():
     pass
 
-@cli.command()  # @cli, not @click!
+@cli.command()
 @click.option('--mode',
               help='Choose tss or tes',
               required=True)
@@ -27,7 +27,7 @@ def gtf_to_bed(mode, gtf, o, dist=50):
     bed = pr.PyRanges(df=bed)
     bed.to_bed(o)
 
-@cli.command()  # @cli, not @click!
+@cli.command()
 @click.option('--mode',
               help='Choose tss or tes',
               required=True)
@@ -35,12 +35,14 @@ def gtf_to_bed(mode, gtf, o, dist=50):
               help='Path to file w/ path to BED '+\
                 'files on each line; ordered by priority',
               required=True)
+@click.option('--slack',
+              help='Distance allowable for merging regions',
+              default=50)
 @click.option('-o',
             help='Output file name',
             required=True)
-def end_agg(mode, input, ofile):
-    click.echo('Syncing')
-
+def agg_ends(mode, input, slack, o):
+    aggregate_ends(input, mode, slack, o)
 
 def compute_triplets(mode, gtf, ofile, dist=50):
     click.echo('Syncing')
