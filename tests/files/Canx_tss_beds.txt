@@ -1,1 +1,1 @@
-~/mortazavi_lab/bin/cerberus/tests/files/Canx_tss.bed
+/Users/fairliereese/mortazavi_lab/bin/cerberus/tests/files/Canx_tss.bed
