@@ -40,8 +40,30 @@ def agg_ends(mode, input, o):
     bed = aggregate_ends(input, mode)
     bed.to_bed(o)
 
-def compute_triplets(mode, gtf, ofile, dist=50):
-    click.echo('Syncing')
+@cli.command()
+@click.option('--gtf',
+              help='GTF of isoforms',
+              required=True)
+@click.option('--tss_bed',
+              help='Bed file of TSS regions',
+              required=True)
+@click.option('--tes_bed',
+              help='Bed file of TES regions',
+              required=True)
+@click.option('--opref',
+              help='Output file prefix to save beds / gtf w/ triplets')
+def assign_triplets(gtf, tss_bed, tes_bed, opref):
+    gtf, tss_bed, tes_bed = add_triplets(gtf, tss_bed, tes_bed)
+
+    oname = '{}.gtf'.format(opref)
+    gtf.to_gtf(oname)
+
+    oname = '{}_tss.bed'.format(opref)
+    tss_bed.to_bed(oname)
+
+    oname = '{}_tes.bed'.format(opref)
+    tes_bed.to_bed(oname)
+
 
 def update_talon_abundance(mode, gtf, ofile, dist=50):
     click.echo('Syncing')

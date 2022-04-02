@@ -2,8 +2,8 @@ import pyranges as pr
 import pandas as pd
 import pdb
 from click.testing import CliRunner
-from conftest import canx_gtf
-from cerberus.main import gtf_to_bed, agg_ends
+from conftest import *
+from cerberus.main import gtf_to_bed, agg_ends, assign_triplets
 
 def test_gtf_to_bed(tmp_path):
     bed_path = str(tmp_path/'test.bed')
@@ -47,3 +47,12 @@ def test_agg_ends(tmp_path):
     assert result.exit_code == 0
 
     # >1 file, passed from cmd
+
+def test_assign_triplets(tmp_path):
+    opref = str(tmp_path/'test')
+    runner = CliRunner()
+
+    cmd = '--gtf {} --tss_bed {} --tes_bed {} --opref {}'.format(canx_gtf, canx_tss_bed, canx_tes_bed, opref)
+    print(cmd)
+    result = runner.invoke(assign_triplets, cmd)
+    assert result.exit_code == 0
