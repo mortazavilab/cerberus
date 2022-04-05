@@ -80,20 +80,20 @@ def assign_triplets(gtf, tss_bed, tes_bed, opref):
               help='TALON abundance file',
               required=False,
               default=None)
-@click.option('--agg',
-              help='aggregate transcripts with the same triplets',
+@click.option('--collapse',
+              help='collapse transcripts with the same triplets',
               is_flag=True,
               required=False,
               default=False)
 @click.option('--opref',
               help='Output file prefix to save updated gtf / ab',
               required=True)
-def replace_ids(map, gtf, ab, agg, opref):
+def replace_ids(map, gtf, ab, collapse, opref):
     if gtf:
-        df = replace_gtf_ids(gtf, map, agg)
+        df = replace_gtf_ids(gtf, map, collapse)
         oname = '{}.gtf'.format(opref)
         df.to_gtf(oname)
     if ab:
-        df = replace_ab_ids(ab, map, agg)
+        df = replace_ab_ids(ab, map, collapse)
         oname = '{}.tsv'.format(opref)
         df.to_csv(oname, index=False, sep='\t')

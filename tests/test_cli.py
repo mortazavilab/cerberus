@@ -3,7 +3,7 @@ import pandas as pd
 import pdb
 from click.testing import CliRunner
 from conftest import *
-from cerberus.main import gtf_to_bed, agg_ends, assign_triplets
+from cerberus.main import gtf_to_bed, agg_ends, assign_triplets, replace_ids
 
 def test_gtf_to_bed(tmp_path):
     bed_path = str(tmp_path/'test.bed')
@@ -55,4 +55,34 @@ def test_assign_triplets(tmp_path):
     cmd = '--gtf {} --tss_bed {} --tes_bed {} --opref {}'.format(canx_gtf, canx_tss_bed, canx_tes_bed, opref)
     print(cmd)
     result = runner.invoke(assign_triplets, cmd)
+    assert result.exit_code == 0
+
+
+def test_replace_ids(tmp_path):
+    opref = str(tmp_path/'test')
+    runner = CliRunner()
+
+    # ab+gtf
+    cmd = '--map {} --gtf {} --ab {} --collapse --opref {}'.format(canx_tid_map,
+                                                             canx_gtf,
+                                                             canx_ab,
+                                                             opref)
+    print(cmd)
+    result = runner.invoke(replace_ids, cmd)
+    assert result.exit_code == 0
+
+    # ab
+    cmd = '--map {} --ab {} --collapse --opref {}'.format(canx_tid_map,
+                                                             canx_ab,
+                                                             opref)
+    print(cmd)
+    result = runner.invoke(replace_ids, cmd)
+    assert result.exit_code == 0
+
+    # gtf
+    cmd = '--map {} --gtf {} --collapse --opref {}'.format(canx_tid_map,
+                                                             canx_gtf,
+                                                             opref)
+    print(cmd)
+    result = runner.invoke(replace_ids, cmd)
     assert result.exit_code == 0
