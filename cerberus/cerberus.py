@@ -378,10 +378,10 @@ def replace_gtf_ids(gtf, m, agg):
 
     # if we're only reporting one transcript per triplet
     if agg:
-        df = df.loc[~((df.duplicated(subset=['transcript_id',
+        df = df.loc[~(df.duplicated(subset=['transcript_id',
                                              'transcript_name',
-                                             'exon_id']))&(df.Feature.isin(['transcript', 'exon'])))]
-
+                                             'exon_id',
+                                             'Feature'], keep='first'))]
     df = pr.PyRanges(df)
 
     return df
