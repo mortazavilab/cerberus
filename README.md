@@ -8,7 +8,7 @@ start sites (TSSs) and transcript end sites (TESs).
 #### Calling TSS / TES regions from a transcriptome
 Create and merge end regions from a transcriptome annotation (GTF) file.
 
-```bash
+```
 Usage: cerberus gtf-to-bed [OPTIONS]
 
 Options:
@@ -42,7 +42,7 @@ cerberus gtf-to-bed \
 #### Aggregate end regions from multiple bed files
 Create consensus end regions from multiple bed files.
 
-```bash
+```
 Usage: cerberus agg-ends [OPTIONS]
 
 Options:
@@ -71,7 +71,7 @@ Using the regions from `cerberus agg-ends` combined with the GTF, determine whic
 end region and intron chain each transcript uses, and number then in ascending
 order based on which transcripts are part of the basic set.
 
-```bash
+```
 Usage: cerberus assign-triplets [OPTIONS]
 
 Options:
@@ -98,7 +98,7 @@ Using the map generated in `cerberus assign-triplets`, update the transcript ids
 and transcript names that are used a TALON abundance matrix and GTF with the new
 triplet versions of the transcript ids / names
 
-```bash
+```
 Usage: cerberus replace-ids [OPTIONS]
 
 Options:
