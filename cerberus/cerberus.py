@@ -134,12 +134,13 @@ def add_triplets(gtf, tss_bed, tes_bed):
             `get_ends_from_gtf`
 
     Returns:
-        df (pyranges PyRanges): GTF PyRanges object with added field
+        gtf (pyranges PyRanges): GTF PyRanges object with added field
             "transcript_triplet"
         tss_bed (pyranges PyRanges): BED PyRanges object with TSS named
             gene_id_tss_#
         tes_bed (pyranges PyRanges): BED PyRanges object with TES named
             gene_id_tes_#
+        df (pandas DataFrame): DataFrame including new and old transcript IDs
     """
 
     ### intron chain annotation ###
@@ -245,6 +246,21 @@ def add_triplets(gtf, tss_bed, tes_bed):
     df = df.merge(ttrip_df[['transcript_id', 'transcript_triplet']],
                   how='left',
                   on='transcript_id')
-    df = pr.PyRanges(df)
+    gtf = pr.PyRanges(df)
 
-    return df, beds['tss'], beds['tes']
+    # transcript to triplet reference file
+
+    # add gene name from transcript name
+    df = df.loc[df.Feature == 'transcript']
+    if 'gene_name' not in df.columns:
+        df['gene_name'] = df.transcript_name.str.split('-', n=1, expand=True)[0]
+    df = df[['transcript_id', 'transcript_name',
+             'gene_name', 'gene_id',
+             'transcript_triplet']]
+    df.rename({'transcript_id': 'original_transcript_id',
+               'transcript_name': 'original_transcript_name'},
+               axis=1, inplace=True)
+    df['transcript_id'] = df.gene_id+' '+df.transcript_triplet
+    df['transcript_name'] = df.gene_name+' '+df.transcript_triplet
+
+    return gtf, beds['tss'], beds['tes'], df

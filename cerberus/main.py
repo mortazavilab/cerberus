@@ -53,7 +53,7 @@ def agg_ends(mode, input, o):
 @click.option('--opref',
               help='Output file prefix to save beds / gtf w/ triplets')
 def assign_triplets(gtf, tss_bed, tes_bed, opref):
-    gtf, tss_bed, tes_bed = add_triplets(gtf, tss_bed, tes_bed)
+    gtf, tss_bed, tes_bed, df = add_triplets(gtf, tss_bed, tes_bed)
 
     oname = '{}.gtf'.format(opref)
     gtf.to_gtf(oname)
@@ -64,6 +64,8 @@ def assign_triplets(gtf, tss_bed, tes_bed, opref):
     oname = '{}_tes.bed'.format(opref)
     tes_bed.to_bed(oname)
 
+    oname = '{}_tid_map.tsv'.format(opref)
+    df.to_csv(oname, index=False, sep='\t')
 
-def update_talon_abundance(mode, gtf, ofile, dist=50):
+def replace_ids(mode, gtf, ofile, dist=50):
     click.echo('Syncing')
