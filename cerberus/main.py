@@ -55,10 +55,10 @@ def agg_ends(mode, input, o):
               help='Output file prefix to save beds / gtf w/ triplets',
               required=True)
 def assign_triplets(gtf, tss_bed, tes_bed, opref):
-    gtf, tss_bed, tes_bed, df = add_triplets(gtf, tss_bed, tes_bed)
+    ic, tss_bed, tes_bed, df = add_triplets(gtf, tss_bed, tes_bed)
 
-    oname = '{}.gtf'.format(opref)
-    gtf.to_gtf(oname)
+    oname = '{}_ic.tsv'.format(opref)
+    ic.to_csv(oname, index=False, sep='\t')
 
     oname = '{}_tss.bed'.format(opref)
     tss_bed.to_bed(oname)

@@ -107,8 +107,10 @@ def number_tss_ic_tes(df, mode):
     """
     # groupby feature but record which feature
     # each transcript id uses
-    cols = ['transcript_id', mode, 'basic_set', 'appris_principal', 'gene_id']
-    df = df[cols].groupby([mode, 'gene_id']).agg({'transcript_id': ','.join,
+    cols = ['transcript_id', 'Chromosome', 'Strand',
+            mode, 'basic_set', 'appris_principal', 'gene_id']
+    df = df[cols].groupby(['Chromosome', 'Strand',
+                           mode, 'gene_id']).agg({'transcript_id': ','.join,
                                      'basic_set': 'max',
                                      'appris_principal': 'min'}).reset_index()
 
@@ -203,8 +205,8 @@ def add_triplets(gtf, tss_bed, tes_bed):
             `get_ends_from_gtf`
 
     Returns:
-        gtf (pyranges PyRanges): GTF PyRanges object with added field
-            "transcript_triplet"
+        ic (pandas DataFrame): Table detailing each intron chain with each IC
+            named gene_id_ic_#
         tss_bed (pyranges PyRanges): BED PyRanges object with TSS named
             gene_id_tss_#
         tes_bed (pyranges PyRanges): BED PyRanges object with TES named
@@ -256,6 +258,20 @@ def add_triplets(gtf, tss_bed, tes_bed):
 
     # add number for each unique intron chain
     df = number_tss_ic_tes(df, mode='ic')
+
+    # make coords into tuple and perform additional
+    # formatting for this table
+    # df['ic'] = df.ic.str.split('-')
+    # df['ic'] = [tuple(c) for c in df.ic.tolist()]
+    ic = df.copy(deep=True)
+    ic.rename({'ic': 'coordinates',
+               'Chromosome': 'chrom',
+               'Strand': 'strand'},
+               axis=1, inplace=True)
+    ic['ic_id'] = ic['gene_id']+'_'+ic.ic_num.astype(str)
+    ic.drop(['basic_set', 'appris_principal',
+             'gene_id', 'ic_num'],
+            axis=1, inplace=True)
 
     # keep track of which transcripts use each intron chain
     df.transcript_id = df.transcript_id.str.split(',')
@@ -332,7 +348,7 @@ def add_triplets(gtf, tss_bed, tes_bed):
     df['transcript_id'] = df.gene_id+' '+df.transcript_triplet
     df['transcript_name'] = df.gene_name+' '+df.transcript_triplet
 
-    return gtf, beds['tss'], beds['tes'], df
+    return ic, beds['tss'], beds['tes'], df
 
 def replace_gtf_ids(gtf, m, agg):
     """
