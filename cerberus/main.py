@@ -51,7 +51,8 @@ def agg_ends(mode, input, o):
               help='Bed file of TES regions',
               required=True)
 @click.option('--opref',
-              help='Output file prefix to save beds / gtf w/ triplets')
+              help='Output file prefix to save beds / gtf w/ triplets',
+              required=True)
 def assign_triplets(gtf, tss_bed, tes_bed, opref):
     gtf, tss_bed, tes_bed, df = add_triplets(gtf, tss_bed, tes_bed)
 
@@ -67,5 +68,32 @@ def assign_triplets(gtf, tss_bed, tes_bed, opref):
     oname = '{}_tid_map.tsv'.format(opref)
     df.to_csv(oname, index=False, sep='\t')
 
-def replace_ids(mode, gtf, ofile, dist=50):
-    click.echo('Syncing')
+@cli.command()
+@click.option('--map',
+              help='transcript ID map from assign_triplets',
+              required=True)
+@click.option('--gtf',
+              help='GTF of isoforms',
+              required=False,
+              default=None)
+@click.option('--ab',
+              help='TALON abundance file',
+              required=False,
+              default=None)
+@click.option('--agg',
+              help='aggregate transcripts with the same triplets',
+              is_flag=True,
+              required=False,
+              default=False)
+@click.option('--opref',
+              help='Output file prefix to save updated gtf / ab',
+              required=True)
+def replace_ids(map, gtf, ab, agg, opref):
+    if gtf:
+        df = replace_gtf_ids(gtf, map, agg)
+        oname = '{}.gtf'.format(opref)
+        df.to_gtf(oname)
+    if ab:
+        df = replace_ab_ids(ab, map, agg)
+        oname = '{}.tsv'.format(opref)
+        df.to_csv(oname, index=False, sep='\t')

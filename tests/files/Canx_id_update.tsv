@@ -1,0 +1,6 @@
+gene_ID	transcript_ID	annot_gene_id	annot_transcript_id	annot_gene_name	annot_transcript_name	n_exons	length	gene_novelty	transcript_novelty	ISM_subtype	adrenal_2mo_f_1
+32839	86107	ENSMUSG00000020368.15	ENSMUSG00000020368.14 [1, 2, 1]	Canx	Canx [1, 2, 1]	15	4281	Known	Known	Prefix	8
+32839	86108	ENSMUSG00000020368.15	ENSMUSG00000020368.14 [1, 3, 2]	Canx	Canx [1, 3, 2]	15	3779	Known	Known		371
+32839	86111,86111	ENSMUSG00000020368.15	ENSMUSG00000020368.14 [2, 1, 3]	Canx	Canx [2, 1, 3]	2	600	Known	Known		2
+32839	86109	ENSMUSG00000020368.15	ENSMUSG00000020368.14 [3, 5, 4]	Canx	Canx [3, 5, 4]	5	708	Known	Known		1
+32839	86110	ENSMUSG00000020368.15	ENSMUSG00000020368.14 [4, 4, 5]	Canx	Canx [4, 4, 5]	2	234	Known	Known		0

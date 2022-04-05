@@ -2,6 +2,75 @@ import pyranges as pr
 import pandas as pd
 import pdb
 
+def get_nov_ranks():
+    """
+    Get rank for each novelty category
+
+    Returns:
+        nov_rank (dict): Dictionary of novelty category: int rank
+        rank_nov (dict): Dictionary of int rank: novelty category
+    """
+    nov_rank = {'Known': 0,
+           'NIC': 1,
+           'ISM': 2,
+           'NNC': 3,
+           'Genomic': 4,
+           'Antisense': 5,
+           'Intergenic': 6}
+
+    rank_nov = dict()
+    for key, item in nov_rank.items():
+        rank_nov[item] = key
+
+    return nov_rank, rank_nov
+
+def get_ism_ranks():
+    """
+    Get rank for each ISM subtype category
+
+    Returns:
+        ism_rank (dict): Dictionary of ism subtype: int rank
+        rank_ism (dict): Dictionary of int rank: ism subtype
+    """
+    ism_rank = {'Both': 0,
+                'Prefix': 1,
+                'Suffix': 2,
+                None: 3}
+    rank_ism = dict()
+    for key, item in ism_rank.items():
+        rank_ism[item] = key
+
+    return ism_rank, rank_ism
+
+def get_non_dataset_cols():
+    """
+    Get a list of ordered columns from TALON abundance file that
+    are the non-dataset columns
+
+    Returns:
+        non_dataset_cols (list of str): List of non-dataset columns
+    """
+    non_dataset_cols = ['gene_ID', 'transcript_ID', 'annot_gene_id',
+                   'annot_transcript_id', 'annot_gene_name',
+                   'annot_transcript_name', 'n_exons', 'length',
+                   'gene_novelty', 'transcript_novelty', 'ISM_subtype']
+    return non_dataset_cols
+
+def get_dataset_cols(df):
+    """
+    Get a list of the dataset columns from a TALON abundance file
+
+    Parameters:
+        df (pandas DataFrame): TALON abundance file
+
+    Returns:
+        dataset_cols (list of str): List of dataset columns
+    """
+    non_dataset_cols = get_non_dataset_cols()
+    dataset_cols = [ x for x in list(df.columns) \
+                        if x not in non_dataset_cols ]
+    return dataset_cols
+
 def get_transcript_ref(fname):
     """
     Get transcripts with necessary tags to order based on basic set etc.
@@ -264,3 +333,124 @@ def add_triplets(gtf, tss_bed, tes_bed):
     df['transcript_name'] = df.gene_name+' '+df.transcript_triplet
 
     return gtf, beds['tss'], beds['tes'], df
+
+def replace_gtf_ids(gtf, m, agg):
+    """
+    Replace transcript ids and names in a gtf with the triplets
+    calculated from assign_triplets
+
+    Parameters:
+        gtf (str): Path to gtf file
+        m (str): Path to map file output from assign_triplets
+        agg (bool): Whether or not to collapse transcripts with
+            duplicate triplets
+
+    Returns:
+        df (pyranges PyRanges): PyRanges gtf table with updated ids
+    """
+
+    df = pr.read_gtf(gtf).df
+    m_df = pd.read_csv(m, sep='\t')
+
+    # groupby transcripts that are the same
+    gb_cols = ['gene_name', 'gene_id', 'transcript_triplet',
+               'transcript_id', 'transcript_name']
+    temp = m_df[['transcript_id',
+                 'original_transcript_id',
+                 'original_transcript_name']].copy(deep=True)
+    m_df = m_df.groupby(gb_cols).agg({'original_transcript_id': ','.join,
+                                      'original_transcript_name': ','.join}).reset_index()
+    m_df = m_df.merge(temp, on='transcript_id', suffixes=('','_merge'))
+    m_df.drop(['gene_name', 'gene_id', 'transcript_triplet'],
+              axis=1, inplace=True)
+
+    # add new transcript ids
+    df = df.merge(m_df, left_on=['transcript_id', 'transcript_name'],
+                  right_on=['original_transcript_id_merge',
+                            'original_transcript_name_merge'],
+                 suffixes=('_x', ''))
+
+    # drop old tids
+    df.drop(['transcript_id_x', 'transcript_name_x',
+             'original_transcript_id_merge',
+             'original_transcript_name_merge'],
+            axis=1, inplace=True)
+
+    # if we're only reporting one transcript per triplet
+    if agg:
+        df = df.loc[~((df.duplicated(subset=['transcript_id',
+                                             'transcript_name',
+                                             'exon_id']))&(df.Feature.isin(['transcript', 'exon'])))]
+
+    df = pr.PyRanges(df)
+
+    return df
+
+def replace_ab_ids(ab, m, agg):
+    """
+    Replace the transcript ids and transcript names in a TALON abundance file
+    with the new transcript ids that contain the triplet
+
+    Parameters:
+        ab (str): Path to TALON abundance file
+        m (str): Path to map file (output from assign_triplets)
+        agg (bool): Aggregate / collapse transcripts with the same triplets
+            and sum up their count values
+
+    Returns:
+        df (pandas DataFrame): TALON abundance file with updated
+            transcript ids / names
+    """
+    df = pd.read_csv(ab, sep='\t')
+    m_df = pd.read_csv(m, sep='\t')
+
+    # fix transcript ids in abundance file
+    ab_map = m_df[['original_transcript_id', 'original_transcript_name',
+                   'transcript_name', 'transcript_id']]
+    df = df.merge(ab_map, left_on='annot_transcript_id', right_on='original_transcript_id')
+
+    df.drop(['original_transcript_id', 'original_transcript_name',
+             'annot_transcript_id', 'annot_transcript_name'],
+            axis=1, inplace=True)
+    df.rename({'transcript_name': 'annot_transcript_name',
+               'transcript_id': 'annot_transcript_id'},
+              axis=1, inplace=True)
+
+    # aggregate counts if requested
+    if agg:
+        gb_cols = ['gene_ID', 'annot_gene_id', 'annot_gene_name',
+                   'gene_novelty', 'annot_transcript_name',
+                   'annot_transcript_id']
+
+        # handle properties which won't always correspond across the transcripts
+        # these are all subject to change
+        nov_rank, rank_nov = get_nov_ranks()
+        df['nov_rank'] = df.transcript_novelty.map(nov_rank)
+        df.drop('transcript_novelty', axis=1, inplace=True)
+
+        ism_rank, rank_ism = get_ism_ranks()
+        df['ism_rank'] = df.ISM_subtype.map(ism_rank)
+        df.drop('ISM_subtype', axis=1, inplace=True)
+
+        df['transcript_ID'] = df.transcript_ID.astype(str)
+        agg_dict = {'transcript_ID': ','.join,
+                    'n_exons': 'mean',
+                    'length': 'mean',
+                    'nov_rank': 'min',
+                    'ism_rank': 'min'}
+        cols = gb_cols + list(agg_dict.keys())
+        for c in list(set(df.columns)-set(cols)):
+            agg_dict[c] = 'sum'
+
+        df = df.groupby(gb_cols).agg(agg_dict).reset_index()
+        df['transcript_novelty'] = df.nov_rank.map(rank_nov)
+        df.drop(['nov_rank'], axis=1, inplace=True)
+        df['ISM_subtype'] = df.ism_rank.map(rank_ism)
+        df.drop(['ism_rank'], axis=1, inplace=True)
+
+    # reorder columns
+    c1 = get_non_dataset_cols()
+    c2 = get_dataset_cols(df)
+    df = df[c1+c2]
+
+    return df
