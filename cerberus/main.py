@@ -31,7 +31,8 @@ def gtf_to_bed(mode, gtf, o, dist=50, slack=50):
               required=True)
 @click.option('--input',
               help='Path to file w/ path to BED '+\
-                'files on each line; ordered by priority',
+                'files on each line or comma-separated '+\
+                ' list of file paths; ordered by priority',
               required=True)
 @click.option('-o',
             help='Output file name',
