@@ -54,20 +54,40 @@ def agg_ends(mode, input, o):
 @click.option('--opref',
               help='Output file prefix to save beds / gtf w/ triplets',
               required=True)
-def assign_triplets(gtf, tss_bed, tes_bed, opref):
+@click.option('--h5',
+              help='Save output as an h5 file',
+              is_flag=True,
+              default=False)
+def assign_triplets(gtf, tss_bed, tes_bed, opref, h5):
     ic, tss_bed, tes_bed, df = add_triplets(gtf, tss_bed, tes_bed)
 
-    oname = '{}_ic.tsv'.format(opref)
-    ic.to_csv(oname, index=False, sep='\t')
+    # save as a series of tables
+    if not h5:
+        oname = '{}_ic.tsv'.format(opref)
+        ic.to_csv(oname, index=False, sep='\t')
 
-    oname = '{}_tss.bed'.format(opref)
-    tss_bed.to_bed(oname)
+        oname = '{}_tss.bed'.format(opref)
+        tss_bed.to_bed(oname)
 
-    oname = '{}_tes.bed'.format(opref)
-    tes_bed.to_bed(oname)
+        oname = '{}_tes.bed'.format(opref)
+        tes_bed.to_bed(oname)
 
-    oname = '{}_tid_map.tsv'.format(opref)
-    df.to_csv(oname, index=False, sep='\t')
+        oname = '{}_tid_map.tsv'.format(opref)
+        df.to_csv(oname, index=False, sep='\t')
+    elif h5:
+
+        tss_bed = tss_bed.df
+        tes_bed = tes_bed.df
+
+        ic = change_all_dtypes(ic, str)
+        tss_bed = change_all_dtypes(tss_bed, str)
+        tes_bed = change_all_dtypes(tes_bed, str)
+
+        oname = '{}.h5'.format(opref)
+        ic.to_hdf(oname, 'ic', mode='w')
+        tss_bed.to_hdf(oname, 'tss', mode='a', format='table')
+        tes_bed.to_hdf(oname, 'tes', mode='a', format='table')
+        df.to_hdf(oname, 'map', mode='a')
 
 @cli.command()
 @click.option('--map',

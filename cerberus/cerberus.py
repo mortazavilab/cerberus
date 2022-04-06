@@ -1,6 +1,23 @@
 import pyranges as pr
 import pandas as pd
 import pdb
+import h5py
+
+def change_all_dtypes(df, dtype):
+    """
+    Change all dtypes in a dataframe to a specified dtype
+
+    Parameters:
+        df (pandas DataFrame): DataFrame to alter
+        dtype (type): Variable type to convert each column to
+
+    Returns:
+        df (pandas DataFrame): DataFrame with all dtypes changed
+    """
+    for c in df.columns:
+        df[c] = df[c].astype(dtype)
+    return df
+
 
 def get_nov_ranks():
     """
@@ -261,8 +278,8 @@ def add_triplets(gtf, tss_bed, tes_bed):
 
     # make coords into tuple and perform additional
     # formatting for this table
-    # df['ic'] = df.ic.str.split('-')
-    # df['ic'] = [tuple(c) for c in df.ic.tolist()]
+    df['ic'] = df.ic.str.split('-')
+    df['ic'] = [tuple(c) for c in df.ic.tolist()]
     ic = df.copy(deep=True)
     ic.rename({'ic': 'coordinates',
                'Chromosome': 'chrom',

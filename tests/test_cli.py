@@ -52,11 +52,17 @@ def test_assign_triplets(tmp_path):
     opref = str(tmp_path/'test')
     runner = CliRunner()
 
+    # saving as series of 4 files
     cmd = '--gtf {} --tss_bed {} --tes_bed {} --opref {}'.format(canx_gtf, canx_tss_bed, canx_tes_bed, opref)
     print(cmd)
     result = runner.invoke(assign_triplets, cmd)
     assert result.exit_code == 0
 
+    # saving as h5 file
+    cmd = '--gtf {} --tss_bed {} --tes_bed {} --opref {} --h5'.format(canx_gtf, canx_tss_bed, canx_tes_bed, opref)
+    print(cmd)
+    result = runner.invoke(assign_triplets, cmd)
+    assert result.exit_code == 0
 
 def test_replace_ids(tmp_path):
     opref = str(tmp_path/'test')
