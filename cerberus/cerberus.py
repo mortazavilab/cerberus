@@ -101,9 +101,57 @@ def get_transcript_ref(fname):
     """
     df = pr.read_gtf(fname, duplicate_attr=True).df
     df = df.loc[df.Feature == 'transcript']
+    df['MANE_Select'] = df.tag.str.contains('MANE_Select')
     df['basic_set'] = df.tag.str.contains('basic')
     df['temp'] = df.tag.str.split('appris_principal_', n=1, expand=True)[1]
     df['appris_principal'] = df.temp.str.split(',', n=1, expand=True)[0]
+
+    return df
+
+def get_ic(gtf_pr):
+    """
+    Get a hyphen-separated representation of each transcript's intron chain
+    from a PyRanges GTF
+
+    Parameters:
+        gtf_pr (pyranges PyRanges): GTF PyRanges object
+
+    Returns:
+        df (pandas DataFrame): DataFrame detailing intron chain, gene, strand,
+            chromosome, and transcript that intron chain was seen in
+    """
+    df = gtf_pr.df.copy(deep=True)
+
+    # restrict to exon entries
+    df = df.loc[df.Feature == 'exon']
+    cols = ['Chromosome', 'Strand', 'Start', 'End', 'transcript_id', 'gene_id']
+    df = df[cols]
+
+    # melt to isolate individual coordinates
+    df = pd.melt(df, id_vars=['Chromosome', 'Strand', 'transcript_id', 'gene_id'],
+                value_vars=['Start', 'End'],
+                value_name='Coord')
+    df.drop('variable', axis=1, inplace=True)
+
+    # sort to order coordinates correctly
+    df.Coord = df.Coord.astype(int)
+    fwd = df.loc[df.Strand == '+'].copy(deep=True)
+    rev = df.loc[df.Strand == '-'].copy(deep=True)
+
+    fwd.sort_values(by=['Chromosome', 'transcript_id', 'Coord'],
+                    ascending=[True, True, True], inplace=True)
+    rev.sort_values(by=['Chromosome', 'transcript_id', 'Coord'],
+                    ascending=[True, True, False], inplace=True)
+    df = pd.concat([fwd, rev])
+
+    # create intron chain strings
+    df.Coord = df.Coord.astype(str)
+    df = df.groupby(['Chromosome', 'Strand',
+                     'transcript_id', 'gene_id'], observed=True)['Coord'].apply('-'.join).reset_index()
+
+    # remove tss and tes from intron chain
+    df['temp'] = df.Coord.str.split('-', n=1, expand=True)[1]
+    df['ic'] = df.temp.str.rsplit('-', n=1, expand=True)[0]
 
     return df
 
@@ -125,15 +173,18 @@ def number_tss_ic_tes(df, mode):
     # groupby feature but record which feature
     # each transcript id uses
     cols = ['transcript_id', 'Chromosome', 'Strand',
-            mode, 'basic_set', 'appris_principal', 'gene_id']
+            mode, 'basic_set', 'MANE_Select',
+            'appris_principal', 'gene_id']
     df = df[cols].groupby(['Chromosome', 'Strand',
                            mode, 'gene_id']).agg({'transcript_id': ','.join,
+                                     'MANE_Select': 'max',
                                      'basic_set': 'max',
                                      'appris_principal': 'min'}).reset_index()
 
-    # compute intron chain number
-    df['{}_num'.format(mode)] = df.sort_values(by=['gene_id', 'appris_principal', 'basic_set'],
-                                 ascending=[True, False, True],
+    # compute feature number
+    df['{}_num'.format(mode)] = df.sort_values(by=['gene_id', 'MANE_Select',
+                                                   'appris_principal', 'basic_set'],
+                                 ascending=[True, False, True, False],
                                  na_position='last')\
                                  .groupby(['gene_id'])\
                                  .cumcount() + 1
@@ -211,8 +262,9 @@ def add_triplets(gtf, tss_bed, tes_bed):
     """
     Merges end regions with ends from GTF and assigns triplets to each detected
     intron chain, tss, and tes for each gene.
-    Preferentially orders based on transcript support level (appris_principal)
-    and which transcripts are in the basic annotation
+    Preferentially orders based on transcript support level
+        (MANE_Select, basic set, appris_principal)
+        and which transcripts are in the basic annotation
 
     Parameters:
         gtf (str): File path to GTF
@@ -235,40 +287,11 @@ def add_triplets(gtf, tss_bed, tes_bed):
 
     # get basic status and appris_principal tag for each transcript
     t_df = get_transcript_ref(gtf)
-    t_df = t_df[['transcript_id', 'gene_id', 'basic_set', 'appris_principal']]
+    t_df = t_df[['transcript_id', 'MANE_Select', 'basic_set', 'appris_principal']]
 
     # get unique intron chains from gtf
-    df = pr.read_gtf(gtf).df
-
-    # restrict to exon entries
-    df = df.loc[df.Feature == 'exon']
-    cols = ['Chromosome', 'Strand', 'Start', 'End', 'transcript_id', 'gene_id']
-    df = df[cols]
-
-    # melt to isolate individual coordinates
-    df = pd.melt(df, id_vars=['Chromosome', 'Strand', 'transcript_id', 'gene_id'],
-                value_vars=['Start', 'End'],
-                value_name='Coord')
-    df.drop('variable', axis=1, inplace=True)
-
-    # sort to order coordinates correctly
-    df.Coord = df.Coord.astype(int)
-    fwd = df.loc[df.Strand == '+'].copy(deep=True)
-    rev = df.loc[df.Strand == '-'].copy(deep=True)
-
-    fwd.sort_values(by=['Chromosome', 'transcript_id', 'Coord'],
-                    ascending=[True, True, True])
-    rev.sort_values(by=['Chromosome', 'transcript_id', 'Coord'],
-                    ascending=[True, True, False])
-    df = pd.concat([fwd, rev])
-
-    # create intron chain strings
-    df.Coord = df.Coord.astype(str)
-    df = df.groupby(['Chromosome', 'Strand', 'transcript_id'])['Coord'].apply('-'.join).reset_index()
-
-    # remove tss and tes from intron chain
-    df['temp'] = df.Coord.str.split('-', n=1, expand=True)[1]
-    df['ic'] = df.temp.str.rsplit('-', n=1, expand=True)[0]
+    df = pr.read_gtf(gtf)
+    df = get_ic(df)
 
     # add basic annotation, appris principal number, and gene id
     df = df.merge(t_df, on='transcript_id', how='left')
@@ -286,7 +309,7 @@ def add_triplets(gtf, tss_bed, tes_bed):
                'Strand': 'strand'},
                axis=1, inplace=True)
     ic['ic_id'] = ic['gene_id']+'_'+ic.ic_num.astype(str)
-    ic.drop(['basic_set', 'appris_principal',
+    ic.drop(['MANE_Select', 'basic_set', 'appris_principal',
              'gene_id', 'ic_num'],
             axis=1, inplace=True)
 
@@ -312,7 +335,8 @@ def add_triplets(gtf, tss_bed, tes_bed):
 
         # merge in information about transcript status
         t_df = get_transcript_ref(gtf)
-        t_df = t_df[['transcript_id', 'appris_principal', 'basic_set']]
+        t_df = t_df[['transcript_id', 'MANE_Select',
+                     'appris_principal', 'basic_set']]
         df = df.merge(t_df, how='left', on='transcript_id')
         df = pr.PyRanges(df)
 
@@ -405,16 +429,18 @@ def replace_gtf_ids(gtf, m, agg):
 
     # drop old tids
     df.drop(['transcript_id_x', 'transcript_name_x',
-             'original_transcript_id_merge',
              'original_transcript_name_merge'],
             axis=1, inplace=True)
 
-    # if we're only reporting one transcript per triplet
+    # remove duplicated transcripts; just keeping the first one
     if agg:
-        df = df.loc[~(df.duplicated(subset=['transcript_id',
-                                             'transcript_name',
-                                             'exon_id',
-                                             'Feature'], keep='first'))]
+        temp = df[['transcript_id', 'original_transcript_id_merge']].drop_duplicates()
+        dupe_old_tids = temp.loc[temp.transcript_id.duplicated(keep='first'), 'original_transcript_id_merge']
+        df = df.loc[~df.original_transcript_id_merge.isin(dupe_old_tids)]
+
+    # drop last column
+    df.drop('original_transcript_id_merge', axis=1, inplace=True)
+
     df = pr.PyRanges(df)
 
     return df
@@ -438,8 +464,7 @@ def replace_ab_ids(ab, m, agg):
     m_df = pd.read_csv(m, sep='\t')
 
     # fix transcript ids in abundance file
-    ab_map = m_df[['original_transcript_id', 'original_transcript_name',
-                   'transcript_name', 'transcript_id']]
+    ab_map = m_df[['original_transcript_id', 'original_transcript_name', 'transcript_name', 'transcript_id']]
     df = df.merge(ab_map, left_on='annot_transcript_id', right_on='original_transcript_id')
 
     df.drop(['original_transcript_id', 'original_transcript_name',
