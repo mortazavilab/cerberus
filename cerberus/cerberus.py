@@ -172,21 +172,25 @@ def number_tss_ic_tes(df, mode):
     """
     # groupby feature but record which feature
     # each transcript id uses
-    cols = ['transcript_id', 'Chromosome', 'Strand',
-            'Start', 'End',
-            mode, 'basic_set', 'MANE_Select',
-            'appris_principal', 'gene_id']
-    df = df[cols].groupby(['Chromosome', 'Strand',
-                           'Start', 'End',
-                           mode, 'gene_id'],
+    gb_cols =['Chromosome', 'Strand', mode, 'gene_id']
+    subset_cols = ['transcript_id', 'Chromosome', 'Strand', mode,
+                   'basic_set', 'MANE_Select', 'appris_principal', 'gene_id']
+
+    if mode == 'tss' or mode == 'tes':
+        gb_cols += ['Start', 'End']
+        subset_cols += ['Start', 'End']
+
+    sort_cols = ['gene_id', 'MANE_Select',
+                 'appris_principal', 'basic_set']
+
+    df = df[subset_cols].groupby(gb_cols,
                            observed=True).agg({'transcript_id': ','.join,
                                      'MANE_Select': 'max',
                                      'basic_set': 'max',
                                      'appris_principal': 'min'}).reset_index()
 
     # compute feature number based on tags
-    df['{}_num'.format(mode)] = df.sort_values(by=['gene_id', 'MANE_Select',
-                                                   'appris_principal', 'basic_set'],
+    df['{}_num'.format(mode)] = df.sort_values(by=sort_cols,
                                  ascending=[True, False, True, False],
                                  na_position='last')\
                                  .groupby(['gene_id'])\
@@ -282,6 +286,48 @@ def get_ends_from_gtf(gtf, mode, dist, slack):
     bed = number_gtf_ends(bed, gtf, mode)
 
     return bed
+
+def get_ics_from_gtf(gtf):
+    """
+    Get a file for each intron chain in a gtf and number them
+    based on tags indicating priority for each gene w/i the gtf
+
+    Parameters:
+        gtf (str): Filename for input gtf
+
+    Returns:
+        ic (pandas DataFrame): Dataframe for each unique intron chain found
+            in the input gtf
+    """
+
+    # get basic status and appris_principal tag for each transcript
+    t_df = get_transcript_ref(gtf)
+    t_df = t_df[['transcript_id', 'MANE_Select', 'basic_set', 'appris_principal']]
+
+    # get unique intron chains from gtf
+    df = pr.read_gtf(gtf)
+    df = get_ic(df)
+
+    # add basic annotation, appris principal number, and gene id
+    df = df.merge(t_df, on='transcript_id', how='left')
+
+    # add number for each unique intron chain
+    df = number_tss_ic_tes(df, mode='ic')
+
+    # make coords into tuple and perform additional
+    # formatting for this table
+    df['ic'] = df.ic.str.split('-')
+    df['ic'] = [tuple(c) for c in df.ic.tolist()]
+    ic = df.copy(deep=True)
+    ic.rename({'ic': 'Coordinates'},
+               axis=1, inplace=True)
+    ic['gene_id'] = ic.gene_id.str.split('.', n=1, expand=True)[0]
+    ic['Name'] = ic['gene_id']+'_'+ic.ic_num.astype(str)
+    cols = ['transcript_id', 'MANE_Select', 'basic_set', 'appris_principal',
+            'gene_id', 'ic_num']
+    ic.drop(cols, axis=1, inplace=True)
+
+    return ic
 
 def aggregate_ends(beds, mode):
     """

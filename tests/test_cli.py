@@ -3,7 +3,7 @@ import pandas as pd
 import pdb
 from click.testing import CliRunner
 from conftest import *
-from cerberus.main import gtf_to_bed, agg_ends, assign_triplets, replace_ids
+from cerberus.main import gtf_to_bed, gtf_to_ics, agg_ends, assign_triplets, replace_ids
 
 def test_gtf_to_bed(tmp_path):
     bed_path = str(tmp_path/'test.bed')
@@ -29,6 +29,15 @@ def test_gtf_to_bed(tmp_path):
     # pdb.set_trace()
     # bed.head()
     # assert all(bed.lengths() == 101)
+
+def test_gtf_to_ics(tmp_path):
+    out_path = str(tmp_path/'test.tsv')
+    runner = CliRunner()
+    cmd = '--gtf {} -o {}'.format(canx_gtf, out_path)
+    print(cmd)
+    result = runner.invoke(gtf_to_ics, cmd)
+    assert result.exit_code == 0
+
 
 def test_agg_ends(tmp_path):
     ofile = str(tmp_path/'test.bed')

@@ -26,6 +26,17 @@ def gtf_to_bed(mode, gtf, o, dist=50, slack=50):
     bed.to_bed(o)
 
 @cli.command()
+@click.option('--gtf',
+              help='GTF file',
+              required=True)
+@click.option('-o',
+            help='Output file name',
+            required=True)
+def gtf_to_ics(gtf, o):
+    df = get_ics_from_gtf(gtf)
+    df.to_csv(o, index=False, sep='\t')
+
+@cli.command()
 @click.option('--mode',
               help='Choose tss or tes',
               required=True)
