@@ -58,17 +58,11 @@ def test_agg_ends(tmp_path):
     # >1 file, passed from cmd
 
 def test_assign_triplets(tmp_path):
-    opref = str(tmp_path/'test')
+    o = str(tmp_path/'test.h5')
     runner = CliRunner()
 
-    # saving as series of 4 files
-    cmd = '--gtf {} --tss_bed {} --tes_bed {} --opref {}'.format(canx_gtf, canx_tss_bed, canx_tes_bed, opref)
-    print(cmd)
-    result = runner.invoke(assign_triplets, cmd)
-    assert result.exit_code == 0
-
     # saving as h5 file
-    cmd = '--gtf {} --tss_bed {} --tes_bed {} --opref {} --h5'.format(canx_gtf, canx_tss_bed, canx_tes_bed, opref)
+    cmd = '--gtf {} --ic {} --tss_bed {} --tes_bed {} -o {}'.format(canx_gtf, canx_ic_tsv, canx_tss_bed, canx_tes_bed, o)
     print(cmd)
     result = runner.invoke(assign_triplets, cmd)
     assert result.exit_code == 0

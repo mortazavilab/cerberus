@@ -39,6 +39,26 @@ cerberus gtf-to-bed \
   --slack 50
 ```
 
+### Calling unique intron chains from a transcriptome
+Create a tab-separated file detailing unique intron chains present in a
+transcriptome annotation (GTF) file.
+
+```
+Usage: cerberus gtf-to-ics [OPTIONS]
+
+Options:
+  --gtf TEXT  GTF file  [required]
+  -o TEXT     Output file name  [required]
+  --help      Show this message and exit.
+```
+
+Example call:
+```bash
+cerberus gtf-to-ics \
+  --gtf tests/files/Canx.gtf \
+  -o tests/files/Canx_ics.tsv
+```
+
 ### Aggregate end regions from multiple bed files
 Create consensus end regions from multiple bed files.
 

@@ -88,26 +88,6 @@ def get_dataset_cols(df):
                         if x not in non_dataset_cols ]
     return dataset_cols
 
-def get_transcript_ref(fname):
-    """
-    Get transcripts with necessary tags to order based on basic set etc.
-
-    Parameters:
-        fname (str): Path to GTF file
-
-    Returns:
-        df (pandas DataFrame): DataFrame of only transcript entries
-            with tags parsed out
-    """
-    df = pr.read_gtf(fname, duplicate_attr=True).df
-    df = df.loc[df.Feature == 'transcript']
-    df['MANE_Select'] = df.tag.str.contains('MANE_Select')
-    df['basic_set'] = df.tag.str.contains('basic')
-    df['temp'] = df.tag.str.split('appris_principal_', n=1, expand=True)[1]
-    df['appris_principal'] = df.temp.str.split(',', n=1, expand=True)[0]
-
-    return df
-
 def get_ic(gtf_pr):
     """
     Get a hyphen-separated representation of each transcript's intron chain
@@ -124,7 +104,8 @@ def get_ic(gtf_pr):
 
     # restrict to exon entries
     df = df.loc[df.Feature == 'exon']
-    cols = ['Chromosome', 'Strand', 'Start', 'End', 'transcript_id', 'gene_id']
+    cols = ['Chromosome', 'Strand', 'Start', 'End',
+            'transcript_id', 'gene_id']
     df = df[cols]
 
     # melt to isolate individual coordinates
@@ -152,6 +133,7 @@ def get_ic(gtf_pr):
     # remove tss and tes from intron chain
     df['temp'] = df.Coord.str.split('-', n=1, expand=True)[1]
     df['ic'] = df.temp.str.rsplit('-', n=1, expand=True)[0]
+    df.drop(['temp', 'Coord'], axis=1, inplace=True)
 
     return df
 
@@ -251,6 +233,67 @@ def number_gtf_ends(bed, gtf, mode):
 
     return bed
 
+##### readers #####
+def get_transcript_ref(fname):
+    """
+    Get transcripts with necessary tags to order based on basic set etc.
+
+    Parameters:
+        fname (str): Path to GTF file
+
+    Returns:
+        df (pandas DataFrame): DataFrame of only transcript entries
+            with tags parsed out
+    """
+    df = pr.read_gtf(fname, duplicate_attr=True).df
+    df = df.loc[df.Feature == 'transcript']
+    df['MANE_Select'] = df.tag.str.contains('MANE_Select')
+    df['basic_set'] = df.tag.str.contains('basic')
+    df['temp'] = df.tag.str.split('appris_principal_', n=1, expand=True)[1]
+    df['appris_principal'] = df.temp.str.split(',', n=1, expand=True)[0]
+
+    return df
+
+def read_ic_ref(ic_file):
+    """
+    Read intron chain tsv format (output from gtf_to_ics or agg_ics)
+
+    Parameters:
+        ic_file (str): Path to ic file
+
+    Returns:
+        df (pandas DataFrame): Dataframe with gene id and intron chain number
+            added in addition to existing information
+    """
+    df = pd.read_csv(ic_file, sep='\t')
+
+    # add stable gene id and intron chain #
+    df[['gene_id', 'ic']] = df.Name.str.split('_', expand=True)
+
+    return df
+
+def read_end_ref(bed_file, mode):
+    """
+    Read end reference bed file (output from gtf_to_bed or agg_ends)
+
+    Parameters:
+        bed_file (str): Path to bed file
+        mode (str): {'tss', 'tes'}
+
+    Returns:
+        df (pandas DataFrame): Dataframe with gene id and end number
+            added in addition to existing information
+    """
+    df = pr.read_bed(bed_file).df
+
+    # add stable gene id and end #
+    df[['gene_id', mode]] = df.Name.str.split('_', expand=True)
+
+    return df
+
+
+##### main methods #####
+
 def get_ends_from_gtf(gtf, mode, dist, slack):
     """
     Create bed regions for each tes in a gtf and number them
@@ -316,8 +359,8 @@ def get_ics_from_gtf(gtf):
 
     # make coords into tuple and perform additional
     # formatting for this table
-    df['ic'] = df.ic.str.split('-')
-    df['ic'] = [tuple(c) for c in df.ic.tolist()]
+    # df['ic'] = df.ic.str.split('-')
+    # df['ic'] = [tuple(c) for c in df.ic.tolist()]
     ic = df.copy(deep=True)
     ic.rename({'ic': 'Coordinates'},
                axis=1, inplace=True)
@@ -365,138 +408,94 @@ def aggregate_ends(beds, mode):
 
     return bed
 
-def add_triplets(gtf, tss_bed, tes_bed):
+def add_triplets(gtf, ic_file, tss_bed, tes_bed):
     """
-    Merges end regions with ends from GTF and assigns triplets to each detected
-    intron chain, tss, and tes for each gene.
-    Preferentially orders based on transcript support level
-        (MANE_Select, basic set, appris_principal)
-        and which transcripts are in the basic annotation
+    Determines which tss, intron chain, and tes are used from a cerberus
+    reference are used in a specific gtf.
 
     Parameters:
-        gtf (str): File path to GTF
-        tss_bed (str): File path to TSS bed; output from `aggregate_ends` or
-            `get_ends_from_gtf`
-        tes_bed (str): File path to TES bed: output from `aggregate_ends` or
-            `get_ends_from_gtf`
+        gtf (str): File path to gtf you want to assign triplets to
+        ic_file (str): File path to intron chain tsv (part of cerberus ref.)
+        tss_bed (str): File path to tss bed (part of cerberus ref.)
+        tes_bed (str): File path to tes bed (part of cerberus ref.)
 
     Returns:
-        ic (pandas DataFrame): Table detailing each intron chain with each IC
-            named gene_id_ic_#
-        tss_bed (pyranges PyRanges): BED PyRanges object with TSS named
-            gene_id_tss_#
-        tes_bed (pyranges PyRanges): BED PyRanges object with TES named
-            gene_id_tes_#
-        df (pandas DataFrame): DataFrame including new and old transcript IDs
+        df (pandas DataFrame): File that maps each transcript from gtf to
+            a tss, intron chain, and tes given by the cerberus reference.
+            Also includes new transcript ids to refer to each transcript
     """
+    t_df = pr.read_gtf(gtf)
+    t_df = t_df.df
+    t_df['gene_id'] = t_df.gene_id.str.split('.', n=1, expand=True)[0]
+    t_df = pr.PyRanges(t_df)
 
     ### intron chain annotation ###
 
-    # get basic status and appris_principal tag for each transcript
-    t_df = get_transcript_ref(gtf)
-    t_df = t_df[['transcript_id', 'MANE_Select', 'basic_set', 'appris_principal']]
-
     # get unique intron chains from gtf
-    df = pr.read_gtf(gtf)
+    df = t_df.copy()
     df = get_ic(df)
+    df.rename({'ic': 'Coordinates'},
+              axis=1, inplace=True)
 
-    # add basic annotation, appris principal number, and gene id
-    df = df.merge(t_df, on='transcript_id', how='left')
+    # read in reference set of intron chains and format them as strings
+    # to enable merging
+    ref = read_ic_ref(ic_file)
 
-    # add number for each unique intron chain
-    df = number_tss_ic_tes(df, mode='ic')
+    # merge on intron chain, strand, chromosome, and gene id
+    df = df.merge(ref, how='left',
+                 on=['Chromosome', 'Strand',
+                     'Coordinates', 'gene_id'])
 
-    # make coords into tuple and perform additional
-    # formatting for this table
-    df['ic'] = df.ic.str.split('-')
-    df['ic'] = [tuple(c) for c in df.ic.tolist()]
-    ic = df.copy(deep=True)
-    ic.rename({'ic': 'coordinates',
-               'Chromosome': 'chrom',
-               'Strand': 'strand'},
-               axis=1, inplace=True)
-    ic['ic_id'] = ic['gene_id']+'_'+ic.ic_num.astype(str)
-    ic.drop(['MANE_Select', 'basic_set', 'appris_principal',
-             'gene_id', 'ic_num'],
-            axis=1, inplace=True)
+    # formatting
+    df.rename({'Name': 'ic_id'}, axis=1, inplace=True)
+    df = df[['transcript_id', 'ic', 'ic_id']]
 
-    # keep track of which transcripts use each intron chain
-    df.transcript_id = df.transcript_id.str.split(',')
-    ttrip_df = df[['transcript_id', 'ic_num']].explode(column='transcript_id')
+    ### end annotation ###
 
-    ### tss / tes numbering ###
-    beds = {}
     for mode, bed_file in zip(['tss', 'tes'], [tss_bed, tes_bed]):
 
-        ends = pr.read_bed(bed_file).df
-        ends.rename({'ThickStart': 'gene_id'}, axis=1, inplace=True)
-        ends[mode] = [i for i in range(len(ends.index))]
-        ends = pr.PyRanges(ends)
-
-        # merge gtf ends with bed ends
-        df = pr.read_gtf(gtf)
         if mode == 'tss':
-            df = df.features.tss().df
+            ends = t_df.features.tss()
         elif mode == 'tes':
-            df = df.features.tes().df
+            ends = t_df.features.tes()
 
-        # merge in information about transcript status
-        t_df = get_transcript_ref(gtf)
-        t_df = t_df[['transcript_id', 'MANE_Select',
-                     'appris_principal', 'basic_set']]
-        df = df.merge(t_df, how='left', on='transcript_id')
-        df = pr.PyRanges(df)
+        # merge transcriptome ends with reference ends
+        ref = read_end_ref(bed_file, mode=mode)
+        ref = pr.PyRanges(ref)
+        ends = ends.join(ref,
+                         strandedness='same',
+                         how='left').df
+        ends = ends.loc[ends.gene_id == ends.gene_id_b]
 
-        # join with bed ends
-        df = df.join(ends,
-                     strandedness='same',
-                     how='left').df
-        df = df.loc[df.gene_id == df.gene_id_b]
+        # formatting
+        ends.rename({'Name': '{}_id'.format(mode)}, axis=1, inplace=True)
+        ends = ends[['transcript_id', mode, '{}_id'.format(mode)]]
 
-        # add number for each unique end region
-        df = number_tss_ic_tes(df, mode=mode)
+        # add ends into map df
+        df = df.merge(ends, how='left', on='transcript_id')
 
-        # keep track of which transcripts use each intron chain
-        df.transcript_id = df.transcript_id.str.split(',')
-        temp = df[['transcript_id', '{}_num'.format(mode)]].explode(column='transcript_id')
-        ttrip_df = ttrip_df.merge(temp, on='transcript_id')
+    ### creating map file ###
 
-        # add numbers back into bed file
-        ends = ends.df
-        ends = ends.merge(df[[mode, '{}_num'.format(mode)]], on=mode)
+    # get gene id / name and transcript name from original gtf
+    t_df = t_df.df
+    t_df = t_df.loc[t_df.Feature == 'transcript']
+    if 'gene_name' not in t_df.columns:
+        t_df['gene_name'] = t_df.transcript_name.str.split('-', n=1, expand=True)[0]
+    t_df = t_df[['gene_id', 'gene_name',
+                 'transcript_id', 'transcript_name']]
+    df = df.merge(t_df, how='left', on='transcript_id')
 
-        ends['Name'] = ends.gene_id+'_'+ends['{}_num'.format(mode)].astype(str)
-        ends.drop([mode, 'gene_id', '{}_num'.format(mode)], axis=1, inplace=True)
-        beds[mode] = pr.PyRanges(ends)
-
-    # create formatted string to represent each transcript
-    ttrip_df['transcript_triplet'] = '['+ttrip_df['tss_num'].astype(str)+', '+\
-                                         ttrip_df['ic_num'].astype(str)+', '+\
-                                         ttrip_df['tes_num'].astype(str)+']'
-
-    # final gtf file formatting
-    df = pr.read_gtf(gtf, duplicate_attr=True).df
-    df = df.merge(ttrip_df[['transcript_id', 'transcript_triplet']],
-                  how='left',
-                  on='transcript_id')
-    gtf = pr.PyRanges(df)
-
-    # transcript to triplet reference file
-
-    # add gene name from transcript name
-    df = df.loc[df.Feature == 'transcript']
-    if 'gene_name' not in df.columns:
-        df['gene_name'] = df.transcript_name.str.split('-', n=1, expand=True)[0]
-    df = df[['transcript_id', 'transcript_name',
-             'gene_name', 'gene_id',
-             'transcript_triplet']]
+    # create triplets and rename old ids
     df.rename({'transcript_id': 'original_transcript_id',
                'transcript_name': 'original_transcript_name'},
                axis=1, inplace=True)
-    df['transcript_id'] = df.gene_id+' '+df.transcript_triplet
-    df['transcript_name'] = df.gene_name+' '+df.transcript_triplet
+    df['transcript_triplet'] = '['+df.tss.astype(str)+', '+\
+                                   df.ic.astype(str)+', '+\
+                                   df.tes.astype(str)+']'
+    df['transcript_id'] = df['gene_id']+' '+df.transcript_triplet
+    df['transcript_name'] = df['gene_name']+' '+df.transcript_triplet
 
-    return ic, beds['tss'], beds['tes'], df
+    return df
 
 def replace_gtf_ids(gtf, m, agg):
     """
