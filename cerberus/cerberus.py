@@ -173,15 +173,18 @@ def number_tss_ic_tes(df, mode):
     # groupby feature but record which feature
     # each transcript id uses
     cols = ['transcript_id', 'Chromosome', 'Strand',
+            'Start', 'End',
             mode, 'basic_set', 'MANE_Select',
             'appris_principal', 'gene_id']
     df = df[cols].groupby(['Chromosome', 'Strand',
-                           mode, 'gene_id']).agg({'transcript_id': ','.join,
+                           'Start', 'End',
+                           mode, 'gene_id'],
+                           observed=True).agg({'transcript_id': ','.join,
                                      'MANE_Select': 'max',
                                      'basic_set': 'max',
                                      'appris_principal': 'min'}).reset_index()
 
-    # compute feature number
+    # compute feature number based on tags
     df['{}_num'.format(mode)] = df.sort_values(by=['gene_id', 'MANE_Select',
                                                    'appris_principal', 'basic_set'],
                                  ascending=[True, False, True, False],
@@ -191,9 +194,63 @@ def number_tss_ic_tes(df, mode):
 
     return df
 
+def number_gtf_ends(bed, gtf, mode):
+    """
+    As a part of calling ends from a gtf, use the tags and gene id
+    in the gtf to assign each region a name / number
+
+    Parameters:
+        bed (pyranges PyRanges): Output of get_ends_from_gtf
+        gtf (str): Path to gtf file
+        mode (str): {'tss', 'tes'}
+
+    Returns:
+        bed (pyranges PyRanges): Bed file with Name field
+            consisting of stable gene id_end region number
+    """
+
+    # read gtf with extra tag info
+    gr_gtf = get_transcript_ref(gtf)
+    gr_gtf = pr.PyRanges(gr_gtf)
+
+    # add a temporary unique identifier for each end
+    bed = bed.df
+    bed[mode] = [i for i in range(len(bed.index))]
+    bed = pr.PyRanges(bed)
+
+    # get ends from reference gtf and join with called ends
+    cols = ['Chromosome', 'Start', 'End', 'Strand',
+             'gene_id', 'transcript_id', 'MANE_Select',
+             'basic_set', 'appris_principal']
+    if mode == 'tss':
+        temp = pr.PyRanges(gr_gtf.features.tss().df[cols])
+    elif mode == 'tes':
+        temp = pr.PyRanges(gr_gtf.features.tes().df[cols])
+    bed = bed.join(temp,
+               strandedness='same',
+               how='left',
+               slack=0)
+    bed = bed.df
+    bed = bed.loc[bed.gene_id == bed.gene_id_b]
+    cols = ['Start_b', 'End_b', 'Strand_b', 'gene_id_b']
+    bed.drop(cols, axis=1, inplace=True)
+
+    # use the tags from the gtf to assign an actual end id
+    bed = number_tss_ic_tes(bed, mode=mode)
+    bed['gene_id'] = bed.gene_id.str.split(pat='.', n=1, expand=True)[0]
+    c = '{}_num'.format(mode)
+    bed['Name'] = bed.gene_id+'_'+bed[c].astype(str)
+    cols = [mode, 'transcript_id', 'MANE_Select',
+            'basic_set', 'appris_principal', c, 'gene_id']
+    bed.drop(cols, axis=1, inplace=True)
+    bed = pr.PyRanges(bed)
+
+    return bed
+
 def get_ends_from_gtf(gtf, mode, dist, slack):
     """
-    Create bed regions for each tes in a gtf
+    Create bed regions for each tes in a gtf and number them
+    based on tags indicating priority for each gene w/i the gtf
 
     Parameters:
         gtf (str): Path to gtf
@@ -204,7 +261,7 @@ def get_ends_from_gtf(gtf, mode, dist, slack):
         bed (pyranges PyRanges): PyRanges object containing extended regions
     """
     gr_gtf = pr.read_gtf(gtf)
-    if 'gene_id' not in gr_gtf.df.columns:
+    if 'gene_id' not in gr_gtf.columns:
         raise ValueError('No gene_id field found in {}'.format(gtf))
 
     # get and extend ends
@@ -221,6 +278,8 @@ def get_ends_from_gtf(gtf, mode, dist, slack):
     bed = bed.merge(strand=True,
                 by='gene_id',
                 slack=slack)
+
+    bed = number_gtf_ends(bed, gtf, mode)
 
     return bed
 
@@ -240,6 +299,8 @@ def aggregate_ends(beds, mode):
     Returns:
         bed (pyranges PyRanges): PyRanges object containing aggregated ends
     """
+    # TODO : need to consider numbering from names of ends from
+    # input gtf files
 
     # bed files given as list on cmd line
     if beds.endswith('.bed'):
