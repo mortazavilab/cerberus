@@ -261,7 +261,7 @@ def number_gtf_ends(bed, gtf, mode):
 
 ##### writers #####
 
-def h5_to_tsv(h5, opref):
+def write_h5_to_tsv(h5, opref):
     """
     Write a cerberus transcriptome h5 file to a series
     of 4 flat tsv files
@@ -282,7 +282,7 @@ def h5_to_tsv(h5, opref):
     oname = '{}_tes.bed'.format(opref)
     tes.to_bed(oname)
 
-    oname = '{}_map.bed'.format(opref)
+    oname = '{}_map.tsv'.format(opref)
     m.to_csv(oname, sep='\t', index=False)
 
 ##### readers #####

@@ -131,3 +131,13 @@ def replace_ids(map, gtf, ab, collapse, opref):
         df = replace_ab_ids(ab, map, collapse)
         oname = '{}.tsv'.format(opref)
         df.to_csv(oname, index=False, sep='\t')
+
+@cli.command()
+@click.option('--h5',
+              help='h5 transcriptome file output from cerberus assign-triplets',
+              required=True)
+@click.option('--opref',
+              help='output file prefix',
+              required=True)
+def h5_to_tsv(h5, opref):
+    write_h5_to_tsv(h5, opref)

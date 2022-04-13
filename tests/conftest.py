@@ -6,3 +6,5 @@ canx_ic_tsv = 'tests/files/Canx_ics.tsv'
 
 canx_tid_map = 'tests/files/Canx_triplet_tid_map.tsv'
 canx_ab = 'tests/files/Canx_abundance.tsv'
+
+canx_h5 = 'tests/files/Canx_triplet.h5'

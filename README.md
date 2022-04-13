@@ -27,6 +27,23 @@ Example calls:
 cerberus gtf-to-bed \
   --mode tss \
   --gtf tests/files/Canx.gtf \
+  -o test_output/Canx_tss.bed \
+  --dist 50 \
+  --slack 50
+
+cerberus gtf-to-bed \
+  --mode tes \
+  --gtf tests/files/Canx.gtf \
+  -o test_output/Canx_tes.bed \
+  --dist 50 \
+  --slack 50
+```
+
+<!-- Calls to generate test files:
+```bash
+cerberus gtf-to-bed \
+  --mode tss \
+  --gtf tests/files/Canx.gtf \
   -o tests/files/Canx_tss.bed \
   --dist 50 \
   --slack 50
@@ -37,7 +54,7 @@ cerberus gtf-to-bed \
   -o tests/files/Canx_tes.bed \
   --dist 50 \
   --slack 50
-```
+``` -->
 
 ### Calling unique intron chains from a transcriptome
 Create a tab-separated file detailing unique intron chains present in a
@@ -56,11 +73,27 @@ Example call:
 ```bash
 cerberus gtf-to-ics \
   --gtf tests/files/Canx.gtf \
-  -o tests/files/Canx_ics.tsv
+  -o test_output/Canx_ics.tsv
 ```
 
+<!-- Calls to generate test files:
+```bash
+cerberus gtf-to-ics \
+  --gtf tests/files/Canx.gtf \
+  -o tests/files/Canx_ics.tsv
+
+cerberus gtf-to-ics \
+  --gtf tests/files/Canx_1.gtf \
+  -o tests/files/Canx_1_ics.tsv
+
+cerberus gtf-to-ics \
+  --gtf tests/files/Canx_2.gtf \
+  -o tests/files/Canx_2_ics.tsv
+``` -->
+
 ### Aggregate end regions from multiple bed files
-Create consensus end regions from multiple bed files.
+Create consensus end regions from multiple bed files. The intent is for some
+of these files to come from `cerberus gtf-to-bed`.
 
 ```
 Usage: cerberus agg-ends [OPTIONS]
@@ -78,29 +111,69 @@ Example calls:
 cerberus agg-ends \
   --mode tss \
   --input tests/files/Canx_tss_beds.txt \
-  -o Canx_tss_agg.bed
+  -o test_output/Canx_tss_agg.bed
 
 cerberus agg-ends \
   --mode tes \
   --input tests/files/Canx_tes.bed \
-  -o Canx_tes_agg.bed
+  -o test_output/Canx_tes_agg.bed
 ```
 
+<!-- Calls to generate test files
+```bash
+cerberus agg-ends \
+  --mode tss \
+  --input tests/files/Canx_tss_beds.txt \
+  -o tests/files/Canx_tss_agg.bed
+
+cerberus agg-ends \
+  --mode tes \
+  --input tests/files/Canx_tes.bed \
+  -o tests/files/Canx_tes_agg.bed
+``` -->
+
+### Aggregate intron chains from multiple intron chain files
+Create consensus intron chain annotations from multiple intron chain files
+(output from `cerberus gtf-to-ics`).
+
+```
+Usage: cerberus agg-ics [OPTIONS]
+
+Options:
+  --input TEXT  Path to file w/ path to ic files on each line OR comma-
+                separated list of files paths; ordered by priority  [required]
+  -o TEXT       Output file name  [required]
+  --help        Show this message and exit.
+```
+
+Example call:
+```bash
+cerberus agg-ics \
+  --input tests/files/Canx_1_ics.tsv,tests/files/Canx_2_ics.tsv \
+  -o test_output/Canx_ic_agg.tsv
+```
+
+<!-- Calls to generate test files
+```bash
+cerberus agg-ics \
+  --input tests/files/Canx_ics.tsv \
+  -o tests/files/Canx_ic_agg.tsv
+``` -->
+
 ### Compute triplet IDs for a transcriptome
-Using the regions from `cerberus agg-ends` combined with the GTF, determine which
-end region and intron chain each transcript uses, and number then in ascending
-order based on which transcripts are part of the basic set.
+Using the regions from `cerberus agg-ends` and the intron chains from
+`cerberus agg-ics`, determine which end regions and intron chain each transcript
+in the input GTF uses and output the results to an h5 transcriptome representation.
 
 ```
 Usage: cerberus assign-triplets [OPTIONS]
 
 Options:
-  --gtf TEXT      GTF of isoforms  [required]
+  --gtf TEXT      GTF of isoforms to assign triplets to  [required]
+  --ic TEXT       Intron chain file  [required]
   --tss_bed TEXT  Bed file of TSS regions  [required]
   --tes_bed TEXT  Bed file of TES regions  [required]
-  --opref TEXT    Output file prefix to save beds / gtf w/ triplets
-                  [required]
-
+  -o TEXT         Output file name  [required]
   --help          Show this message and exit.
 ```
 
@@ -108,10 +181,21 @@ Example call:
 ```bash
 cerberus assign-triplets \
   --gtf tests/files/Canx.gtf \
-  --tss_bed Canx_tss_agg.bed \
-  --tes_bed Canx_tes_agg.bed \
-  --opref Canx_triplet
+  --ic tests/files/Canx_ic_agg.tsv \
+  --tss_bed tests/files/Canx_tss_agg.bed \
+  --tes_bed tests/files/Canx_tes_agg.bed \
+  -o test_output/Canx_triplet.h5
 ```
+
+<!-- Calls to generate test files:
+```bash
+cerberus assign-triplets \
+  --gtf tests/files/Canx.gtf \
+  --ic tests/files/Canx_ic_agg.tsv \
+  --tss_bed tests/files/Canx_tss_agg.bed \
+  --tes_bed tests/files/Canx_tes_agg.bed \
+  -o tests/files/Canx_triplet.h5
+``` -->
 
 ### Update transcript ids
 Using the map generated in `cerberus assign-triplets`, update the transcript ids
@@ -139,3 +223,40 @@ cerberus replace-ids \
   --collapse \
   --opref Canx_triplet
 ```
+
+## Utilites
+
+### h5 to tsvs
+By default as output from `assign-triplets`, cerberus writes a .h5 file with
+4 different tables in it corresponding to
+* Unique intron chains
+* Unique TSS regions in bed format
+* Unique TES regions in bed format
+* Mapping of transcripts to their corresponding TSS, intron chain, and TES
+
+If you wish to save tsv versions of each of these files for easier viewing,
+you can use this utility to convert it.
+
+```
+Usage: cerberus h5-to-tsv [OPTIONS]
+
+Options:
+  --h5 TEXT     h5 transcriptome file output from cerberus assign-triplets
+                [required]
+  --opref TEXT  output file prefix  [required]
+  --help        Show this message and exit.
+```
+
+Example calls:
+```bash
+cerberus h5-to-tsv \
+  --h5 tests/files/Canx_triplet.h5 \
+  --opref test_output/Canx
+```
+
+<!-- Calls to generate test files:
+```bash
+cerberus h5-to-tsv \
+  --h5 tests/files/Canx_triplet.h5 \
+  --opref tests/files/Canx_triplet
+``` -->

@@ -126,3 +126,12 @@ def test_replace_ids(tmp_path):
     print(cmd)
     result = runner.invoke(replace_ids, cmd)
     assert result.exit_code == 0
+
+def test_h5_to_tsv(tmp_path):
+    opref = str(tmp_path/'test')
+    runner = CliRunner()
+
+    cmd = '--h5 {} --opref {}'.format(canx_h5, opref)
+    print(cmd)
+    result = runner.invoke(h5_to_tsv, cmd)
+    assert result.exit_code == 0
