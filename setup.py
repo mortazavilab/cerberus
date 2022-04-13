@@ -9,7 +9,7 @@ requirements = [
     'setuptools',
     'tqdm',
     'click',
-    'pandas',
+    'pandas>=1.3',
     'pyranges>=0.0.71',
     'matplotlib',
 ]

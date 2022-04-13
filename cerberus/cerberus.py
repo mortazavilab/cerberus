@@ -3,6 +3,33 @@ import pandas as pd
 import pdb
 import h5py
 
+##### helper functions #####
+
+def parse_file_input(input, ext):
+    """
+    From either a file w/ filenames on each line or a comma-separated
+    list of files, get an ordered list of filenames
+
+    Parameters:
+        input (str): Either a path to a file where each line contains
+            a file path or a comma separated ordered list of filenames
+        ext (str): Extension of the anticipated files
+
+    Returns:
+        input (list of str): Ordered list of filepaths
+    """
+
+    # input files given as list on cmd line
+    if input.endswith('.{}'.format(ext)):
+        input = input.split(',')
+
+    # bed files given in a file
+    else:
+        df = pd.read_csv(input, header=None, names=['file'])
+        input = df.file.tolist()
+
+    return input
+
 def change_all_dtypes(df, dtype):
     """
     Change all dtypes in a dataframe to a specified dtype
@@ -17,7 +44,6 @@ def change_all_dtypes(df, dtype):
     for c in df.columns:
         df[c] = df[c].astype(dtype)
     return df
-
 
 def get_nov_ranks():
     """
@@ -233,7 +259,58 @@ def number_gtf_ends(bed, gtf, mode):
 
     return bed
 
+##### writers #####
+
+def h5_to_tsv(h5, opref):
+    """
+    Write a cerberus transcriptome h5 file to a series
+    of 4 flat tsv files
+
+    Parameters:
+        h5 (str): h5 file to convert to tables
+        opref (str): Output file path / prefix to give
+            each of the output files
+    """
+    ic, tss, tes, m = read_h5_annot(h5)
+
+    oname = '{}_ic.tsv'.format(opref)
+    ic.to_csv(oname, sep='\t', index=False)
+
+    oname = '{}_tss.bed'.format(opref)
+    tss.to_bed(oname)
+
+    oname = '{}_tes.bed'.format(opref)
+    tes.to_bed(oname)
+
+    oname = '{}_map.bed'.format(opref)
+    m.to_csv(oname, sep='\t', index=False)
+
 ##### readers #####
+
+def read_h5_annot(h5):
+    """
+    Read h5 representation of a transcriptome
+
+    Parameters:
+        h5 (str): .h5 file to read from
+
+    Returns:
+        ic (pandas DataFrame): Table detailing intron chains
+        tss (pyranges PyRanges): Bed representation of tss regions
+        tes (pyranges PyRanges): Bed represenation of tes regions
+        m (pandas DataFrame): Map of transcript id to tss / ic / tes
+    """
+
+    ic = pd.read_hdf(h5, key='ic')
+    tss = pd.read_hdf(h5, key='tss')
+    tes = pd.read_hdf(h5, key='tes')
+    m = pd.read_hdf(h5, key='map')
+
+    tss = pr.PyRanges(tss)
+    tes = pr.PyRanges(tes)
+
+    return ic, tss, tes, m
+
 def get_transcript_ref(fname):
     """
     Get transcripts with necessary tags to order based on basic set etc.
@@ -269,6 +346,7 @@ def read_ic_ref(ic_file):
 
     # add stable gene id and intron chain #
     df[['gene_id', 'ic']] = df.Name.str.split('_', expand=True)
+    df.ic = df.ic.astype(int)
 
     return df
 
@@ -378,9 +456,7 @@ def aggregate_ends(beds, mode):
     from multiple bed files.
 
     Parameters:
-        beds (str): Comma-separated list of paths to bed files
-            or path of text file with path of each bed file on each line
-            Bed files will be aggregated in the order that they are given
+        beds (list of str): List of bed files
         mode (str): 'tss' or 'tes'
         slack (int): Allowable distance b/w ends to cluster them.
             Default: 50
@@ -390,16 +466,6 @@ def aggregate_ends(beds, mode):
     """
     # TODO : need to consider numbering from names of ends from
     # input gtf files
-
-    # bed files given as list on cmd line
-    if beds.endswith('.bed'):
-        beds = beds.split(',')
-
-    # bed files given in a file
-    else:
-        df = pd.read_csv(beds, header=None, names=['bed_file'])
-        beds = df.bed_file.tolist()
-
     if len(beds) > 1:
         raise ValueError('Currently more than one bed file is not supported')
 
@@ -407,6 +473,55 @@ def aggregate_ends(beds, mode):
         bed = pr.read_bed(bed_fname)
 
     return bed
+
+def aggregate_ics(ics):
+    """
+    Aggregate intron chains from multiple gtf_to_ics calls into one
+    ics tsv table. Preferentially number intron chains based on their
+    numbers computed in the order that the ic files are passed in.
+
+    Parameters:
+        ics (list of str): List of ic.tsv files in priority ordering to
+            number each unique ic
+
+    Returns:
+        df (pandas DataFrame): Dataframe detailing the chromosome, strand,
+            coordinates, and new names computed for each unique intron
+            chain
+    """
+    df = pd.DataFrame()
+    for ic in ics:
+        temp = read_ic_ref(ic)
+
+        # start with priority 1
+        if len(df.index) == 0:
+            df = temp.copy(deep=True)
+        else:
+
+            # if we have more than 1 set of ics, merge on chrom, strand,
+            # ic coords, and gene id
+            df = df.merge(temp,
+                          on=['Chromosome', 'Strand', 'Coordinates', 'gene_id'],
+                          how='outer', suffixes=('', '_new'))
+
+            # renumber intron chains that are new to the set
+            n = int(df.ic.max())+1
+            new_ics = df.loc[df.ic.isnull()&~df.ic_new.isnull()].index
+            nums = [i for i in range(n, n+len(new_ics))]
+            df.loc[new_ics, 'ic'] = nums
+
+            # drop irrelevant columns
+            cols = ['Name_new', 'ic_new']
+            df.drop(cols, axis=1, inplace=True)
+
+    # reformat ic name
+    df['Name'] = df.gene_id+'_'+df.ic.astype(int).astype(str)
+
+    # other reformatting
+    cols = ['Chromosome', 'Strand', 'Coordinates', 'Name']
+    df = df[cols]
+
+    return df
 
 def add_triplets(gtf, ic_file, tss_bed, tes_bed):
     """

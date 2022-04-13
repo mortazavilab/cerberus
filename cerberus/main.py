@@ -42,15 +42,30 @@ def gtf_to_ics(gtf, o):
               required=True)
 @click.option('--input',
               help='Path to file w/ path to BED '+\
-                'files on each line or comma-separated '+\
-                ' list of file paths; ordered by priority',
+                'files on each line OR comma-separated '+\
+                'list of file paths; ordered by priority',
               required=True)
 @click.option('-o',
             help='Output file name',
             required=True)
 def agg_ends(mode, input, o):
-    bed = aggregate_ends(input, mode)
+    beds = parse_file_input(input, 'bed')
+    bed = aggregate_ends(beds, mode)
     bed.to_bed(o)
+
+@cli.command()
+@click.option('--input',
+              help='Path to file w/ path to ic '+\
+                'files on each line OR comma-separated '+\
+                'list of files paths; ordered by priority',
+              required=True)
+@click.option('-o',
+              help='Output file name',
+              required=True)
+def agg_ics(input, o):
+    ics = parse_file_input(input, 'tsv')
+    ic = aggregate_ics(ics)
+    ic.to_csv(o, sep='\t', index=False)
 
 @cli.command()
 @click.option('--gtf',
@@ -77,6 +92,7 @@ def assign_triplets(gtf, ic, tss_bed, tes_bed, o):
     tes_bed = pr.read_bed(tes_bed).df
     ic = pd.read_csv(ic, sep='\t')
 
+    df = change_all_dtypes(df, str)
     ic = change_all_dtypes(ic, str)
     tss_bed = change_all_dtypes(tss_bed, str)
     tes_bed = change_all_dtypes(tes_bed, str)

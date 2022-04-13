@@ -1,0 +1,2 @@
+/Users/fairliereese/mortazavi_lab/bin/cerberus/tests/files/Canx_1_ics.tsv
+/Users/fairliereese/mortazavi_lab/bin/cerberus/tests/files/Canx_2_ics.tsv
