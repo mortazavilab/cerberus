@@ -1,7 +1,11 @@
 # cerberus
 
-Cerberus is a set of tools designed to use bed regions to represent transcript
-start sites (TSSs) and transcript end sites (TESs).
+Cerberus is a set of tools designed to characterize and enhance transcriptome annotations. Currently cerberus can do the following:
+* represent transcription start sites (TSSs) and transcription end sites (TESs) as bed regions rather than single base pair ends
+* integrate intron chains from multiple transcriptome annotations (GTFs) to create a transcriptome of the union of them all
+* integrate TSSs and TESs from multiple GTFs as well as from outside BED sources to create end annotations from the union of them all
+* number intron chains, TSSs, and TESs found by their priority in a reference GTF
+* use the enhanced intron chain and end sets to annotate an existing GTF transcriptome and to modify the GTF and corresponding abundance matrices to reflect the new naming scheme / identities of the transcripts
 
 ## Workflow
 
