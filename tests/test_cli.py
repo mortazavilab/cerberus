@@ -103,7 +103,7 @@ def test_replace_ids(tmp_path):
     runner = CliRunner()
 
     # ab+gtf
-    cmd = '--map {} --gtf {} --ab {} --collapse --opref {}'.format(canx_tid_map,
+    cmd = '--h5 {} --gtf {} --ab {} --collapse --opref {}'.format(canx_h5,
                                                              canx_gtf,
                                                              canx_ab,
                                                              opref)
@@ -112,7 +112,7 @@ def test_replace_ids(tmp_path):
     assert result.exit_code == 0
 
     # ab
-    cmd = '--map {} --ab {} --collapse --opref {}'.format(canx_tid_map,
+    cmd = '--h5 {} --ab {} --collapse --opref {}'.format(canx_h5,
                                                              canx_ab,
                                                              opref)
     print(cmd)
@@ -120,7 +120,7 @@ def test_replace_ids(tmp_path):
     assert result.exit_code == 0
 
     # gtf
-    cmd = '--map {} --gtf {} --collapse --opref {}'.format(canx_tid_map,
+    cmd = '--h5 {} --gtf {} --collapse --opref {}'.format(canx_h5,
                                                              canx_gtf,
                                                              opref)
     print(cmd)

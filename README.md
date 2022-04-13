@@ -217,12 +217,22 @@ Options:
 Example call:
 ```bash
 cerberus replace-ids \
-  --map Canx_triplet_tid_map.tsv \
+  --h5 tests/files/Canx_triplet.h5 \
   --gtf tests/files/Canx.gtf \
   --ab tests/files/Canx_abundance.tsv \
   --collapse \
-  --opref Canx_triplet
+  --opref test_output/Canx_triplet_updated
 ```
+
+<!-- Calls to generate test files:
+```bash
+cerberus replace-ids \
+  --h5 tests/files/Canx_triplet.h5 \
+  --gtf tests/files/Canx.gtf \
+  --ab tests/files/Canx_abundance.tsv \
+  --collapse \
+  --opref tests/files/Canx_triplet_updated
+``` -->
 
 ## Utilites
 

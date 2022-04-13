@@ -103,9 +103,8 @@ def assign_triplets(gtf, ic, tss_bed, tes_bed, o):
     df.to_hdf(o, 'map', mode='a')
 
 @cli.command()
-@click.option('--map',
-              help='transcript ID map from assign_triplets',
-              required=True)
+@click.option('--h5',
+              help='h5 file output from assign-triplets')
 @click.option('--gtf',
               help='GTF of isoforms',
               required=False,
@@ -122,13 +121,13 @@ def assign_triplets(gtf, ic, tss_bed, tes_bed, o):
 @click.option('--opref',
               help='Output file prefix to save updated gtf / ab',
               required=True)
-def replace_ids(map, gtf, ab, collapse, opref):
+def replace_ids(h5, gtf, ab, collapse, opref):
     if gtf:
-        df = replace_gtf_ids(gtf, map, collapse)
+        df = replace_gtf_ids(gtf, h5, collapse)
         oname = '{}.gtf'.format(opref)
         df.to_gtf(oname)
     if ab:
-        df = replace_ab_ids(ab, map, collapse)
+        df = replace_ab_ids(ab, h5, collapse)
         oname = '{}.tsv'.format(opref)
         df.to_csv(oname, index=False, sep='\t')
 

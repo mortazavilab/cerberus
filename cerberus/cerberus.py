@@ -612,14 +612,14 @@ def add_triplets(gtf, ic_file, tss_bed, tes_bed):
 
     return df
 
-def replace_gtf_ids(gtf, m, agg):
+def replace_gtf_ids(gtf, h5, agg):
     """
     Replace transcript ids and names in a gtf with the triplets
     calculated from assign_triplets
 
     Parameters:
         gtf (str): Path to gtf file
-        m (str): Path to map file output from assign_triplets
+        h5 (str): Path to h5 annotation (output from assign)
         agg (bool): Whether or not to collapse transcripts with
             duplicate triplets
 
@@ -628,7 +628,7 @@ def replace_gtf_ids(gtf, m, agg):
     """
 
     df = pr.read_gtf(gtf).df
-    m_df = pd.read_csv(m, sep='\t')
+    _, _, _, m_df = read_h5_annot(h5)
 
     # groupby transcripts that are the same
     gb_cols = ['gene_name', 'gene_id', 'transcript_triplet',
@@ -666,14 +666,14 @@ def replace_gtf_ids(gtf, m, agg):
 
     return df
 
-def replace_ab_ids(ab, m, agg):
+def replace_ab_ids(ab, h5, agg):
     """
     Replace the transcript ids and transcript names in a TALON abundance file
     with the new transcript ids that contain the triplet
 
     Parameters:
         ab (str): Path to TALON abundance file
-        m (str): Path to map file (output from assign_triplets)
+        h5 (str): Path to h5 annotation (output from assign)
         agg (bool): Aggregate / collapse transcripts with the same triplets
             and sum up their count values
 
@@ -682,7 +682,7 @@ def replace_ab_ids(ab, m, agg):
             transcript ids / names
     """
     df = pd.read_csv(ab, sep='\t')
-    m_df = pd.read_csv(m, sep='\t')
+    _, _, _, m_df = read_h5_annot(h5)
 
     # fix transcript ids in abundance file
     ab_map = m_df[['original_transcript_id', 'original_transcript_name', 'transcript_name', 'transcript_id']]
