@@ -58,6 +58,20 @@ cerberus gtf-to-bed \
   -o tests/files/Canx_tes.bed \
   --dist 50 \
   --slack 50
+
+cerberus gtf-to-bed \
+  --mode tss \
+  --gtf tests/files/Canx_1.gtf \
+  -o tests/files/Canx_1_tss.bed \
+  --dist 50 \
+  --slack 50
+
+cerberus gtf-to-bed \
+  --mode tss \
+  --gtf tests/files/Canx_2.gtf \
+  -o tests/files/Canx_2_tss.bed \
+  --dist 50 \
+  --slack 50
 ``` -->
 
 ### Calling unique intron chains from a transcriptome

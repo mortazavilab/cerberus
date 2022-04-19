@@ -350,7 +350,7 @@ def read_ic_ref(ic_file):
 
     return df
 
-def read_end_ref(bed_file, mode):
+def read_cerberus_ends(bed_file, mode):
     """
     Read end reference bed file (output from gtf_to_bed or agg_ends)
 
@@ -367,6 +367,31 @@ def read_end_ref(bed_file, mode):
     # add stable gene id and end #
     df[['gene_id', mode]] = df.Name.str.split('_', expand=True)
 
+    # remove cerberus classification in ThickStart
+    df.drop('ThickStart', axis=1, inplace=True)
+
+    return df
+
+def read_bed(bed_file, mode):
+    """
+    Read a bed file and determine format
+    """
+
+    df = pr.read_bed(bed_file).df
+
+    # bed files without strands but with a column that the
+    # strand should be
+    if 'Strand' in df.columns:
+        ctrl = set(['+', '-'])
+        if set(df.Strand.tolist()) != ctrl:
+            df.rename({'Strand': 'Other'}, axis=1, inplace=True)
+
+    # bed files output from gtf_to_bed with gid_number names
+    if 'ThickStart' in df.columns:
+        if 'cerberus' in df.ThickStart.tolist():
+            df = read_cerberus_ends(bed_file, mode)
+
+    df = pr.PyRanges(df)
     return df
 
 
@@ -405,6 +430,11 @@ def get_ends_from_gtf(gtf, mode, dist, slack):
                 slack=slack)
 
     bed = number_gtf_ends(bed, gtf, mode)
+
+    # add cerberus as the source in thickstart column
+    bed = bed.df
+    bed['ThickStart'] = 'cerberus'
+    bed = pr.PyRanges(bed)
 
     return bed
 
@@ -575,7 +605,7 @@ def add_triplets(gtf, ic_file, tss_bed, tes_bed):
             ends = t_df.features.tes()
 
         # merge transcriptome ends with reference ends
-        ref = read_end_ref(bed_file, mode=mode)
+        ref = read_cerberus_ends(bed_file, mode=mode)
         ref = pr.PyRanges(ref)
         ends = ends.join(ref,
                          strandedness='same',
