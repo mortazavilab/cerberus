@@ -259,6 +259,108 @@ def number_gtf_ends(bed, gtf, mode):
 
     return bed
 
+##### for aggregating ends and intron chains #####
+
+def get_gene_feat_max(df, mode):
+    """
+    Get the maximum current number of a feature in an existing df
+
+    Parameters:
+        df (pandas DataFrame): DataFrame with all the entries from the old
+            DataFrame
+        mode (str): {ic, tss, tes}
+
+    Returns:
+        temp (pandas DataFrame): DataFrame detailing the max value for
+            each gene
+    """
+
+    max_c = '{}_max'.format(mode)
+
+    df[mode] = df[mode].astype(int)
+    temp = df[['gene_id', mode]].copy(deep=True)
+    temp = temp.groupby('gene_id').max().reset_index()
+    temp.rename({mode: max_c}, axis=1, inplace=True)
+
+    return temp
+
+def renumber_new_feats(df, g_maxes, mode):
+    """
+    Update the id numbers of each novel feature that's
+    being added
+
+    Parameters:
+        df (pandas DataFrame): DataFrame with all the novel entries
+            being added to the reference
+        g_maxes (pandas DataFrames): Output from `get_gene_feat_max`
+        mode (str): {ic, tss, tes}
+
+    Returns:
+        df (pandas DataFrame): DataFrame with the new numbers for
+            each tss, tes, or ic
+    """
+    max_c = '{}_max'.format(mode)
+    new_c = '{}_new'.format(mode)
+
+    # merge with new ends that are being added
+    df = df.merge(g_maxes, how='left', on='gene_id')
+    df[max_c].fillna(0, inplace=True)
+    sort_cols = ['gene_id', mode]
+
+    # renumber new features
+    df[new_c] = df.sort_values(by=sort_cols,
+                                ascending=[True, True])\
+                                .groupby(['gene_id'])\
+                                .cumcount()+1
+    df[new_c] = df[new_c].astype(int) + df[max_c].astype(int)
+
+    return df
+
+def agg_2_ics(ic1, ic2):
+    """
+    Aggregate and reconcile intron chains from two
+    intron chain dataframes
+
+    Parameters:
+        ic1, ic2 (pandas DataFrame): DataFrame with the old and
+            new intron chains respecitvely
+
+    Returns:
+        df (pandas DataFrame): DataFrame with merged and
+            renamed intron chains
+    """
+
+    mode = 'ic'
+    max_c = '{}_max'.format(mode)
+    new_c = '{}_new'.format(mode)
+
+    # if we have more than 1 set of ics, merge on chrom, strand,
+    # ic coords, and gene id
+    ic1 = ic1.merge(ic2,
+                  on=['Chromosome', 'Strand', 'Coordinates', 'gene_id'],
+                  how='outer', suffixes=('', '_new'))
+
+
+    # get new ic numbers for duplicate entries
+    old = ic1.loc[~ic1.ic.isnull()].copy(deep=True)
+    g_maxes = get_gene_feat_max(old, 'ic')
+    new = ic1.loc[ic1.ic.isnull()].copy(deep=True)
+    new = renumber_new_feats(new, g_maxes, 'ic')
+
+    # some df formatting
+    new.drop([mode, max_c, 'Name_new'], axis=1, inplace=True)
+    new.rename({new_c: mode}, axis=1, inplace=True)
+
+    # finally, concatenate new and old df
+    df = pd.concat([old, new])
+
+    # drop unnecessary columns and create new names
+    # and do some extra formatting
+    df['Name'] = df.gene_id+'_'+df[mode].astype(str)
+    df.drop(['gene_id', mode], axis=1, inplace=True)
+
+    return df
+
 ##### writers #####
 
 def write_h5_to_tsv(h5, opref):
@@ -527,29 +629,7 @@ def aggregate_ics(ics):
         if len(df.index) == 0:
             df = temp.copy(deep=True)
         else:
-
-            # if we have more than 1 set of ics, merge on chrom, strand,
-            # ic coords, and gene id
-            df = df.merge(temp,
-                          on=['Chromosome', 'Strand', 'Coordinates', 'gene_id'],
-                          how='outer', suffixes=('', '_new'))
-
-            # renumber intron chains that are new to the set
-            n = int(df.ic.max())+1
-            new_ics = df.loc[df.ic.isnull()&~df.ic_new.isnull()].index
-            nums = [i for i in range(n, n+len(new_ics))]
-            df.loc[new_ics, 'ic'] = nums
-
-            # drop irrelevant columns
-            cols = ['Name_new', 'ic_new']
-            df.drop(cols, axis=1, inplace=True)
-
-    # reformat ic name
-    df['Name'] = df.gene_id+'_'+df.ic.astype(int).astype(str)
-
-    # other reformatting
-    cols = ['Chromosome', 'Strand', 'Coordinates', 'Name']
-    df = df[cols]
+            df = agg_2_ics(df, temp)
 
     return df
 
