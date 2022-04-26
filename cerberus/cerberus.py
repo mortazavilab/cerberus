@@ -2,6 +2,7 @@ import pyranges as pr
 import pandas as pd
 import pdb
 import h5py
+import numpy as np
 
 ##### helper functions #####
 
@@ -313,6 +314,123 @@ def renumber_new_feats(df, g_maxes, mode):
                                 .groupby(['gene_id'])\
                                 .cumcount()+1
     df[new_c] = df[new_c].astype(int) + df[max_c].astype(int)
+
+    return df
+
+def agg_2_ends(bed1, bed2,
+               strand,
+               gid,
+               buffer,
+               add_ends,
+               mode):
+    """
+    Parameters:
+        bed1 (pyranges PyRanges): Bed PyRanges object for existing ends
+        bed2 (pyranges PyRanges): Bed PyRanges object for new ends
+        buffer (int): Maximum allowable distance between ends in bed1 and bed2
+            to call them the same end
+        add_ends (bool): Whether to initialize new regions from bed2
+    """
+
+    source1 = bed1.df.source.unique().tolist()[0]
+    source2 = bed2.df.source.unique().tolist()[0]
+
+    new_c = '{}_new'.format(mode)
+    max_c = '{}_max'.format(mode)
+
+    # depending on whether the new bed has strand information,
+    # construct the join call
+    if strand:
+        temp_joined = bed1.join(bed2,
+            strandedness='same',
+            suffix='_new',
+            slack=buffer,
+            how='left')
+    elif not strand:
+        bed2 = bed2.df
+        bed2.drop('Strand', axis=1, inplace=True)
+        bed2 = pr.PyRanges(bed2)
+        temp_joined = bed1.join(bed2,
+            strandedness=False,
+            suffix='_new',
+            slack=buffer,
+            how='left')
+
+    # format null starts as actual nans b/c of join
+    temp_joined = temp_joined.df
+    temp_joined.loc[temp_joined.Start_new == -1, 'Start_new'] = np.nan
+
+    # df to hold final end annotations
+    df = pd.DataFrame()
+
+    ### old ends ###
+
+    # situation 1: ends match across the datasets in coord and gene id
+    if gid:
+        temp = temp_joined.loc[temp_joined.gene_id == temp_joined.gene_id_new].copy(deep=True)
+    else:
+        temp = temp_joined.loc[~temp_joined.Start_new.isnull()].copy(deep=True)
+    temp.source = temp.source+','+temp.source_new
+    df = pd.concat([df, temp])
+
+    # situation 2: ends are only in the first dataset
+    if gid:
+        temp = temp_joined.loc[(temp_joined.Start_new.isnull())|(temp_joined.gene_id!=temp_joined.gene_id_new)].copy(deep=True)
+    else:
+        temp = temp_joined.loc[temp_joined.Start_new.isnull()].copy(deep=True)
+    df = pd.concat([df, temp])
+
+    # restrict to relevant columns
+    cols = ['Chromosome', 'Start', 'End', 'Strand',
+            'Name', 'gene_id', 'source', mode, 'id_new']
+    df = df[cols]
+    df.rename({'id_new': 'id'}, axis=1, inplace=True)
+
+    ### new ends, only add if we're allowing them to be independent
+    ### end support
+    if add_ends and strand and gid:
+
+        new_df = pd.DataFrame()
+
+        drop_cols = ['Start', 'End', 'Strand', 'gene_id', 'source', 'Name', mode]
+        m = {'Start_new': 'Start',
+             'End_new': 'End',
+             'gene_id_new': 'gene_id',
+             'Strand_new': 'Strand',
+             'source_new': 'source',
+             'Name_new': 'Name',
+             new_c: mode}
+
+        # situation 3: the ends overlapped, but the gene ids didn't match
+        temp = temp_joined.loc[(temp_joined.gene_id!=temp_joined.gene_id_new)&(temp_joined.gene_id_new!='-1')].copy(deep=True)
+        temp.drop(drop_cols, axis=1, inplace=True)
+        temp.rename(m, axis=1, inplace=True)
+        new_df = pd.concat([new_df, temp])
+
+        # situation 4: the ends are brand new and didn't overlap at all in the existing ends
+        bed2 = bed2.df
+        inds = list(set(bed2.id.tolist())-set(df.id.tolist()))
+        temp = bed2.loc[inds]
+        new_df = pd.concat([new_df, temp])
+
+        g_maxes = get_gene_feat_max(df, mode)
+        new_df = renumber_new_feats(new_df, g_maxes, mode)
+
+        # some df formatting
+        new_df.drop([mode, max_c], axis=1, inplace=True)
+        new_df.rename({new_c: mode}, axis=1, inplace=True)
+
+        # finally, concatenate new and old df
+        df = pd.concat([df, new_df])
+
+    # drop unnecessary columns and create new names
+    # and do some extra formatting
+    df.drop('id', axis=1, inplace=True)
+    df['Name'] = df.gene_id+'_'+df[mode].astype(str)
+    df[mode] = df[mode].astype(int)
+    df['Start'] = df.Start.astype(int)
+    keep_cols = ['Chromosome', 'Start', 'End', 'Strand', 'Name', 'source']
+    df = df[keep_cols]
 
     return df
 
