@@ -40,7 +40,7 @@ def format_end_df(df):
     df.reset_index(drop=True, inplace=True)
     return df
 
-def test_agg_2_ends_1(print_dfs=False):
+def test_agg_2_ends_1(print_dfs=True):
     """
     Test agg_2_ends w/ and w/o end adding
     """
@@ -141,6 +141,7 @@ def test_agg_2_ends_1(print_dfs=False):
 
         pd.testing.assert_frame_equal(ctrl, test, check_like=True)
 
+        assert 1 == 0
         assert len(ctrl.index) == len(test.index)
 
 def test_agg_2_ends_2(print_dfs=False):

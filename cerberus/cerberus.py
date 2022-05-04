@@ -192,6 +192,7 @@ def number_tss_ic_tes(df, mode):
     sort_cols = ['gene_id', 'MANE_Select',
                  'appris_principal', 'basic_set']
 
+    # pdb.set_trace()
     df = df[subset_cols].groupby(gb_cols,
                            observed=True).agg({'transcript_id': ','.join,
                                      'MANE_Select': 'max',
@@ -313,6 +314,7 @@ def renumber_new_feats(df, g_maxes, mode):
                                 ascending=[True, True])\
                                 .groupby(['gene_id'])\
                                 .cumcount()+1
+    # pdb.set_trace()
     df[new_c] = df[new_c].astype(int) + df[max_c].astype(int)
 
     return df
@@ -327,9 +329,12 @@ def agg_2_ends(bed1, bed2,
     Parameters:
         bed1 (pyranges PyRanges): Bed PyRanges object for existing ends
         bed2 (pyranges PyRanges): Bed PyRanges object for new ends
+        strand (bool): Whether bed2 has strand info
+        gid (bool): Whether bed2 has gene id info
         buffer (int): Maximum allowable distance between ends in bed1 and bed2
             to call them the same end
         add_ends (bool): Whether to initialize new regions from bed2
+        mode (str): {'tss', 'tes'}
     """
 
     source1 = bed1.df.source.unique().tolist()[0]
@@ -337,6 +342,10 @@ def agg_2_ends(bed1, bed2,
 
     new_c = '{}_new'.format(mode)
     max_c = '{}_max'.format(mode)
+
+    # convert into int64
+    bed1 = pr.PyRanges(bed1.df, int64=True)
+    bed2 = pr.PyRanges(bed2.df, int64=True)
 
     # depending on whether the new bed has strand information,
     # construct the join call
@@ -429,8 +438,9 @@ def agg_2_ends(bed1, bed2,
     df['Name'] = df.gene_id+'_'+df[mode].astype(str)
     df[mode] = df[mode].astype(int)
     df['Start'] = df.Start.astype(int)
-    keep_cols = ['Chromosome', 'Start', 'End', 'Strand', 'Name', 'source']
+    keep_cols = ['Chromosome', 'Start', 'End', 'Strand', 'Name', 'gene_id', mode, 'source']
     df = df[keep_cols]
+    df['id'] = [i for i in range(len(df.index))]
 
     return df
 
@@ -454,6 +464,7 @@ def agg_2_ics(ic1, ic2):
 
     # if we have more than 1 set of ics, merge on chrom, strand,
     # ic coords, and gene id
+    # pdb.set_trace()
     ic1 = ic1.merge(ic2,
                   on=['Chromosome', 'Strand', 'Coordinates', 'gene_id'],
                   how='outer', suffixes=('', '_new'))
@@ -475,7 +486,7 @@ def agg_2_ics(ic1, ic2):
     # drop unnecessary columns and create new names
     # and do some extra formatting
     df['Name'] = df.gene_id+'_'+df[mode].astype(str)
-    df.drop(['gene_id', mode], axis=1, inplace=True)
+    df.drop(['Name_new', new_c], axis=1, inplace=True)
 
     return df
 
@@ -544,10 +555,20 @@ def get_transcript_ref(fname):
     """
     df = pr.read_gtf(fname, duplicate_attr=True).df
     df = df.loc[df.Feature == 'transcript']
+
+    # for some transcripts, there are no tags. replace w/ empty strings
+    df.loc[df.tag.isnull(), 'tag'] = ''
+
     df['MANE_Select'] = df.tag.str.contains('MANE_Select')
     df['basic_set'] = df.tag.str.contains('basic')
     df['temp'] = df.tag.str.split('appris_principal_', n=1, expand=True)[1]
     df['appris_principal'] = df.temp.str.split(',', n=1, expand=True)[0]
+    df['appris_principal'] = df.appris_principal.astype(float)
+
+    # if this tag didn't exist in the annotation replace it with
+    # 0s so the aggregation function won't fail
+    if all(df.appris_principal.isnull()):
+        df.appris_principal = 0
 
     return df
 
@@ -700,29 +721,29 @@ def get_ics_from_gtf(gtf):
 
     return ic
 
-def aggregate_ends(beds, mode):
-    """
-    Aggregate the end regions within the same gene
-    from multiple bed files.
-
-    Parameters:
-        beds (list of str): List of bed files
-        mode (str): 'tss' or 'tes'
-        slack (int): Allowable distance b/w ends to cluster them.
-            Default: 50
-
-    Returns:
-        bed (pyranges PyRanges): PyRanges object containing aggregated ends
-    """
-    # TODO : need to consider numbering from names of ends from
-    # input gtf files
-    if len(beds) > 1:
-        raise ValueError('Currently more than one bed file is not supported')
-
-    for bed_fname in beds:
-        bed = pr.read_bed(bed_fname)
-
-    return bed
+# def aggregate_ends(beds, mode):
+#     """
+#     Aggregate the end regions within the same gene
+#     from multiple bed files.
+#
+#     Parameters:
+#         beds (list of str): List of bed files
+#         mode (str): 'tss' or 'tes'
+#         slack (int): Allowable distance b/w ends to cluster them.
+#             Default: 50
+#
+#     Returns:
+#         bed (pyranges PyRanges): PyRanges object containing aggregated ends
+#     """
+#     # TODO : need to consider numbering from names of ends from
+#     # input gtf files
+#     if len(beds) > 1:
+#         raise ValueError('Currently more than one bed file is not supported')
+#
+#     for bed_fname in beds:
+#         bed = pr.read_bed(bed_fname)
+#
+#     return bed
 
 def aggregate_ics(ics):
     """
@@ -748,6 +769,9 @@ def aggregate_ics(ics):
             df = temp.copy(deep=True)
         else:
             df = agg_2_ics(df, temp)
+
+    # drop gene id and ic number as they are captured in name
+    df.drop(['gene_id', 'ic'], axis=1, inplace=True)
 
     return df
 

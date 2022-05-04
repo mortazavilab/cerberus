@@ -17,13 +17,15 @@ def make_ics_df(c,s,co,n):
 
     df['gene_id'] = df.Name.str.split('_', expand=True)[0]
     df['ic'] = df.Name.str.split('_', expand=True)[1]
+    df.ic = df.ic.astype(int)
 
     return df
 
 def format_ics_df(df):
     sort_cols = ['Chromosome', 'Strand', 'Coordinates']
     df = df.sort_values(by=sort_cols)
-    order = ['Chromosome', 'Strand', 'Coordinates', 'Name']
+    order = ['Chromosome', 'Strand', 'Coordinates', 'Name', 'gene_id', 'ic']
+    order = [o for o in order if o in df.columns]
     df = df[order]
     df.reset_index(drop=True, inplace=True)
     return df
@@ -58,7 +60,7 @@ def test_agg_2_ics_1(print_dfs=True):
         co = ['1-2-3', '1-4-3', '5-2-3', '1-2-6', '11-12-13']
         n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene1_4', 'gene2_1']
         df = make_ics_df(c,s,co,n)
-        df.drop(['gene_id', 'ic'], axis=1, inplace=True)
+        # df.drop(['gene_id', 'ic'], axis=1, inplace=True)
 
         return df
 
@@ -72,9 +74,11 @@ def test_agg_2_ics_1(print_dfs=True):
         print('test')
         print(test)
         print(test.index)
+        print(test.dtypes)
         print('ctrl')
         print(ctrl)
         print(ctrl.index)
+        print(ctrl.dtypes)
 
     pd.testing.assert_frame_equal(ctrl, test, check_like=True)
-    assert len(ctrl.index) == len(test.index)    
+    assert len(ctrl.index) == len(test.index)
