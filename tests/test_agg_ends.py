@@ -57,7 +57,7 @@ def test_agg_2_ends_1(print_dfs=True):
         # later - beds that don't have strand
         # later - beds that don't have gid
 
-        buffer = 20
+        slack = 20
 
         n = 4
         c = ['1' for i in range(n)]
@@ -113,7 +113,7 @@ def test_agg_2_ends_1(print_dfs=True):
     tests = [True, False]
     for add_ends in tests:
 
-        buffer = 20
+        slack = 20
         mode = 'tss'
         sort_cols = ['Chromosome', 'Strand', 'gene_id', 'Start', 'End']
         order = ['Chromosome', 'Start', 'End', 'Strand', 'Name',
@@ -122,7 +122,7 @@ def test_agg_2_ends_1(print_dfs=True):
         df = agg_2_ends(bed1, bed2,
                         strand=True,
                         gid=True,
-                        buffer=buffer,
+                        slack=slack,
                         add_ends=add_ends,
                         mode=mode)
 
@@ -141,7 +141,6 @@ def test_agg_2_ends_1(print_dfs=True):
 
         pd.testing.assert_frame_equal(ctrl, test, check_like=True)
 
-        assert 1 == 0
         assert len(ctrl.index) == len(test.index)
 
 def test_agg_2_ends_2(print_dfs=False):
@@ -157,7 +156,7 @@ def test_agg_2_ends_2(print_dfs=False):
         # - gene id
         # in bed1
 
-        buffer = 20
+        slack = 20
 
         n = 6
         c = ['1' for i in range(n)]
@@ -216,7 +215,7 @@ def test_agg_2_ends_2(print_dfs=False):
     gid = False
     add_ends = False
 
-    buffer = 20
+    slack = 20
     mode = 'tss'
     sort_cols = ['Chromosome', 'Strand', 'gene_id', 'Start', 'End']
     order = ['Chromosome', 'Start', 'End', 'Strand', 'Name',
@@ -225,7 +224,7 @@ def test_agg_2_ends_2(print_dfs=False):
     df = agg_2_ends(bed1, bed2,
                     strand=strand,
                     gid=gid,
-                    buffer=buffer,
+                    slack=slack,
                     add_ends=add_ends,
                     mode=mode)
     test = format_end_df(df)

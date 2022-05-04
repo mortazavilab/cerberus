@@ -319,10 +319,44 @@ def renumber_new_feats(df, g_maxes, mode):
 
     return df
 
+def format_agg_2_ends_bed(bed, mode):
+    """
+    Format bed file for agg_2_ends
+
+    Parameters:
+        bed (pyranges PyRanges): DataFrame of bed file
+        mode (str): {'tss', 'tes'}
+
+    Returns:
+        bed (pandas DataFrame): DataFrame with added gene id
+            and strand info
+        gid (bool): Whether or not the bed file contained a gene id
+        strand (bool): Whether or not the bed file contained a strand
+    """
+    cols = ['Name', 'gene_id', mode, 'Strand']
+
+    gid = True
+    strand = True
+    for col in cols:
+        if col not in bed.df.columns:
+            bed = bed.df
+            bed[col] = [np.nan for i in range(len(bed.index))]
+
+            # record some bools
+            if col == 'gene_id':
+                gid = False
+            elif col == 'Strand':
+                strand = False
+
+            bed[col] = bed[col].astype(str)
+            bed = pr.PyRanges(bed)
+
+    return bed, gid, strand
+
 def agg_2_ends(bed1, bed2,
                strand,
                gid,
-               buffer,
+               slack,
                add_ends,
                mode):
     """
@@ -331,7 +365,7 @@ def agg_2_ends(bed1, bed2,
         bed2 (pyranges PyRanges): Bed PyRanges object for new ends
         strand (bool): Whether bed2 has strand info
         gid (bool): Whether bed2 has gene id info
-        buffer (int): Maximum allowable distance between ends in bed1 and bed2
+        slack (int): Maximum allowable distance between ends in bed1 and bed2
             to call them the same end
         add_ends (bool): Whether to initialize new regions from bed2
         mode (str): {'tss', 'tes'}
@@ -353,16 +387,16 @@ def agg_2_ends(bed1, bed2,
         temp_joined = bed1.join(bed2,
             strandedness='same',
             suffix='_new',
-            slack=buffer,
+            slack=slack,
             how='left')
     elif not strand:
         bed2 = bed2.df
         bed2.drop('Strand', axis=1, inplace=True)
-        bed2 = pr.PyRanges(bed2)
+        bed2 = pr.PyRanges(bed2, int64=True)
         temp_joined = bed1.join(bed2,
             strandedness=False,
             suffix='_new',
-            slack=buffer,
+            slack=slack,
             how='left')
 
     # format null starts as actual nans b/c of join
@@ -721,29 +755,65 @@ def get_ics_from_gtf(gtf):
 
     return ic
 
-# def aggregate_ends(beds, mode):
-#     """
-#     Aggregate the end regions within the same gene
-#     from multiple bed files.
-#
-#     Parameters:
-#         beds (list of str): List of bed files
-#         mode (str): 'tss' or 'tes'
-#         slack (int): Allowable distance b/w ends to cluster them.
-#             Default: 50
-#
-#     Returns:
-#         bed (pyranges PyRanges): PyRanges object containing aggregated ends
-#     """
-#     # TODO : need to consider numbering from names of ends from
-#     # input gtf files
-#     if len(beds) > 1:
-#         raise ValueError('Currently more than one bed file is not supported')
-#
-#     for bed_fname in beds:
-#         bed = pr.read_bed(bed_fname)
-#
-#     return bed
+def aggregate_ends(beds, sources, add_ends, slack, mode):
+    """
+    Aggregate ends from more than one bed source.
+
+    Parameters:
+        beds (list of str): List of bed file names
+        sources (list of str): List of source names for each bed
+        add_ends (list of bool): List of booleans indicating whether
+            to add novel ends for each bed file
+        slack (int): Allowable distance to an existing end for new
+            ends to be called the same end
+        mode (str): {'tss', 'tes'}
+
+    Returns:
+        df (pandas DataFrame): DataFrame of regions from
+            aggregated bed files
+    """
+
+    df = pd.DataFrame()
+    i = 0
+    for bed_fname, source, add in zip(beds, sources, add_ends):
+
+        # read in bed file and do some formatting
+        bed = read_bed(bed_fname, mode)
+        bed = bed.df
+        bed['source'] = source
+        bed['id'] = [i for i in range(len(bed.index))]
+        bed = pr.PyRanges(bed)
+
+        # first bed; just accept all these ends
+        if len(df.index) == 0:
+
+            if not add:
+                raise Exception('Must add ends from first bed file')
+
+            if 'gene_id' not in bed.df.columns and 'Strand' not in bed.df.columns:
+                raise Exception('First bed must contain Strand and gene_id columns')
+
+            df = bed.df
+
+        # more than one bed; merge and reconcile ends
+        else:
+
+            if 'gene_id' not in bed.df.columns or 'Strand' not in bed.df.columns:
+                if add:
+                    raise Exception('Cannot add new ends from {} because '+\
+                                    'it does not contain gene_id information.')
+
+            # add missing columns but keep track of what information we'll be
+            # able to merge on
+            bed, gid, strand = format_agg_2_ends_bed(bed, mode)
+            df = pr.PyRanges(df)
+            df = agg_2_ends(df, bed,
+                            strand, gid,
+                            slack, add, mode)
+            i += 1
+
+    df.drop('id', axis=1, inplace=True)
+    return df
 
 def aggregate_ics(ics):
     """

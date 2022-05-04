@@ -50,8 +50,8 @@ def gtf_to_ics(gtf, o):
             required=True)
 def agg_ends(mode, input, o):
     beds = parse_file_input(input, 'bed')
-    bed = aggregate_ends(beds, mode)
-    bed.to_bed(o)
+    # bed = aggregate_ends(beds, mode)
+    # bed.to_bed(o)
 
 @cli.command()
 @click.option('--input',
