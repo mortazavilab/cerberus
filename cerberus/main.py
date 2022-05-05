@@ -58,16 +58,15 @@ def agg_ends(input, mode, slack, o):
 
 @cli.command()
 @click.option('--input',
-              help='Path to file w/ path to ic '+\
-                'files on each line OR comma-separated '+\
-                'list of files paths; ordered by priority',
+              help='Path to config file. Each line contains'+\
+                   'file path,source name',
               required=True)
 @click.option('-o',
               help='Output file name',
               required=True)
 def agg_ics(input, o):
-    ics = parse_file_input(input, 'tsv')
-    ic = aggregate_ics(ics)
+    ics, sources = parse_agg_ics_config(input)
+    ic = aggregate_ics(ics, sources)
     ic.to_csv(o, sep='\t', index=False)
 
 @cli.command()

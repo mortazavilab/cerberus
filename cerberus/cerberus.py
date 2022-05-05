@@ -511,7 +511,8 @@ def agg_2_ics(ic1, ic2):
     ic1 = ic1.merge(ic2,
                   on=['Chromosome', 'Strand', 'Coordinates', 'gene_id'],
                   how='outer', suffixes=('', '_new'))
-
+    # https://stackoverflow.com/questions/62681371/python-combining-names-with-missing-values/62681510#62681510
+    ic1['source'] = ic1[['source', 'source_new']].stack().groupby(level=0).agg(','.join)
 
     # get new ic numbers for duplicate entries
     old = ic1.loc[~ic1.ic.isnull()].copy(deep=True)
@@ -529,7 +530,7 @@ def agg_2_ics(ic1, ic2):
     # drop unnecessary columns and create new names
     # and do some extra formatting
     df['Name'] = df.gene_id+'_'+df[mode].astype(str)
-    df.drop(['Name_new', new_c], axis=1, inplace=True)
+    df.drop(['Name_new', new_c, 'source_new'], axis=1, inplace=True)
 
     return df
 
@@ -677,6 +678,25 @@ def read_bed(bed_file, mode):
 
     df = pr.PyRanges(df)
     return df
+
+def parse_agg_ics_config(fname):
+    """
+    Parse a config file for intron chain aggregation
+
+    Parameters:
+        fname (str): Path to ic config file
+
+    Returns:
+        ics (list of str): List of fnames to ic files
+        sources (list of str): Source names for each ic file
+    """
+    df = pd.read_csv(fname, header=None, sep=',')
+    df.columns = ['fname', 'source']
+
+    ics = df.fname.tolist()
+    sources = df.source.tolist()
+
+    return ics, sources
 
 def parse_agg_ends_config(fname):
     """
@@ -846,7 +866,7 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
     df.drop(drop_cols, axis=1, inplace=True)
     return df
 
-def aggregate_ics(ics):
+def aggregate_ics(ics, sources):
     """
     Aggregate intron chains from multiple gtf_to_ics calls into one
     ics tsv table. Preferentially number intron chains based on their
@@ -855,6 +875,8 @@ def aggregate_ics(ics):
     Parameters:
         ics (list of str): List of ic.tsv files in priority ordering to
             number each unique ic
+        sources (list of str): List of strings describing the source of each
+            ic file
 
     Returns:
         df (pandas DataFrame): Dataframe detailing the chromosome, strand,
@@ -862,8 +884,9 @@ def aggregate_ics(ics):
             chain
     """
     df = pd.DataFrame()
-    for ic in ics:
+    for ic, source in zip(ics, sources):
         temp = read_ic_ref(ic)
+        temp['source'] = source
 
         # start with priority 1
         if len(df.index) == 0:
