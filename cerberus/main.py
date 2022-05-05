@@ -37,20 +37,26 @@ def gtf_to_ics(gtf, o):
     df.to_csv(o, index=False, sep='\t')
 
 @cli.command()
-@click.option('--mode',
-              help='Choose tss or tes',
-              required=True)
 @click.option('--input',
-              help='Path to file w/ path to BED '+\
-                'files on each line OR comma-separated '+\
-                'list of file paths; ordered by priority',
+              help='Path to config file. Each line contains'+\
+                   'file path,whether to add ends (True / False),source name',
               required=True)
+@click.option('--mode',
+            help='Choose tss or tes',
+            required=True)
+@click.option('--slack',
+              help='Distance (bp) allowable for merging regions',
+              default=20)
 @click.option('-o',
             help='Output file name',
             required=True)
-def agg_ends(mode, input, o):
-    beds = parse_file_input(input, 'bed')
-    # bed = aggregate_ends(beds, mode)
+def agg_ends(input, mode, slack, o):
+    beds, add_ends, sources = parse_agg_ends_config(input)
+    bed = aggregate_ends(beds, sources, add_ends, slack, mode)
+    print(bed.head())
+    print(len(bed.index))
+    bed.drop_duplicates(inplace=True)
+    print(len(bed.index))
     # bed.to_bed(o)
 
 @cli.command()

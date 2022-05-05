@@ -401,6 +401,10 @@ def agg_2_ends(bed1, bed2,
 
     # format null starts as actual nans b/c of join
     temp_joined = temp_joined.df
+
+    temp_joined.sort_values(by=['Chromosome', 'Start', 'End'], inplace=True)
+    # print(temp_joined.loc[temp_joined[['Chromosome', 'Start', 'End']].duplicated(keep=False)].head())
+
     temp_joined.loc[temp_joined.Start_new == -1, 'Start_new'] = np.nan
 
     # df to hold final end annotations
@@ -474,6 +478,18 @@ def agg_2_ends(bed1, bed2,
     df['Start'] = df.Start.astype(int)
     keep_cols = ['Chromosome', 'Start', 'End', 'Strand', 'Name', 'gene_id', mode, 'source']
     df = df[keep_cols]
+
+    # drop duplicates that could have arisen from entries
+    # on multiple strands or from multiple subregions in bed2
+    # print('idk')
+    # print()
+    # print(len(df.index))
+    df = df.sort_values(by=['Chromosome', 'Start'])
+    # print(df.loc[df.duplicated(keep=False) == True].head())
+    df.drop_duplicates(inplace=True)
+    # print(len(df.index))
+
+
     df['id'] = [i for i in range(len(df.index))]
 
     return df
@@ -669,6 +685,27 @@ def read_bed(bed_file, mode):
     df = pr.PyRanges(df)
     return df
 
+def parse_agg_ends_config(fname):
+    """
+    Parse a config file for end aggregation
+
+    Parameters:
+        fname (str): Path to the tss / tes config file
+
+    Returns:
+        beds (list of str): List of fnames to beds
+        add_ends (list of bool): List of whether or not
+            to add new ends from each bed
+        sources (list of str): Source names for each bed
+    """
+    df = pd.read_csv(fname, header=None, sep=',')
+    df.columns = ['fname', 'add_ends', 'source']
+
+    beds = df.fname.tolist()
+    add_ends = df.add_ends.tolist()
+    sources = df.source.tolist()
+
+    return beds, add_ends, sources
 
 ##### main methods #####
 
@@ -776,6 +813,7 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
     df = pd.DataFrame()
     i = 0
     for bed_fname, source, add in zip(beds, sources, add_ends):
+        # print(source)
 
         # read in bed file and do some formatting
         bed = read_bed(bed_fname, mode)
@@ -811,7 +849,7 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
                             strand, gid,
                             slack, add, mode)
             i += 1
-
+        # print(df.head())
     df.drop('id', axis=1, inplace=True)
     return df
 

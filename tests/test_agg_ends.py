@@ -46,16 +46,15 @@ def test_agg_2_ends_1(print_dfs=True):
     """
 
     def get_test(mode='tss'):
-        # example should have
+        # example has
         # - entries that overlap
         # - entries that don't overlap but are within a certain distance
         # - entries that are unique to either
         # - entries that overlap but aren't using the same gene_id / strand (these will be
         #      equivalent situtations b/c the gene ids for things on different strands will always
         #      differ
-
-        # later - beds that don't have strand
-        # later - beds that don't have gid
+        # - entries in bed2 that are non continuous but overlap the same
+        #      entry in bed1
 
         slack = 20
 
@@ -69,12 +68,12 @@ def test_agg_2_ends_1(print_dfs=True):
         bed1 = make_end_df(c,s,st,e,n, source, mode)
         bed1 = pr.PyRanges(bed1)
 
-        n = 4
+        n = 5
         c = ['1' for i in range(n)]
         s = ['+' for i in range(n)]
-        st = [5, 120, 500, 200]
-        e = [10, 140, 550, 250]
-        n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene2_1']
+        st = [5, 20, 120, 500, 200]
+        e = [10, 25, 140, 550, 250]
+        n = ['gene1_1', 'gene1_4', 'gene1_2', 'gene1_3', 'gene2_1']
         source = 'v2'
         bed2 = make_end_df(c,s,st,e,n, source, mode)
         bed2 = pr.PyRanges(bed2)
@@ -143,7 +142,7 @@ def test_agg_2_ends_1(print_dfs=True):
 
         assert len(ctrl.index) == len(test.index)
 
-def test_agg_2_ends_2(print_dfs=False):
+def test_agg_2_ends_2(print_dfs=True):
     """
     Test agg_2_ends w/ and w/o end adding
     """
@@ -151,9 +150,10 @@ def test_agg_2_ends_2(print_dfs=False):
     def get_test(mode='tss'):
 
         # adding a bed file that doesn't have strand or gid info
-        # TODO add an entry in bed2 that is duplicated based on
+        # entries in bed2 that are duplicated based on
         # - strandedness
         # - gene id
+        # entries in bed2 where both of them overlap the same region
         # in bed1
 
         slack = 20
@@ -169,11 +169,11 @@ def test_agg_2_ends_2(print_dfs=False):
         bed1 = make_end_df(c,s,st,e,n, source, mode)
         bed1 = pr.PyRanges(bed1)
 
-        n = 4
+        n = 5
         c = ['1' for i in range(n)]
         s = [np.nan for i in range(n)]
-        st = [5, 120, 500, 200]
-        e = [10, 140, 550, 250]
+        st = [5, 11, 120, 500, 200]
+        e = [10, 21, 140, 550, 250]
         n = [np.nan for i in range(n)]
         source = 'v2'
         bed2 = make_end_df(c,s,st,e,n, source, mode)
@@ -241,5 +241,4 @@ def test_agg_2_ends_2(print_dfs=False):
         print(ctrl.dtypes)
 
     pd.testing.assert_frame_equal(ctrl, test, check_like=True)
-
     assert len(ctrl.index) == len(test.index)

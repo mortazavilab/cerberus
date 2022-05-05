@@ -39,25 +39,25 @@ def test_gtf_to_ics(tmp_path):
     assert result.exit_code == 0
 
 
-def test_agg_ends(tmp_path):
-    ofile = str(tmp_path/'test.bed')
-    runner = CliRunner()
-
-    # 1 file, passed from cmd
-    cmd = '--mode tss --input tests/files/Canx_tss.bed -o {}'.format(ofile)
-    print(cmd)
-    result = runner.invoke(agg_ends, cmd)
-    assert result.exit_code == 0
-
-    # 1 file, passed from config file
-    cmd = '--mode tss --input tests/files/Canx_tss_beds.txt -o {}'.format(ofile)
-    print(cmd)
-    result = runner.invoke(agg_ends, cmd)
-    assert result.exit_code == 0
-
-    # >1 file, passed from cmd
-
-    # >1 file, passed from config file
+# def test_agg_ends(tmp_path):
+#     ofile = str(tmp_path/'test.bed')
+#     runner = CliRunner()
+#
+#     # 1 file, passed from cmd
+#     cmd = '--mode tss --input tests/files/Canx_tss.bed -o {}'.format(ofile)
+#     print(cmd)
+#     result = runner.invoke(agg_ends, cmd)
+#     assert result.exit_code == 0
+#
+#     # 1 file, passed from config file
+#     cmd = '--mode tss --input tests/files/Canx_tss_beds.txt -o {}'.format(ofile)
+#     print(cmd)
+#     result = runner.invoke(agg_ends, cmd)
+#     assert result.exit_code == 0
+#
+#     # >1 file, passed from cmd
+#
+#     # >1 file, passed from config file
 
 def test_agg_ics(tmp_path):
 
