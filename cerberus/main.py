@@ -53,11 +53,8 @@ def gtf_to_ics(gtf, o):
 def agg_ends(input, mode, slack, o):
     beds, add_ends, sources = parse_agg_ends_config(input)
     bed = aggregate_ends(beds, sources, add_ends, slack, mode)
-    print(bed.head())
-    print(len(bed.index))
-    bed.drop_duplicates(inplace=True)
-    print(len(bed.index))
-    # bed.to_bed(o)
+    bed = pr.PyRanges(bed)
+    bed.to_bed(o)
 
 @cli.command()
 @click.option('--input',

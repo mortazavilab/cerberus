@@ -403,7 +403,6 @@ def agg_2_ends(bed1, bed2,
     temp_joined = temp_joined.df
 
     temp_joined.sort_values(by=['Chromosome', 'Start', 'End'], inplace=True)
-    # print(temp_joined.loc[temp_joined[['Chromosome', 'Start', 'End']].duplicated(keep=False)].head())
 
     temp_joined.loc[temp_joined.Start_new == -1, 'Start_new'] = np.nan
 
@@ -481,14 +480,8 @@ def agg_2_ends(bed1, bed2,
 
     # drop duplicates that could have arisen from entries
     # on multiple strands or from multiple subregions in bed2
-    # print('idk')
-    # print()
-    # print(len(df.index))
     df = df.sort_values(by=['Chromosome', 'Start'])
-    # print(df.loc[df.duplicated(keep=False) == True].head())
     df.drop_duplicates(inplace=True)
-    # print(len(df.index))
-
 
     df['id'] = [i for i in range(len(df.index))]
 
@@ -813,7 +806,6 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
     df = pd.DataFrame()
     i = 0
     for bed_fname, source, add in zip(beds, sources, add_ends):
-        # print(source)
 
         # read in bed file and do some formatting
         bed = read_bed(bed_fname, mode)
@@ -849,8 +841,9 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
                             strand, gid,
                             slack, add, mode)
             i += 1
-        # print(df.head())
-    df.drop('id', axis=1, inplace=True)
+
+    drop_cols = ['id', mode, 'gene_id']
+    df.drop(drop_cols, axis=1, inplace=True)
     return df
 
 def aggregate_ics(ics):
