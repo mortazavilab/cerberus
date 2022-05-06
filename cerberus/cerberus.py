@@ -3,6 +3,7 @@ import pandas as pd
 import pdb
 import h5py
 import numpy as np
+import os
 
 ##### helper functions #####
 
@@ -536,6 +537,25 @@ def agg_2_ics(ic1, ic2):
 
 ##### writers #####
 
+def write_h5(ic, tss, tes, oname, m=None):
+    """
+    Write a cerberus transcriptome as an h5df file
+
+    Parameters:
+        ic (pandas DataFrame): DataFrame of intron chains
+        tss (pandas DataFrame): DataFrame in bed format of tsss
+        tes (pandas DataFrame): DataFrame in bed format of tess
+        oname (str): Output file name ending in '.h5'
+        m (pandas DataFrame): DataFrame of map file
+    """
+    ic.to_hdf(oname, 'ic', mode='w')
+    tss.to_hdf(oname, 'tss', mode='a', format='table')
+    tes.to_hdf(oname, 'tes', mode='a', format='table')
+
+    if not isinstance(m, pd.DataFrame):
+        m = pd.DataFrame()
+    m.to_hdf(oname, 'map', mode='a', format='table')
+
 def write_h5_to_tsv(h5, opref):
     """
     Write a cerberus transcriptome h5 file to a series
@@ -546,7 +566,7 @@ def write_h5_to_tsv(h5, opref):
         opref (str): Output file path / prefix to give
             each of the output files
     """
-    ic, tss, tes, m = read_h5_annot(h5)
+    ic, tss, tes, m = read_h5(h5)
 
     oname = '{}_ic.tsv'.format(opref)
     ic.to_csv(oname, sep='\t', index=False)
@@ -562,7 +582,47 @@ def write_h5_to_tsv(h5, opref):
 
 ##### readers #####
 
-def read_h5_annot(h5):
+def check_files(files, sources):
+    """
+    Check if a series of files exists and whether their
+    associated sources are all unique. Raise an exception
+    if not.
+
+    Parameters:
+        files (list of str): List of file paths
+        sources (list of str): List of sources
+    """
+
+    for f in files:
+        if not os.path.exists(f):
+            raise Exception('File {} does not exist'.format(bed))
+
+    if len(set(sources)) < len(sources):
+        raise Exception('Sources must be unique')
+
+def parse_gtf_config(fname):
+    """
+    Parse a config file for gtf end and ic calling
+
+    Parameters:
+        fname (str): Path to gtf config file
+
+    Returns:
+        ics (list of str): List of fnames to ic files
+        add_ends (list of bool): List of whether or not to add ends from
+            gtf file
+        sources (list of str): Source names for each ic file
+    """
+    df = pd.read_csv(fname, header=None, sep=',')
+    df.columns = ['fname', 'add_ends', 'source']
+
+    gtfs = df.fname.tolist()
+    add_ends = df.add_ends.tolist()
+    sources = df.source.tolist()
+
+    return gtfs, add_ends, sources
+
+def read_h5(h5):
     """
     Read h5 representation of a transcriptome
 
@@ -579,7 +639,10 @@ def read_h5_annot(h5):
     ic = pd.read_hdf(h5, key='ic')
     tss = pd.read_hdf(h5, key='tss')
     tes = pd.read_hdf(h5, key='tes')
-    m = pd.read_hdf(h5, key='map')
+    try:
+        m = pd.read_hdf(h5, key='map')
+    except:
+        m = None
 
     tss = pr.PyRanges(tss)
     tes = pr.PyRanges(tes)
@@ -711,6 +774,9 @@ def parse_agg_ends_config(fname):
             to add new ends from each bed
         sources (list of str): Source names for each bed
     """
+    if not fname:
+        return [], [], []
+
     df = pd.read_csv(fname, header=None, sep=',')
     df.columns = ['fname', 'add_ends', 'source']
 
@@ -848,10 +914,10 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
         # more than one bed; merge and reconcile ends
         else:
 
-            if 'gene_id' not in bed.df.columns or 'Strand' not in bed.df.columns:
-                if add:
-                    raise Exception('Cannot add new ends from {} because '+\
-                                    'it does not contain gene_id information.')
+            # if 'gene_id' not in bed.df.columns or 'Strand' not in bed.df.columns:
+            #     if add:
+            #         raise Exception('Cannot add new ends from {} because '+\
+            #                         'it does not contain gene_id information.'.format(source))
 
             # add missing columns but keep track of what information we'll be
             # able to merge on
@@ -1004,7 +1070,7 @@ def replace_gtf_ids(gtf, h5, agg):
     """
 
     df = pr.read_gtf(gtf).df
-    _, _, _, m_df = read_h5_annot(h5)
+    _, _, _, m_df = read_h5(h5)
 
     # groupby transcripts that are the same
     gb_cols = ['gene_name', 'gene_id', 'transcript_triplet',
@@ -1058,7 +1124,7 @@ def replace_ab_ids(ab, h5, agg):
             transcript ids / names
     """
     df = pd.read_csv(ab, sep='\t')
-    _, _, _, m_df = read_h5_annot(h5)
+    _, _, _, m_df = read_h5(h5)
 
     # fix transcript ids in abundance file
     ab_map = m_df[['original_transcript_id', 'original_transcript_name', 'transcript_name', 'transcript_id']]
