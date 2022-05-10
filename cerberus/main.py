@@ -129,10 +129,12 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
             required=True)
 @click.option('--dist',
               help='Distance (bp) to extend regions on either side',
-              default=50)
+              default=50,
+              show_default=True)
 @click.option('--slack',
               help='Distance allowable for merging regions',
-              default=50)
+              default=50,
+              show_default=True)
 def gtf_to_bed_command(gtf, mode, o, dist=50, slack=50):
     return gtf_to_bed(gtf, mode, dist, slack)
 
@@ -156,7 +158,8 @@ def gtf_to_ics_command(gtf, o):
             required=True)
 @click.option('--slack',
               help='Distance (bp) allowable for merging regions',
-              default=20)
+              default=20,
+              show_default=True)
 @click.option('-o',
             help='Output file name',
             required=True)
@@ -198,32 +201,40 @@ def agg_ics_command(input, o):
 @click.option('--gtf_tss_dist',
               help='Distance (bp) to extend TSS regions on either side of '+\
                    'each end from the GTFs',
-              default=50)
+              default=50,
+              show_default=True)
 @click.option('--gtf_tss_slack',
               help='Distance allowable for merging TSS regions from each GTF',
-              default=50)
+              default=50,
+              show_default=True)
 @click.option('--gtf_tes_dist',
             help='Distance (bp) to extend TES regions on either side of '+\
                  'each end from the GTFs',
-            default=50)
+            default=50,
+            show_default=True)
 @click.option('--gtf_tes_slack',
             help='Distance allowable for merging TSS regions from each GTF',
-            default=50)
+            default=50,
+            show_default=True)
 @click.option('--tss_slack',
               help='Distance (bp) allowable for merging TSS regions',
-              default=20)
+              default=20,
+              show_default=True)
 @click.option('--tes_slack',
             help='Distance (bp) allowable for merging TES regions',
             default=20)
 @click.option('--verbosity',
               help='Verbosity. Higher numbers mean more output.',
-              default=1)
+              default=1,
+              show_default=True)
 @click.option('--tmp_dir',
               help='Prefix / file path to save temporary files.',
-              default='temp')
+              default='temp',
+              show_default=True)
 @click.option('--keep_tmp',
               help='Keep intermediate bed and ic files instead of deleting them',
-              default=False)
+              default=False,
+              is_flag=True)
 def gen_reference_command(ref_gtf, o,
                           ref_tss, ref_tes,
                           gtf_tss_dist, gtf_tss_slack,

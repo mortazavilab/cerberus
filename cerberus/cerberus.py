@@ -622,17 +622,18 @@ def parse_gtf_config(fname):
 
     return gtfs, add_ends, sources
 
-def read_h5(h5):
+def read_h5(h5, as_pyranges=True):
     """
     Read h5 representation of a transcriptome
 
     Parameters:
         h5 (str): .h5 file to read from
+        as_pyranges (bool): Convert bed representations to PyRanges objects
 
     Returns:
         ic (pandas DataFrame): Table detailing intron chains
-        tss (pyranges PyRanges): Bed representation of tss regions
-        tes (pyranges PyRanges): Bed represenation of tes regions
+        tss (pyranges PyRanges / pandas DataFrame): Bed representation of tss regions
+        tes (pyranges PyRanges / pandas DataFrame): Bed represenation of tes regions
         m (pandas DataFrame): Map of transcript id to tss / ic / tes
     """
 
@@ -644,8 +645,9 @@ def read_h5(h5):
     except:
         m = None
 
-    tss = pr.PyRanges(tss)
-    tes = pr.PyRanges(tes)
+    if as_pyranges:
+        tss = pr.PyRanges(tss)
+        tes = pr.PyRanges(tes)
 
     return ic, tss, tes, m
 
@@ -679,12 +681,34 @@ def get_transcript_ref(fname):
 
     return df
 
-def read_ic_ref(ic_file):
+def split_cerberus_id(df, mode):
+    """
+    Splits the cerberus id for a given df into its gene id
+    and number for the feature
+
+    Parameters:
+        df (pandas DataFrame): DataFrame of either intron chains
+            or end regions
+        mode (str): {'ic', 'tss', 'tes'}
+
+    Returns:
+        df (pandas DataFrame): DataFrame with gene id and feature
+            number added
+    """
+    df[['gene_id', mode]] = df.Name.str.split('_', expand=True)
+    df[mode] = df[mode].astype(int)
+
+    return df
+
+
+def read_ic_ref(ic_file, add_gid=True, add_num=True):
     """
     Read intron chain tsv format (output from gtf_to_ics or agg_ics)
 
     Parameters:
         ic_file (str): Path to ic file
+        add_gid (bool): Whether to include gene id in output
+        add_num (bool): Whether to add intron chain # in output
 
     Returns:
         df (pandas DataFrame): Dataframe with gene id and intron chain number
@@ -693,18 +717,27 @@ def read_ic_ref(ic_file):
     df = pd.read_csv(ic_file, sep='\t')
 
     # add stable gene id and intron chain #
-    df[['gene_id', 'ic']] = df.Name.str.split('_', expand=True)
-    df.ic = df.ic.astype(int)
+    df = split_cerberus_id(df, 'ic')
+
+    drop_cols = []
+    if not add_gid:
+        drop_cols.append('gene_id')
+    elif not add_num:
+        drop_cols.append('ic')
+    df.drop(drop_cols, axis=1, inplace=True)
 
     return df
 
-def read_cerberus_ends(bed_file, mode):
+def read_cerberus_ends(bed_file, mode,
+                       add_gid=True, add_num=True):
     """
     Read end reference bed file (output from gtf_to_bed or agg_ends)
 
     Parameters:
         bed_file (str): Path to bed file
         mode (str): {'tss', 'tes'}
+        add_gid (bool): Whether to include gene id in output
+        add_num (bool): Whether to add intron chain # in output
 
     Returns:
         df (pandas DataFrame): Dataframe with gene id and end number
@@ -713,7 +746,14 @@ def read_cerberus_ends(bed_file, mode):
     df = pr.read_bed(bed_file).df
 
     # add stable gene id and end #
-    df[['gene_id', mode]] = df.Name.str.split('_', expand=True)
+    df = split_cerberus_id(df, mode)
+
+    drop_cols = []
+    if not add_gid:
+        drop_cols.append('gene_id')
+    elif not add_num:
+        drop_cols.append(mode)
+    df.drop(drop_cols, axis=1, inplace=True)
 
     # remove cerberus classification in ThickStart
     df.drop('ThickStart', axis=1, inplace=True)
@@ -722,7 +762,15 @@ def read_cerberus_ends(bed_file, mode):
 
 def read_bed(bed_file, mode):
     """
-    Read a bed file and determine format
+    Read a bed file and determine whether it comes from
+    cerberus
+
+    Parameters:
+        bed_file (str): Path to input bed file
+        mode (str): {'tss', 'tes'}
+
+    Returns:
+        df (pandas DataFrame): DataFrame representation of bed file
     """
 
     df = pr.read_bed(bed_file).df
@@ -865,9 +913,12 @@ def get_ics_from_gtf(gtf):
                axis=1, inplace=True)
     ic['gene_id'] = ic.gene_id.str.split('.', n=1, expand=True)[0]
     ic['Name'] = ic['gene_id']+'_'+ic.ic_num.astype(str)
+    # print(ic.loc[ic.transcript_id == 'ENCODEHT000206942'])
+
     cols = ['transcript_id', 'MANE_Select', 'basic_set', 'appris_principal',
             'gene_id', 'ic_num']
     ic.drop(cols, axis=1, inplace=True)
+
 
     return ic
 
