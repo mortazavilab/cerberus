@@ -545,7 +545,8 @@ def merge_ics(df, ic):
         ic (pandas DataFrame): DataFrame from cerberus reference with intron chains
 
     Returns:
-        df (pandas DataFrame):
+        df (pandas DataFrame): DataFrame indicating which intron chain is used
+            for each transcript
     """
     # merge on intron chain, strand, chromosome, and gene id
     df = df.merge(ic, how='left',
@@ -594,11 +595,7 @@ def merge_ends(ends, ref, mode):
     fix_ends = ends.loc[ends.gene_id != ends.gene_id_b]
     fix_ends = fix_ends[['Chromosome', 'Start', 'End', 'Strand',
                          'gene_id']]
-    # print('ends that need to be fixed')
-    # print(fix_ends)
     ends = ends.loc[ends.gene_id == ends.gene_id_b]
-    # print('okie dokie ends')
-    # print(ends)
 
     for i, gid in enumerate(fix_ends.gene_id.unique().tolist()):
         gene_ends = fix_ends.loc[fix_ends.gene_id == gid].copy(deep=True)
@@ -1130,15 +1127,6 @@ def assign_triplets(gtf_df, tss, ic, tes):
 
     df = merge_ics(df, ic)
 
-    # # merge on intron chain, strand, chromosome, and gene id
-    # df = df.merge(ic, how='left',
-    #               on=['Chromosome', 'Strand',
-    #                   'Coordinates', 'gene_id'])
-    #
-    # # formatting
-    # df.rename({'Name': 'ic_id'}, axis=1, inplace=True)
-    # df = df[['transcript_id', 'ic', 'ic_id']]
-
     ### ends ###
     for mode, ref in zip(['tss', 'tes'], [tss, tes]):
         if mode == 'tss':
@@ -1146,51 +1134,8 @@ def assign_triplets(gtf_df, tss, ic, tes):
         elif mode == 'tes':
             ends = gtf_df.features.tes()
 
-        t_ends = merge_ends(df, ref, mode)
+        t_ends = merge_ends(ends, ref, mode)
 
-        # # limit to relevant columns
-        # ends = ends[['Chromosome', 'Start', 'End', 'Strand',
-        #              'gene_id', 'transcript_id']]
-        #
-        # # get only the relevant columns and deduplicate
-        # ends = ends.df
-        # t_ends = ends.copy(deep=True)
-        # ends.drop('transcript_id', axis=1, inplace=True)
-        # ends.drop_duplicates(inplace=True)
-        # ends = pr.PyRanges(ends)
-        #
-        # # find closest interval in ref
-        # ends = ends.nearest(ref,
-        #                     strandedness=None)
-        #
-        # # fix the ends with mismatching gene ids - this part can be slow :(
-        # ends = ends.df
-        # fix_ends = ends.loc[ends.gene_id != ends.gene_id_b]
-        # fix_ends = fix_ends[['Chromosome', 'Start', 'End', 'Strand',
-        #                      'gene_id']]
-        # ends = ends.loc[ends.gene_id == ends.gene_id_b]
-        #
-        # for i, gid in enumerate(fix_ends.gene_id.unique().tolist()):
-        #     gene_ends = fix_ends.loc[fix_ends.gene_id == gid].copy(deep=True)
-        #     gene_ends = pr.PyRanges(gene_ends)
-        #     gene_refs = ref.df.loc[ref.df.gene_id == gid].copy(deep=True)
-        #     gene_refs = pr.PyRanges(gene_refs)
-        #     gene_ends = gene_ends.nearest(ref,
-        #                                   strandedness=None)
-        #     gene_ends = gene_ends.df
-        #     ends = pd.concat([ends, gene_ends])
-        #
-        #     if i % 100 == 0:
-        #         print('Processed {} / {} genes'.format(i, len(fix_ends.gene_id.unique().tolist())))
-        #
-        # # merge back in to get transcript ids
-        # t_ends = t_ends.merge(ends, how='left',
-        #                   on=['Chromosome', 'Start', 'End', 'Strand', 'gene_id'])
-        #
-        # # formatting
-        # t_ends.rename({'Name': '{}_id'.format(mode)}, axis=1, inplace=True)
-        # t_ends = t_ends[['transcript_id', '{}_id'.format(mode), mode]]
-        #
         # merge with ic ids
         df = df.merge(t_ends, how='left', on='transcript_id')
 
@@ -1216,95 +1161,6 @@ def assign_triplets(gtf_df, tss, ic, tes):
     df['transcript_name'] = df['gene_name']+' '+df.transcript_triplet
 
     return df
-
-# def add_triplets(gtf, ic_file, tss_bed, tes_bed):
-#     """
-#     Determines which tss, intron chain, and tes are used from a cerberus
-#     reference are used in a specific gtf.
-#
-#     Parameters:
-#         gtf (str): File path to gtf you want to assign triplets to
-#         ic_file (str): File path to intron chain tsv (part of cerberus ref.)
-#         tss_bed (str): File path to tss bed (part of cerberus ref.)
-#         tes_bed (str): File path to tes bed (part of cerberus ref.)
-#
-#     Returns:
-#         df (pandas DataFrame): File that maps each transcript from gtf to
-#             a tss, intron chain, and tes given by the cerberus reference.
-#             Also includes new transcript ids to refer to each transcript
-#     """
-#     t_df = pr.read_gtf(gtf)
-#     t_df = t_df.df
-#     t_df['gene_id'] = t_df.gene_id.str.split('.', n=1, expand=True)[0]
-#     t_df = pr.PyRanges(t_df)
-#
-#     ### intron chain annotation ###
-#
-#     # get unique intron chains from gtf
-#     df = t_df.copy()
-#     df = get_ic(df)
-#     df.rename({'ic': 'Coordinates'},
-#               axis=1, inplace=True)
-#
-#     # read in reference set of intron chains and format them as strings
-#     # to enable merging
-#     ref = read_ic_ref(ic_file)
-#
-#     # merge on intron chain, strand, chromosome, and gene id
-#     df = df.merge(ref, how='left',
-#                  on=['Chromosome', 'Strand',
-#                      'Coordinates', 'gene_id'])
-#
-#     # formatting
-#     df.rename({'Name': 'ic_id'}, axis=1, inplace=True)
-#     df = df[['transcript_id', 'ic', 'ic_id']]
-#
-#     ### end annotation ###
-#
-#     for mode, bed_file in zip(['tss', 'tes'], [tss_bed, tes_bed]):
-#
-#         if mode == 'tss':
-#             ends = t_df.features.tss()
-#         elif mode == 'tes':
-#             ends = t_df.features.tes()
-#
-#         # merge transcriptome ends with reference ends
-#         ref = read_cerberus_ends(bed_file, mode=mode)
-#         ref = pr.PyRanges(ref)
-#         ends = ends.join(ref,
-#                          strandedness='same',
-#                          how='left').df
-#         ends = ends.loc[ends.gene_id == ends.gene_id_b]
-#
-#         # formatting
-#         ends.rename({'Name': '{}_id'.format(mode)}, axis=1, inplace=True)
-#         ends = ends[['transcript_id', mode, '{}_id'.format(mode)]]
-#
-#         # add ends into map df
-#         df = df.merge(ends, how='left', on='transcript_id')
-#
-#     ### creating map file ###
-#
-#     # get gene id / name and transcript name from original gtf
-#     t_df = t_df.df
-#     t_df = t_df.loc[t_df.Feature == 'transcript']
-#     if 'gene_name' not in t_df.columns:
-#         t_df['gene_name'] = t_df.transcript_name.str.split('-', n=1, expand=True)[0]
-#     t_df = t_df[['gene_id', 'gene_name',
-#                  'transcript_id', 'transcript_name']]
-#     df = df.merge(t_df, how='left', on='transcript_id')
-#
-#     # create triplets and rename old ids
-#     df.rename({'transcript_id': 'original_transcript_id',
-#                'transcript_name': 'original_transcript_name'},
-#                axis=1, inplace=True)
-#     df['transcript_triplet'] = '['+df.tss.astype(str)+', '+\
-#                                    df.ic.astype(str)+', '+\
-#                                    df.tes.astype(str)+']'
-#     df['transcript_id'] = df['gene_id']+' '+df.transcript_triplet
-#     df['transcript_name'] = df['gene_name']+' '+df.transcript_triplet
-#
-#     return df
 
 def replace_gtf_ids(gtf, h5, agg):
     """
