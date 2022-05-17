@@ -1157,8 +1157,8 @@ def assign_triplets(gtf_df, tss, ic, tes):
     df['transcript_triplet'] = '['+df.tss.astype(str)+','+\
                                    df.ic.astype(str)+','+\
                                    df.tes.astype(str)+']'
-    df['transcript_id'] = df['gene_id']+' '+df.transcript_triplet
-    df['transcript_name'] = df['gene_name']+' '+df.transcript_triplet
+    df['transcript_id'] = df['gene_id']+df.transcript_triplet
+    df['transcript_name'] = df['gene_name']+df.transcript_triplet
 
     return df
 
@@ -1216,70 +1216,70 @@ def replace_gtf_ids(gtf, h5, agg):
 
     return df
 
-def replace_ab_ids(ab, h5, agg):
-    """
-    Replace the transcript ids and transcript names in a TALON abundance file
-    with the new transcript ids that contain the triplet
-
-    Parameters:
-        ab (str): Path to TALON abundance file
-        h5 (str): Path to h5 annotation (output from assign)
-        agg (bool): Aggregate / collapse transcripts with the same triplets
-            and sum up their count values
-
-    Returns:
-        df (pandas DataFrame): TALON abundance file with updated
-            transcript ids / names
-    """
-    df = pd.read_csv(ab, sep='\t')
-    _, _, _, m_df = read_h5(h5)
-
-    # fix transcript ids in abundance file
-    ab_map = m_df[['original_transcript_id', 'original_transcript_name', 'transcript_name', 'transcript_id']]
-    df = df.merge(ab_map, left_on='annot_transcript_id', right_on='original_transcript_id')
-
-    df.drop(['original_transcript_id', 'original_transcript_name',
-             'annot_transcript_id', 'annot_transcript_name'],
-            axis=1, inplace=True)
-    df.rename({'transcript_name': 'annot_transcript_name',
-               'transcript_id': 'annot_transcript_id'},
-              axis=1, inplace=True)
-
-    # aggregate counts if requested
-    if agg:
-        gb_cols = ['gene_ID', 'annot_gene_id', 'annot_gene_name',
-                   'gene_novelty', 'annot_transcript_name',
-                   'annot_transcript_id']
-
-        # handle properties which won't always correspond across the transcripts
-        # these are all subject to change
-        nov_rank, rank_nov = get_nov_ranks()
-        df['nov_rank'] = df.transcript_novelty.map(nov_rank)
-        df.drop('transcript_novelty', axis=1, inplace=True)
-
-        ism_rank, rank_ism = get_ism_ranks()
-        df['ism_rank'] = df.ISM_subtype.map(ism_rank)
-        df.drop('ISM_subtype', axis=1, inplace=True)
-
-        df['transcript_ID'] = df.transcript_ID.astype(str)
-        agg_dict = {'transcript_ID': ','.join,
-                    'n_exons': 'mean',
-                    'length': 'mean',
-                    'nov_rank': 'min',
-                    'ism_rank': 'min'}
-        cols = gb_cols + list(agg_dict.keys())
-        for c in list(set(df.columns)-set(cols)):
-            agg_dict[c] = 'sum'
-
-        df = df.groupby(gb_cols).agg(agg_dict).reset_index()
-        df['transcript_novelty'] = df.nov_rank.map(rank_nov)
-        df.drop(['nov_rank'], axis=1, inplace=True)
-        df['ISM_subtype'] = df.ism_rank.map(rank_ism)
-        df.drop(['ism_rank'], axis=1, inplace=True)
-
-    # reorder columns
-    c1 = get_non_dataset_cols()
-    c2 = get_dataset_cols(df)
-    df = df[c1+c2]
-
-    return df
+# def replace_ab_ids(ab, h5, agg):
+#     """
+#     Replace the transcript ids and transcript names in a TALON abundance file
+#     with the new transcript ids that contain the triplet
+#
+#     Parameters:
+#         ab (str): Path to TALON abundance file
+#         h5 (str): Path to h5 annotation (output from assign)
+#         agg (bool): Aggregate / collapse transcripts with the same triplets
+#             and sum up their count values
+#
+#     Returns:
+#         df (pandas DataFrame): TALON abundance file with updated
+#             transcript ids / names
+#     """
+#     df = pd.read_csv(ab, sep='\t')
+#     _, _, _, m_df = read_h5(h5)
+#
+#     # fix transcript ids in abundance file
+#     ab_map = m_df[['original_transcript_id', 'original_transcript_name', 'transcript_name', 'transcript_id']]
+#     df = df.merge(ab_map, left_on='annot_transcript_id', right_on='original_transcript_id')
+#
+#     df.drop(['original_transcript_id', 'original_transcript_name',
+#              'annot_transcript_id', 'annot_transcript_name'],
+#             axis=1, inplace=True)
+#     df.rename({'transcript_name': 'annot_transcript_name',
+#                'transcript_id': 'annot_transcript_id'},
+#               axis=1, inplace=True)
+#
+#     # aggregate counts if requested
+#     if agg:
+#         gb_cols = ['gene_ID', 'annot_gene_id', 'annot_gene_name',
+#                    'gene_novelty', 'annot_transcript_name',
+#                    'annot_transcript_id']
+#
+#         # handle properties which won't always correspond across the transcripts
+#         # these are all subject to change
+#         nov_rank, rank_nov = get_nov_ranks()
+#         df['nov_rank'] = df.transcript_novelty.map(nov_rank)
+#         df.drop('transcript_novelty', axis=1, inplace=True)
+#
+#         ism_rank, rank_ism = get_ism_ranks()
+#         df['ism_rank'] = df.ISM_subtype.map(ism_rank)
+#         df.drop('ISM_subtype', axis=1, inplace=True)
+#
+#         df['transcript_ID'] = df.transcript_ID.astype(str)
+#         agg_dict = {'transcript_ID': ','.join,
+#                     'n_exons': 'mean',
+#                     'length': 'mean',
+#                     'nov_rank': 'min',
+#                     'ism_rank': 'min'}
+#         cols = gb_cols + list(agg_dict.keys())
+#         for c in list(set(df.columns)-set(cols)):
+#             agg_dict[c] = 'sum'
+#
+#         df = df.groupby(gb_cols).agg(agg_dict).reset_index()
+#         df['transcript_novelty'] = df.nov_rank.map(rank_nov)
+#         df.drop(['nov_rank'], axis=1, inplace=True)
+#         df['ISM_subtype'] = df.ism_rank.map(rank_ism)
+#         df.drop(['ism_rank'], axis=1, inplace=True)
+#
+#     # reorder columns
+#     c1 = get_non_dataset_cols()
+#     c2 = get_dataset_cols(df)
+#     df = df[c1+c2]
+#
+#     return df
