@@ -116,6 +116,37 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
         for f in tmp_files:
             os.remove(f)
 
+def convert_transcriptome(gtf, h5, o):
+    """
+    Create an h5 cerberus transcriptome from a GTF using an existing
+    cerberus annotation
+
+    Parameters:
+        gtf (str): Path to GTF to annotate
+        h5 (str): Path to cerberus annotation in h5 format
+        o (str): Output .h5 file path / name
+    """
+
+    # read in / format existing reference
+    ic, tss, tes, _ = read_h5(h5, as_pyranges=False)
+    ic = split_cerberus_id(ic, 'ic')
+    tss = split_cerberus_id(tss, 'tss')
+    tes = split_cerberus_id(tes, 'tes')
+    tss = pr.PyRanges(tss)
+    tes = pr.PyRanges(tes)
+
+    # read in transcriptome to convert to cerberus
+    gtf_df = pr.read_gtf(gtf).df
+    gtf_df['gene_id'] = gtf_df.gene_id.str.split('.', expand=True)[0]
+    gtf_df = pr.PyRanges(gtf_df)
+
+    df = assign_triplets(gtf_df, tss, ic, tes)
+
+    # write h5 file
+    tss = tss.df
+    tes = tes.df
+    write_h5(ic, tss, tes, o, m=df)
+
 ####### create a reference #######
 @cli.command(name='gtf_to_bed')
 @click.option('--gtf',
@@ -250,40 +281,19 @@ def gen_reference_command(ref_gtf, o,
                   keep_tmp)
 
 ####### annotate a transcriptome ######
-@cli.command()
+@cli.command(name='convert_transcriptome')
 @click.option('--gtf',
-              help='GTF of isoforms to assign triplets to',
+              help='GTF file',
               required=True)
-@click.option('--ic',
-              help='Intron chain file',
-              required=True)
-@click.option('--tss_bed',
-              help='Bed file of TSS regions',
-              required=True)
-@click.option('--tes_bed',
-              help='Bed file of TES regions',
-              required=True)
+@click.option('--h5',
+            help='cerberus reference from gen-reference',
+            required=True)
 @click.option('-o',
-              help='Output file name',
-              required=True)
-def assign_triplets(gtf, ic, tss_bed, tes_bed, o):
-    df = add_triplets(gtf, ic, tss_bed, tes_bed)
+            help='Output file name',
+            required=True)
+def convert_transcriptome_command(gtf, h5, o):
+    convert_transcriptome(gtf, h5, o)
 
-    # read in references that we'll just dump back to a new
-    # h5 file
-    tss_bed = pr.read_bed(tss_bed).df
-    tes_bed = pr.read_bed(tes_bed).df
-    ic = pd.read_csv(ic, sep='\t')
-
-    df = change_all_dtypes(df, str)
-    ic = change_all_dtypes(ic, str)
-    tss_bed = change_all_dtypes(tss_bed, str)
-    tes_bed = change_all_dtypes(tes_bed, str)
-
-    ic.to_hdf(o, 'ic', mode='w')
-    tss_bed.to_hdf(o, 'tss', mode='a', format='table')
-    tes_bed.to_hdf(o, 'tes', mode='a', format='table')
-    df.to_hdf(o, 'map', mode='a')
 
 @cli.command()
 @click.option('--h5',
@@ -314,7 +324,7 @@ def replace_ids(h5, gtf, ab, collapse, opref):
         oname = '{}.tsv'.format(opref)
         df.to_csv(oname, index=False, sep='\t')
 
-@cli.command()
+@cli.command(name='h5_to_tsv')
 @click.option('--h5',
               help='h5 transcriptome file output from cerberus assign-triplets',
               required=True)
