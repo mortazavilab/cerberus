@@ -535,6 +535,94 @@ def agg_2_ics(ic1, ic2):
 
     return df
 
+##### helpers for convert_transcriptome #####
+def merge_ics(df, ic):
+    """
+    Assign each transcript in df to an intron chain in ic
+
+    Parameters:
+        df (pandas DataFrame): DataFrame w/ intron chain for each transcript
+        ic (pandas DataFrame): DataFrame from cerberus reference with intron chains
+
+    Returns:
+        df (pandas DataFrame):
+    """
+    # merge on intron chain, strand, chromosome, and gene id
+    df = df.merge(ic, how='left',
+                  on=['Chromosome', 'Strand',
+                      'Coordinates', 'gene_id'])
+
+    # formatting
+    df.rename({'Name': 'ic_id'}, axis=1, inplace=True)
+    df = df[['transcript_id', 'ic', 'ic_id']]
+
+    return df
+
+def merge_ends(ends, ref, mode):
+    """
+    Merge ends from a GTF with those already annotated in a cerberus reference
+
+    Parameters:
+        ends (pyranges PyRanges): PyRanges object of ends from GTF annotation
+        ref (pyranges PyRanges): PyRanges object of reference ends from cerberus
+            annotation
+        mode (str): {'tss', 'tes'}
+
+    Returns:
+        df (pandas DataFrame): DataFrame detailing which transcript uses which
+            end from the cerberus reference
+    """
+
+
+    # limit to relevant columns
+    ends = ends[['Chromosome', 'Start', 'End', 'Strand',
+                 'gene_id', 'transcript_id']]
+
+    # get only the relevant columns and deduplicate
+    ends = ends.df
+    t_ends = ends.copy(deep=True)
+    ends.drop('transcript_id', axis=1, inplace=True)
+    ends.drop_duplicates(inplace=True)
+    ends = pr.PyRanges(ends)
+
+    # find closest interval in ref
+    ends = ends.nearest(ref,
+                        strandedness=None)
+
+    # fix the ends with mismatching gene ids - this part can be slow :(
+    ends = ends.df
+    fix_ends = ends.loc[ends.gene_id != ends.gene_id_b]
+    fix_ends = fix_ends[['Chromosome', 'Start', 'End', 'Strand',
+                         'gene_id']]
+    # print('ends that need to be fixed')
+    # print(fix_ends)
+    ends = ends.loc[ends.gene_id == ends.gene_id_b]
+    # print('okie dokie ends')
+    # print(ends)
+
+    for i, gid in enumerate(fix_ends.gene_id.unique().tolist()):
+        gene_ends = fix_ends.loc[fix_ends.gene_id == gid].copy(deep=True)
+        gene_ends = pr.PyRanges(gene_ends)
+        gene_refs = ref.df.loc[ref.df.gene_id == gid].copy(deep=True)
+        gene_refs = pr.PyRanges(gene_refs)
+        gene_ends = gene_ends.nearest(gene_refs,
+                                      strandedness=None)
+        gene_ends = gene_ends.df
+        ends = pd.concat([ends, gene_ends])
+
+        if i % 100 == 0:
+            print('Processed {} / {} genes'.format(i, len(fix_ends.gene_id.unique().tolist())))
+
+    # merge back in to get transcript ids
+    t_ends = t_ends.merge(ends, how='left',
+                      on=['Chromosome', 'Start', 'End', 'Strand', 'gene_id'])
+
+    # formatting
+    t_ends.rename({'Name': '{}_id'.format(mode)}, axis=1, inplace=True)
+    t_ends = t_ends[['transcript_id', '{}_id'.format(mode), mode]]
+
+    return t_ends
+
 ##### writers #####
 
 def write_h5(ic, tss, tes, oname, m=None):
@@ -1040,15 +1128,16 @@ def assign_triplets(gtf_df, tss, ic, tes):
     df = get_ic(df)
     df.rename({'ic': 'Coordinates'}, axis=1, inplace=True)
 
-    # merge on intron chain, strand, chromosome, and gene id
-    df = df.merge(ic, how='left',
-                  on=['Chromosome', 'Strand',
-                      'Coordinates', 'gene_id'])
+    df = merge_ics(df, ic)
 
-    # formatting
-    df.rename({'Name': 'ic_id'}, axis=1, inplace=True)
-    df = df[['transcript_id', 'ic', 'ic_id']]
-
+    # # merge on intron chain, strand, chromosome, and gene id
+    # df = df.merge(ic, how='left',
+    #               on=['Chromosome', 'Strand',
+    #                   'Coordinates', 'gene_id'])
+    #
+    # # formatting
+    # df.rename({'Name': 'ic_id'}, axis=1, inplace=True)
+    # df = df[['transcript_id', 'ic', 'ic_id']]
 
     ### ends ###
     for mode, ref in zip(['tss', 'tes'], [tss, tes]):
@@ -1057,49 +1146,51 @@ def assign_triplets(gtf_df, tss, ic, tes):
         elif mode == 'tes':
             ends = gtf_df.features.tes()
 
-        # limit to relevant columns
-        ends = ends[['Chromosome', 'Start', 'End', 'Strand',
-                     'gene_id', 'transcript_id']]
+        t_ends = merge_ends(df, ref, mode)
 
-        # get only the relevant columns and deduplicate
-        ends = ends.df
-        t_ends = ends.copy(deep=True)
-        ends.drop('transcript_id', axis=1, inplace=True)
-        ends.drop_duplicates(inplace=True)
-        ends = pr.PyRanges(ends)
-
-        # find closest interval in ref
-        ends = ends.nearest(ref,
-                            strandedness=None)
-
-        # fix the ends with mismatching gene ids - this part can be slow :(
-        ends = ends.df
-        fix_ends = ends.loc[ends.gene_id != ends.gene_id_b]
-        fix_ends = fix_ends[['Chromosome', 'Start', 'End', 'Strand',
-                             'gene_id']]
-        ends = ends.loc[ends.gene_id == ends.gene_id_b]
-
-        for i, gid in enumerate(fix_ends.gene_id.unique().tolist()):
-            gene_ends = fix_ends.loc[fix_ends.gene_id == gid].copy(deep=True)
-            gene_ends = pr.PyRanges(gene_ends)
-            gene_refs = ref.df.loc[ref.df.gene_id == gid].copy(deep=True)
-            gene_refs = pr.PyRanges(gene_refs)
-            gene_ends = gene_ends.nearest(ref,
-                                          strandedness=None)
-            gene_ends = gene_ends.df
-            ends = pd.concat([ends, gene_ends])
-
-            if i % 100 == 0:
-                print('Processed {} / {} genes'.format(i, len(fix_ends.gene_id.unique().tolist())))
-
-        # merge back in to get transcript ids
-        t_ends = t_ends.merge(ends, how='left',
-                          on=['Chromosome', 'Start', 'End', 'Strand', 'gene_id'])
-
-        # formatting
-        t_ends.rename({'Name': '{}_id'.format(mode)}, axis=1, inplace=True)
-        t_ends = t_ends[['transcript_id', '{}_id'.format(mode), mode]]
-
+        # # limit to relevant columns
+        # ends = ends[['Chromosome', 'Start', 'End', 'Strand',
+        #              'gene_id', 'transcript_id']]
+        #
+        # # get only the relevant columns and deduplicate
+        # ends = ends.df
+        # t_ends = ends.copy(deep=True)
+        # ends.drop('transcript_id', axis=1, inplace=True)
+        # ends.drop_duplicates(inplace=True)
+        # ends = pr.PyRanges(ends)
+        #
+        # # find closest interval in ref
+        # ends = ends.nearest(ref,
+        #                     strandedness=None)
+        #
+        # # fix the ends with mismatching gene ids - this part can be slow :(
+        # ends = ends.df
+        # fix_ends = ends.loc[ends.gene_id != ends.gene_id_b]
+        # fix_ends = fix_ends[['Chromosome', 'Start', 'End', 'Strand',
+        #                      'gene_id']]
+        # ends = ends.loc[ends.gene_id == ends.gene_id_b]
+        #
+        # for i, gid in enumerate(fix_ends.gene_id.unique().tolist()):
+        #     gene_ends = fix_ends.loc[fix_ends.gene_id == gid].copy(deep=True)
+        #     gene_ends = pr.PyRanges(gene_ends)
+        #     gene_refs = ref.df.loc[ref.df.gene_id == gid].copy(deep=True)
+        #     gene_refs = pr.PyRanges(gene_refs)
+        #     gene_ends = gene_ends.nearest(ref,
+        #                                   strandedness=None)
+        #     gene_ends = gene_ends.df
+        #     ends = pd.concat([ends, gene_ends])
+        #
+        #     if i % 100 == 0:
+        #         print('Processed {} / {} genes'.format(i, len(fix_ends.gene_id.unique().tolist())))
+        #
+        # # merge back in to get transcript ids
+        # t_ends = t_ends.merge(ends, how='left',
+        #                   on=['Chromosome', 'Start', 'End', 'Strand', 'gene_id'])
+        #
+        # # formatting
+        # t_ends.rename({'Name': '{}_id'.format(mode)}, axis=1, inplace=True)
+        # t_ends = t_ends[['transcript_id', '{}_id'.format(mode), mode]]
+        #
         # merge with ic ids
         df = df.merge(t_ends, how='left', on='transcript_id')
 

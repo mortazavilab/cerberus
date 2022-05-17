@@ -29,7 +29,7 @@ def make_end_df(c,s,st,e,n, source,mode):
     # get arbitrary unique ids
     df['id'] = [i for i in range(len(df.index))]
 
-    return df
+    return df#
 
 def format_end_df(df):
     sort_cols = ['Chromosome', 'Start', 'End', 'Strand']
