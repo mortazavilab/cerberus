@@ -1229,59 +1229,59 @@ def assign_triplets(gtf_df, tss, ic, tes):
 
     return df
 
-def replace_gtf_ids(gtf, h5, agg):
-    """
-    Replace transcript ids and names in a gtf with the triplets
-    calculated from assign_triplets
-
-    Parameters:
-        gtf (str): Path to gtf file
-        h5 (str): Path to h5 annotation (output from assign)
-        agg (bool): Whether or not to collapse transcripts with
-            duplicate triplets
-
-    Returns:
-        df (pyranges PyRanges): PyRanges gtf table with updated ids
-    """
-
-    df = pr.read_gtf(gtf).df
-    _, _, _, m_df = read_h5(h5)
-
-    # groupby transcripts that are the same
-    gb_cols = ['gene_name', 'gene_id', 'transcript_triplet',
-               'transcript_id', 'transcript_name']
-    temp = m_df[['transcript_id',
-                 'original_transcript_id',
-                 'original_transcript_name']].copy(deep=True)
-    m_df = m_df.groupby(gb_cols).agg({'original_transcript_id': ','.join,
-                                      'original_transcript_name': ','.join}).reset_index()
-    m_df = m_df.merge(temp, on='transcript_id', suffixes=('','_merge'))
-    m_df.drop(['gene_name', 'gene_id', 'transcript_triplet'],
-              axis=1, inplace=True)
-
-    # add new transcript ids
-    df = df.merge(m_df, left_on=['transcript_id', 'transcript_name'],
-                  right_on=['original_transcript_id_merge',
-                            'original_transcript_name_merge'],
-                 suffixes=('_x', ''))
-
-    # drop old tids
-    df.drop(['transcript_id_x', 'transcript_name_x',
-             'original_transcript_name_merge'],
-            axis=1, inplace=True)
-
-    # remove duplicated transcripts; just keeping the first one
-    if agg:
-        temp = df[['transcript_id', 'original_transcript_id_merge']].drop_duplicates()
-        dupe_old_tids = temp.loc[temp.transcript_id.duplicated(keep='first'), 'original_transcript_id_merge']
-        df = df.loc[~df.original_transcript_id_merge.isin(dupe_old_tids)]
-
-    # drop last column
-    df.drop('original_transcript_id_merge', axis=1, inplace=True)
-
-    df = pr.PyRanges(df)
-
-    return df
+# def replace_gtf_ids(gtf, h5, agg):
+#     """
+#     Replace transcript ids and names in a gtf with the triplets
+#     calculated from assign_triplets
+#
+#     Parameters:
+#         gtf (str): Path to gtf file
+#         h5 (str): Path to h5 annotation (output from assign)
+#         agg (bool): Whether or not to collapse transcripts with
+#             duplicate triplets
+#
+#     Returns:
+#         df (pyranges PyRanges): PyRanges gtf table with updated ids
+#     """
+#
+#     df = pr.read_gtf(gtf).df
+#     _, _, _, m_df = read_h5(h5)
+#
+#     # groupby transcripts that are the same
+#     gb_cols = ['gene_name', 'gene_id', 'transcript_triplet',
+#                'transcript_id', 'transcript_name']
+#     temp = m_df[['transcript_id',
+#                  'original_transcript_id',
+#                  'original_transcript_name']].copy(deep=True)
+#     m_df = m_df.groupby(gb_cols).agg({'original_transcript_id': ','.join,
+#                                       'original_transcript_name': ','.join}).reset_index()
+#     m_df = m_df.merge(temp, on='transcript_id', suffixes=('','_merge'))
+#     m_df.drop(['gene_name', 'gene_id', 'transcript_triplet'],
+#               axis=1, inplace=True)
+#
+#     # add new transcript ids
+#     df = df.merge(m_df, left_on=['transcript_id', 'transcript_name'],
+#                   right_on=['original_transcript_id_merge',
+#                             'original_transcript_name_merge'],
+#                  suffixes=('_x', ''))
+#
+#     # drop old tids
+#     df.drop(['transcript_id_x', 'transcript_name_x',
+#              'original_transcript_name_merge'],
+#             axis=1, inplace=True)
+#
+#     # remove duplicated transcripts; just keeping the first one
+#     if agg:
+#         temp = df[['transcript_id', 'original_transcript_id_merge']].drop_duplicates()
+#         dupe_old_tids = temp.loc[temp.transcript_id.duplicated(keep='first'), 'original_transcript_id_merge']
+#         df = df.loc[~df.original_transcript_id_merge.isin(dupe_old_tids)]
+#
+#     # drop last column
+#     df.drop('original_transcript_id_merge', axis=1, inplace=True)
+#
+#     df = pr.PyRanges(df)
+#
+#     return df
 
 ###### routines called from main #####
 ####### actual routines #######
