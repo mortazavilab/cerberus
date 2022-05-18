@@ -620,6 +620,73 @@ def merge_ends(ends, ref, mode):
 
     return t_ends
 
+##### helpers for replace_ab_ids #####
+def map_transcripts(df, m_df, tname, tid):
+    """
+    df (pandas DataFrame): DataFrame with transcript ids
+    m_df (pandas DataFrame): Map DataFrame from cerberus reference
+    tname (str): Column name for transcript name in df
+    tid (str): Column name for transcript id in df
+    """
+
+    # fix transcript ids in abundance file
+    t_map = m_df[['original_transcript_id', 'original_transcript_name',
+                  'transcript_name', 'transcript_id']]
+    df = df.merge(t_map, left_on=tid, right_on='original_transcript_id')
+
+    df.drop(['original_transcript_id', 'original_transcript_name',
+             tid, tname],
+            axis=1, inplace=True)
+    df.rename({'transcript_name': tname,
+               'transcript_id': tid},
+              axis=1, inplace=True)
+
+    return df
+
+def agg_ab(df):
+    """
+    Aggregates expression over transcripts that now are the same based on
+    assignment to cerberus reference ends
+
+    Parameters:
+        df (pandas DataFrame): TALON abundance file output from `map_transcripts`
+
+    Returns:
+        df (pandas DataFrame): Abundance file with counts and other metadata
+            per transcript aggregated for duplicated transcripts
+    """
+    gb_cols = ['gene_ID', 'annot_gene_id', 'annot_gene_name',
+               'gene_novelty', 'annot_transcript_name',
+               'annot_transcript_id']
+
+    # handle properties which won't always correspond across the transcripts
+    # these are all subject to change
+    nov_rank, rank_nov = get_nov_ranks()
+    df['nov_rank'] = df.transcript_novelty.map(nov_rank)
+    df.drop('transcript_novelty', axis=1, inplace=True)
+
+    ism_rank, rank_ism = get_ism_ranks()
+    df['ism_rank'] = df.ISM_subtype.map(ism_rank)
+    df.drop('ISM_subtype', axis=1, inplace=True)
+
+    df['transcript_ID'] = df.transcript_ID.astype(str)
+    agg_dict = {'transcript_ID': ','.join,
+                'n_exons': 'mean',
+                'length': 'mean',
+                'nov_rank': 'min',
+                'ism_rank': 'min'}
+    cols = gb_cols + list(agg_dict.keys())
+    for c in list(set(df.columns)-set(cols)):
+        agg_dict[c] = 'sum'
+
+    df = df.groupby(gb_cols).agg(agg_dict).reset_index()
+    df['transcript_novelty'] = df.nov_rank.map(rank_nov)
+    df.drop(['nov_rank'], axis=1, inplace=True)
+    df['ISM_subtype'] = df.ism_rank.map(rank_ism)
+    df.drop(['ism_rank'], axis=1, inplace=True)
+
+    return df
+
 ##### writers #####
 
 def write_h5(ic, tss, tes, oname, m=None):
@@ -1216,70 +1283,177 @@ def replace_gtf_ids(gtf, h5, agg):
 
     return df
 
-# def replace_ab_ids(ab, h5, agg):
-#     """
-#     Replace the transcript ids and transcript names in a TALON abundance file
-#     with the new transcript ids that contain the triplet
-#
-#     Parameters:
-#         ab (str): Path to TALON abundance file
-#         h5 (str): Path to h5 annotation (output from assign)
-#         agg (bool): Aggregate / collapse transcripts with the same triplets
-#             and sum up their count values
-#
-#     Returns:
-#         df (pandas DataFrame): TALON abundance file with updated
-#             transcript ids / names
-#     """
-#     df = pd.read_csv(ab, sep='\t')
-#     _, _, _, m_df = read_h5(h5)
-#
-#     # fix transcript ids in abundance file
-#     ab_map = m_df[['original_transcript_id', 'original_transcript_name', 'transcript_name', 'transcript_id']]
-#     df = df.merge(ab_map, left_on='annot_transcript_id', right_on='original_transcript_id')
-#
-#     df.drop(['original_transcript_id', 'original_transcript_name',
-#              'annot_transcript_id', 'annot_transcript_name'],
-#             axis=1, inplace=True)
-#     df.rename({'transcript_name': 'annot_transcript_name',
-#                'transcript_id': 'annot_transcript_id'},
-#               axis=1, inplace=True)
-#
-#     # aggregate counts if requested
-#     if agg:
-#         gb_cols = ['gene_ID', 'annot_gene_id', 'annot_gene_name',
-#                    'gene_novelty', 'annot_transcript_name',
-#                    'annot_transcript_id']
-#
-#         # handle properties which won't always correspond across the transcripts
-#         # these are all subject to change
-#         nov_rank, rank_nov = get_nov_ranks()
-#         df['nov_rank'] = df.transcript_novelty.map(nov_rank)
-#         df.drop('transcript_novelty', axis=1, inplace=True)
-#
-#         ism_rank, rank_ism = get_ism_ranks()
-#         df['ism_rank'] = df.ISM_subtype.map(ism_rank)
-#         df.drop('ISM_subtype', axis=1, inplace=True)
-#
-#         df['transcript_ID'] = df.transcript_ID.astype(str)
-#         agg_dict = {'transcript_ID': ','.join,
-#                     'n_exons': 'mean',
-#                     'length': 'mean',
-#                     'nov_rank': 'min',
-#                     'ism_rank': 'min'}
-#         cols = gb_cols + list(agg_dict.keys())
-#         for c in list(set(df.columns)-set(cols)):
-#             agg_dict[c] = 'sum'
-#
-#         df = df.groupby(gb_cols).agg(agg_dict).reset_index()
-#         df['transcript_novelty'] = df.nov_rank.map(rank_nov)
-#         df.drop(['nov_rank'], axis=1, inplace=True)
-#         df['ISM_subtype'] = df.ism_rank.map(rank_ism)
-#         df.drop(['ism_rank'], axis=1, inplace=True)
-#
-#     # reorder columns
-#     c1 = get_non_dataset_cols()
-#     c2 = get_dataset_cols(df)
-#     df = df[c1+c2]
-#
-#     return df
+###### routines called from main #####
+####### actual routines #######
+def gtf_to_bed(gtf, mode, o, dist=50, slack=50):
+    bed = get_ends_from_gtf(gtf, mode, dist, slack)
+    bed.to_bed(o)
+
+def gtf_to_ics(gtf, o):
+    df = get_ics_from_gtf(gtf)
+    df.to_csv(o, index=False, sep='\t')
+
+def agg_ends(input, mode, slack, o):
+    beds, add_ends, sources = parse_agg_ends_config(input)
+    bed = aggregate_ends(beds, sources, add_ends, slack, mode)
+    bed = pr.PyRanges(bed)
+    bed.to_bed(o)
+
+def agg_ics(input, o):
+    ics, sources = parse_agg_ics_config(input)
+    ic = aggregate_ics(ics, sources)
+    ic.to_csv(o, sep='\t', index=False)
+
+def gen_reference(ref_gtf, o, ref_tss, ref_tes,
+                  gtf_tss_dist, gtf_tss_slack,
+                  gtf_tes_dist, gtf_tes_slack,
+                  tss_slack, tes_slack,
+                  verbosity, tmp_dir,
+                  keep_tmp):
+
+    # parse config files and check if the input files exist
+    gtfs, gtf_add_ends, gtf_sources = parse_gtf_config(ref_gtf)
+    tss_beds, tss_add_ends, tss_sources = parse_agg_ends_config(ref_tss)
+    tes_beds, tes_add_ends, tes_sources = parse_agg_ends_config(ref_tes)
+
+    check_files(gtfs+tss_beds, gtf_sources+tss_sources)
+    check_files(gtfs+tes_beds, gtf_sources+tss_sources)
+
+    # make tmp_dir if it doesn't already exist
+    if not os.path.exists(tmp_dir):
+        os.makedirs(tmp_dir)
+
+    # get ends / ics from gtfs
+    gtf_tss_beds = []
+    gtf_tes_beds = []
+    ics = []
+    for gtf, source in zip(gtfs, gtf_sources):
+
+        if verbosity > 0:
+            print('Finding TSSs from {}'.format(source))
+
+        tss_fname = '{}/{}_tss.bed'.format(tmp_dir, source)
+        gtf_to_bed(gtf, 'tss', tss_fname, gtf_tss_dist, gtf_tss_slack)
+
+        if verbosity > 0:
+            print('Finding TSSs from {}'.format(source))
+
+        tes_fname = '{}/{}_tes.bed'.format(tmp_dir, source)
+        gtf_to_bed(gtf, 'tes', tes_fname, gtf_tes_dist, gtf_tes_slack)
+
+        if verbosity > 0:
+            print('Finding intron chains from {}'.format(source))
+
+        ic_fname = '{}/{}_ic.tsv'.format(tmp_dir, source)
+        ic = gtf_to_ics(gtf, ic_fname)
+
+        gtf_tss_beds.append(tss_fname)
+        gtf_tes_beds.append(tes_fname)
+        ics.append(ic_fname)
+
+    # get list of tmp files to (maybe) remove later
+    tmp_files = gtf_tss_beds + gtf_tes_beds + ics
+
+    # aggregate ends
+    tss_beds = gtf_tss_beds + tss_beds
+    tss_add_ends = gtf_add_ends + tss_add_ends
+    tss_sources = gtf_sources + tss_sources
+
+    if verbosity > 0:
+        print('Aggregating TSSs')
+
+    tss = aggregate_ends(tss_beds,
+                         tss_sources,
+                         tss_add_ends,
+                         tss_slack,
+                         'tss')
+
+    tes_beds = gtf_tes_beds + tes_beds
+    tes_add_ends = gtf_add_ends + tes_add_ends
+    tes_sources = gtf_sources + tes_sources
+
+    if verbosity > 0:
+        print('Aggregating TESs')
+
+    tes = aggregate_ends(tes_beds,
+                         tes_sources,
+                         tes_add_ends,
+                         tes_slack,
+                         'tes')
+
+    # aggregate ics
+    if verbosity > 0:
+        print('Aggregating intron chains')
+
+    ics = aggregate_ics(ics, gtf_sources)
+
+    # write h5df
+    write_h5(ics, tss, tes, o)
+
+    # delete tmp files
+    if not keep_tmp:
+        for f in tmp_files:
+            os.remove(f)
+
+def convert_transcriptome(gtf, h5, o):
+    """
+    Create an h5 cerberus transcriptome from a GTF using an existing
+    cerberus annotation
+
+    Parameters:
+        gtf (str): Path to GTF to annotate
+        h5 (str): Path to cerberus annotation in h5 format
+        o (str): Output .h5 file path / name
+    """
+
+    # read in / format existing reference
+    ic, tss, tes, _ = read_h5(h5, as_pyranges=False)
+    ic = split_cerberus_id(ic, 'ic')
+    tss = split_cerberus_id(tss, 'tss')
+    tes = split_cerberus_id(tes, 'tes')
+    tss = pr.PyRanges(tss)
+    tes = pr.PyRanges(tes)
+
+    # read in transcriptome to convert to cerberus
+    gtf_df = pr.read_gtf(gtf).df
+    gtf_df['gene_id'] = gtf_df.gene_id.str.split('.', expand=True)[0]
+    gtf_df = pr.PyRanges(gtf_df)
+
+    df = assign_triplets(gtf_df, tss, ic, tes)
+
+    # write h5 file
+    tss = tss.df
+    tes = tes.df
+    write_h5(ic, tss, tes, o, m=df)
+
+def replace_ab_ids(ab, h5, agg, o):
+    """
+    Replace the transcript ids and transcript names in a TALON abundance file
+    with the new transcript ids that contain the triplet
+
+    Parameters:
+        ab (str): Path to TALON abundance file
+        h5 (str): Path to h5 annotation (output from assign)
+        agg (bool): Aggregate / collapse transcripts with the same triplets
+            and sum up their count values
+
+    Returns:
+        df (pandas DataFrame): TALON abundance file with updated
+            transcript ids / names
+    """
+    df = pd.read_csv(ab, sep='\t')
+    _, _, _, m_df = read_h5(h5)
+
+    df = map_transcripts(df, m_df, 'annot_transcript_name', 'annot_transcript_id')
+
+    # aggregate counts if requested
+    if agg:
+        df = agg_ab(df)
+
+    # reorder columns
+    c1 = get_non_dataset_cols()
+    c2 = get_dataset_cols(df)
+    df = df[c1+c2]
+
+    # write to file
+    df.to_csv(o, sep='\t', index=False)
