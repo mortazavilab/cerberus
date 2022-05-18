@@ -170,7 +170,7 @@ def convert_transcriptome_command(gtf, h5, o):
               help='Output file name',
               required=True)
 def replace_ab_ids_command(h5, ab, collapse, o):
-    replace_ab_ids(h5, ab, collapse, o)
+    replace_ab_ids(ab, h5, collapse, o)
 
 
 # @cli.command()
