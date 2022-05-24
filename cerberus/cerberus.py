@@ -623,10 +623,14 @@ def merge_ends(ends, ref, mode):
 ##### helpers for replace_ab_ids #####
 def map_transcripts(df, m_df, tname, tid):
     """
-    df (pandas DataFrame): DataFrame with transcript ids
-    m_df (pandas DataFrame): Map DataFrame from cerberus reference
-    tname (str): Column name for transcript name in df
-    tid (str): Column name for transcript id in df
+    Parameters:
+        df (pandas DataFrame): DataFrame with transcript ids
+        m_df (pandas DataFrame): Map DataFrame from cerberus reference
+        tname (str): Column name for transcript name in df
+        tid (str): Column name for transcript id in df
+
+    Returns:
+        df (pandas DataFrame): TALON abundance file with tids swapped out
     """
 
     # fix transcript ids in abundance file
@@ -1296,6 +1300,7 @@ def gtf_to_ics(gtf, o):
 def agg_ends(input, mode, slack, o):
     beds, add_ends, sources = parse_agg_ends_config(input)
     bed = aggregate_ends(beds, sources, add_ends, slack, mode)
+    print(bed.loc[bed.Name.str.contains('ENSG00000285976')])
     bed = pr.PyRanges(bed)
     bed.to_bed(o)
 
@@ -1336,7 +1341,7 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
         gtf_to_bed(gtf, 'tss', tss_fname, gtf_tss_dist, gtf_tss_slack)
 
         if verbosity > 0:
-            print('Finding TSSs from {}'.format(source))
+            print('Finding TESs from {}'.format(source))
 
         tes_fname = '{}/{}_tes.bed'.format(tmp_dir, source)
         gtf_to_bed(gtf, 'tes', tes_fname, gtf_tes_dist, gtf_tes_slack)
