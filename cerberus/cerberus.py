@@ -226,6 +226,7 @@ def number_gtf_ends(bed, gtf, mode):
 
     # read gtf with extra tag info
     gr_gtf = get_transcript_ref(gtf)
+    gr_gtf = add_stable_gid(gr_gtf)
     gr_gtf = pr.PyRanges(gr_gtf)
 
     # add a temporary unique identifier for each end
@@ -246,13 +247,15 @@ def number_gtf_ends(bed, gtf, mode):
                how='left',
                slack=0)
     bed = bed.df
+    print('uwu')
+    print(bed.head())
     bed = bed.loc[bed.gene_id == bed.gene_id_b]
     cols = ['Start_b', 'End_b', 'Strand_b', 'gene_id_b']
     bed.drop(cols, axis=1, inplace=True)
 
     # use the tags from the gtf to assign an actual end id
     bed = number_tss_ic_tes(bed, mode=mode)
-    bed['gene_id'] = bed.gene_id.str.split(pat='.', n=1, expand=True)[0]
+    # bed['gene_id'] = bed.gene_id.str.split(pat='.', n=1, expand=True)[0]
     c = '{}_num'.format(mode)
     bed['Name'] = bed.gene_id+'_'+bed[c].astype(str)
     cols = [mode, 'transcript_id', 'MANE_Select',
@@ -481,8 +484,15 @@ def agg_2_ends(bed1, bed2,
 
     # drop duplicates that could have arisen from entries
     # on multiple strands or from multiple subregions in bed2
+    df['n_sources'] = df.source.str.count(pat=',')
+    df.sort_values(by='n_sources', ascending=False)
+    print(len(df.index))
+    df = df.loc[~df[['Chromosome', 'Start', 'End',
+                    'Strand', 'Name', 'gene_id', mode]].duplicated(keep='last')]
+    print(len(df.index))
+    df.drop('n_sources', axis=1, inplace=True)
     df = df.sort_values(by=['Chromosome', 'Start'])
-    df.drop_duplicates(inplace=True)
+    print(df.loc[df.Name == 'ENSG00000002586_1'])
 
     df['id'] = [i for i in range(len(df.index))]
 
@@ -737,6 +747,26 @@ def write_h5_to_tsv(h5, opref):
     m.to_csv(oname, sep='\t', index=False)
 
 ##### readers #####
+
+def add_stable_gid(gtf):
+    """
+    Add stable gene id that accounts for PAR_X and PAR_Y
+    chromosomes to gtf df
+
+    Parameters:
+        gtf (pandas DataFrame): GTF dataframe
+    """
+    try:
+        gtf[['temp', 'par_region_1', 'par_region_2']] = gtf.gene_id.str.split('_', n=2, expand=True)
+        gtf['gene_id'] = gtf.gene_id.str.split('.', expand=True)[0]
+        gtf[['par_region_1', 'par_region_2']] = gtf[['par_region_1',
+                                                           'par_region_2']].fillna('')
+        gtf['gene_id'] = gtf.gene_id+gtf.par_region_1+gtf.par_region_2
+        gtf.drop(['temp', 'par_region_1', 'par_region_2'], axis=1, inplace=True)
+    except:
+        gtf['gene_id'] = gtf.gene_id.str.split('.', expand=True)[0]
+
+    return gtf
 
 def check_files(files, sources):
     """
@@ -1006,8 +1036,13 @@ def get_ends_from_gtf(gtf, mode, dist, slack):
         bed (pyranges PyRanges): PyRanges object containing extended regions
     """
     gr_gtf = pr.read_gtf(gtf)
+
     if 'gene_id' not in gr_gtf.columns:
         raise ValueError('No gene_id field found in {}'.format(gtf))
+    else:
+        gr_gtf = gr_gtf.df
+        gr_gtf = add_stable_gid(gr_gtf)
+        gr_gtf = pr.PyRanges(gr_gtf)
 
     # get and extend ends
     if mode == 'tss':
@@ -1029,6 +1064,8 @@ def get_ends_from_gtf(gtf, mode, dist, slack):
     # add cerberus as the source in thickstart column
     bed = bed.df
     bed['ThickStart'] = 'cerberus'
+    print(bed.columns)
+    print(bed.head())
     bed = pr.PyRanges(bed)
 
     return bed
@@ -1052,6 +1089,9 @@ def get_ics_from_gtf(gtf):
 
     # get unique intron chains from gtf
     df = pr.read_gtf(gtf)
+    df = df.df
+    df = add_stable_gid(df)
+    df = pr.PyRanges(df)
     df = get_ic(df)
 
     # add basic annotation, appris principal number, and gene id
@@ -1067,7 +1107,7 @@ def get_ics_from_gtf(gtf):
     ic = df.copy(deep=True)
     ic.rename({'ic': 'Coordinates'},
                axis=1, inplace=True)
-    ic['gene_id'] = ic.gene_id.str.split('.', n=1, expand=True)[0]
+    # ic['gene_id'] = ic.gene_id.str.split('.', n=1, expand=True)[0]
     ic['Name'] = ic['gene_id']+'_'+ic.ic_num.astype(str)
     # print(ic.loc[ic.transcript_id == 'ENCODEHT000206942'])
 
@@ -1134,6 +1174,9 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
                             strand, gid,
                             slack, add, mode)
             i += 1
+        # print('hewwo?')
+        # df = df.sort_values(by='Name')
+        # print(df.loc[df.Name.duplicated(keep=False)].head())
 
     drop_cols = ['id', mode, 'gene_id']
     df.drop(drop_cols, axis=1, inplace=True)
@@ -1300,9 +1343,8 @@ def gtf_to_ics(gtf, o):
 def agg_ends(input, mode, slack, o):
     beds, add_ends, sources = parse_agg_ends_config(input)
     bed = aggregate_ends(beds, sources, add_ends, slack, mode)
-    print(bed.loc[bed.Name.str.contains('ENSG00000285976')])
     bed = pr.PyRanges(bed)
-    bed.to_bed(o)
+
 
 def agg_ics(input, o):
     ics, sources = parse_agg_ics_config(input)
@@ -1421,7 +1463,10 @@ def convert_transcriptome(gtf, h5, o):
 
     # read in transcriptome to convert to cerberus
     gtf_df = pr.read_gtf(gtf).df
-    gtf_df['gene_id'] = gtf_df.gene_id.str.split('.', expand=True)[0]
+
+    # format gid
+    gtf_df = add_stable_gid(gtf_df)
+
     gtf_df = pr.PyRanges(gtf_df)
 
     df = assign_triplets(gtf_df, tss, ic, tes)

@@ -25,7 +25,7 @@ def cli():
               default=50,
               show_default=True)
 def gtf_to_bed_command(gtf, mode, o, dist=50, slack=50):
-    return gtf_to_bed(gtf, mode, dist, slack)
+    return gtf_to_bed(gtf, mode, o, dist, slack)
 
 @cli.command(name='gtf_to_ics')
 @click.option('--gtf',
