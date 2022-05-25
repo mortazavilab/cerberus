@@ -247,8 +247,6 @@ def number_gtf_ends(bed, gtf, mode):
                how='left',
                slack=0)
     bed = bed.df
-    print('uwu')
-    print(bed.head())
     bed = bed.loc[bed.gene_id == bed.gene_id_b]
     cols = ['Start_b', 'End_b', 'Strand_b', 'gene_id_b']
     bed.drop(cols, axis=1, inplace=True)
@@ -486,13 +484,11 @@ def agg_2_ends(bed1, bed2,
     # on multiple strands or from multiple subregions in bed2
     df['n_sources'] = df.source.str.count(pat=',')
     df.sort_values(by='n_sources', ascending=False)
-    print(len(df.index))
     df = df.loc[~df[['Chromosome', 'Start', 'End',
                     'Strand', 'Name', 'gene_id', mode]].duplicated(keep='last')]
-    print(len(df.index))
     df.drop('n_sources', axis=1, inplace=True)
     df = df.sort_values(by=['Chromosome', 'Start'])
-    print(df.loc[df.Name == 'ENSG00000002586_1'])
+    df = df.sort_values(by='Name')
 
     df['id'] = [i for i in range(len(df.index))]
 
@@ -755,6 +751,10 @@ def add_stable_gid(gtf):
 
     Parameters:
         gtf (pandas DataFrame): GTF dataframe
+
+    Returns:
+        gtf (pandas DataFrame): GTF dataframe with gene id turned into its
+            stable version
     """
     try:
         gtf[['temp', 'par_region_1', 'par_region_2']] = gtf.gene_id.str.split('_', n=2, expand=True)
@@ -1064,8 +1064,6 @@ def get_ends_from_gtf(gtf, mode, dist, slack):
     # add cerberus as the source in thickstart column
     bed = bed.df
     bed['ThickStart'] = 'cerberus'
-    print(bed.columns)
-    print(bed.head())
     bed = pr.PyRanges(bed)
 
     return bed
@@ -1174,9 +1172,6 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
                             strand, gid,
                             slack, add, mode)
             i += 1
-        # print('hewwo?')
-        # df = df.sort_values(by='Name')
-        # print(df.loc[df.Name.duplicated(keep=False)].head())
 
     drop_cols = ['id', mode, 'gene_id']
     df.drop(drop_cols, axis=1, inplace=True)
@@ -1344,7 +1339,7 @@ def agg_ends(input, mode, slack, o):
     beds, add_ends, sources = parse_agg_ends_config(input)
     bed = aggregate_ends(beds, sources, add_ends, slack, mode)
     bed = pr.PyRanges(bed)
-
+    bed.to_bed(o)
 
 def agg_ics(input, o):
     ics, sources = parse_agg_ics_config(input)
