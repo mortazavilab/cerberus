@@ -403,9 +403,7 @@ def agg_2_ends(bed1, bed2,
 
     # format null starts as actual nans b/c of join
     temp_joined = temp_joined.df
-
     temp_joined.sort_values(by=['Chromosome', 'Start', 'End'], inplace=True)
-
     temp_joined.loc[temp_joined.Start_new == -1, 'Start_new'] = np.nan
 
     # df to hold final end annotations
@@ -420,6 +418,15 @@ def agg_2_ends(bed1, bed2,
         temp = temp_joined.loc[~temp_joined.Start_new.isnull()].copy(deep=True)
     temp.source = temp.source+','+temp.source_new
     df = pd.concat([df, temp])
+
+    # create source map for ends from this source
+    m_source = df.loc[df.source_new == source2]
+    m_source = m_source[['Chromosome', 'Start_new', 'End_new', 'Strand',
+                   'source_new', 'Name']].copy(deep=True)
+    m_source.rename({'Start_new': 'Start',
+                     'End_new': 'End',
+                     'source_new': 'source'},
+                     axis=1, inplace=True)
 
     # situation 2: ends are only in the first dataset
     if gid:
@@ -471,6 +478,14 @@ def agg_2_ends(bed1, bed2,
         # finally, concatenate new and old df
         df = pd.concat([df, new_df])
 
+    # drop duplicates that could have arisen from entries
+    # on multiple strands or from multiple subregions in bed2
+    df['n_sources'] = df.source.str.count(pat=',')
+    df.sort_values(by='n_sources', ascending=False)
+    df = df.loc[~df[['Chromosome', 'Start', 'End',
+                    'Strand', 'gene_id']].duplicated(keep='last')]
+    df.drop('n_sources', axis=1, inplace=True)
+
     # drop unnecessary columns and create new names
     # and do some extra formatting
     df.drop('id', axis=1, inplace=True)
@@ -480,19 +495,31 @@ def agg_2_ends(bed1, bed2,
     keep_cols = ['Chromosome', 'Start', 'End', 'Strand', 'Name', 'gene_id', mode, 'source']
     df = df[keep_cols]
 
-    # drop duplicates that could have arisen from entries
-    # on multiple strands or from multiple subregions in bed2
-    df['n_sources'] = df.source.str.count(pat=',')
-    df.sort_values(by='n_sources', ascending=False)
-    df = df.loc[~df[['Chromosome', 'Start', 'End',
-                    'Strand', 'Name', 'gene_id', mode]].duplicated(keep='last')]
-    df.drop('n_sources', axis=1, inplace=True)
     df = df.sort_values(by=['Chromosome', 'Start'])
     df = df.sort_values(by='Name')
 
     df['id'] = [i for i in range(len(df.index))]
 
-    return df
+    # add new ends to source map or ends that weren't added
+    if add_ends:
+        temp = df.loc[df.source == source2].copy(deep=True)
+        temp = temp[['Chromosome', 'Start', 'End', 'Strand', 'source', 'Name']]
+        m_source = pd.concat([m_source, temp])
+    else:
+        merge_cols = ['Chromosome', 'Start', 'End']
+        if strand:
+            merge_cols.append('Strand')
+        temp = bed2.df.copy(deep=True)
+        temp = temp[merge_cols]
+        m_source = m_source.merge(temp, how='outer', on=merge_cols)
+        m_source['source'] = source2
+        # print(len(m_source[merge_cols].drop_duplicates()))
+
+    # update dtypes
+    m_source['Start'] = m_source.Start.astype('int')
+    m_source['End'] = m_source.End.astype('int')
+
+    return df, m_source
 
 def agg_2_ics(ic1, ic2):
     """
@@ -778,10 +805,11 @@ def check_files(files, sources):
         files (list of str): List of file paths
         sources (list of str): List of sources
     """
+    print(files)
 
     for f in files:
         if not os.path.exists(f):
-            raise Exception('File {} does not exist'.format(bed))
+            raise Exception('File {} does not exist'.format(f))
 
     if len(set(sources)) < len(sources):
         raise Exception('Sources must be unique')
@@ -1132,6 +1160,8 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
     Returns:
         df (pandas DataFrame): DataFrame of regions from
             aggregated bed files
+        source_map (pandas DataFrame): Map ends from each source and which
+            cereberus end it was mapped to
     """
 
     df = pd.DataFrame()
@@ -1156,6 +1186,10 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
 
             df = bed.df
 
+            # source map
+            m_source = df[['Chromosome', 'Start', 'End', 'Strand',
+                           'source', 'Name']].copy(deep=True)
+
         # more than one bed; merge and reconcile ends
         else:
 
@@ -1168,9 +1202,12 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
             # able to merge on
             bed, gid, strand = format_agg_2_ends_bed(bed, mode)
             df = pr.PyRanges(df)
-            df = agg_2_ends(df, bed,
+            df, temp = agg_2_ends(df, bed,
                             strand, gid,
                             slack, add, mode)
+
+            # update source map
+            m_source = pd.concat([m_source, temp])
             i += 1
 
     drop_cols = ['id', mode, 'gene_id']
