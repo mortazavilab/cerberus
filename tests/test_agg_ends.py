@@ -109,6 +109,41 @@ def test_agg_2_ends_1(print_dfs=True):
 
         return df
 
+    def get_ctrl_source_map(add=True):
+        # n = 9
+        # c = ['1' for i in range(n)]
+        # s = ['+' for i in range(n)]
+        # st = [1, 200, 100, 300,  5, 20, 120, 500, 200]
+        # e = [15, 250, 110, 340,  10, 25, 140, 550, 250]
+        # n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene1_4',
+        #      'gene1_1', 'gene1_1', 'gene1_3', 'gene1_5', 'gene2_1']
+        # source = ['v1' for i in range(4)]+['v2' for i in range(5)]
+        # mode = 'tss'
+        # df = make_end_df(c,s,st,e,n, source,mode)
+        # df = df.loc[df.source == 'v2']
+        # df.drop(['gene_id', mode, 'id'], axis=1, inplace=True)
+
+        n = 5
+        c = ['1' for i in range(n)]
+        s = ['+' for i in range(n)]
+        st = [5, 20, 120, 500, 200]
+        e = [10, 25, 140, 550, 250]
+        n = ['gene1_1', 'gene1_1', 'gene1_3', 'gene1_5', 'gene2_1']
+        source = 'v2'
+        mode = 'tss'
+        df = make_end_df(c,s,st,e,n, source,mode)
+        df = df.loc[df.source == 'v2']
+        df.drop(['gene_id', mode, 'id'], axis=1, inplace=True)
+        df['Strand'] = df['Strand'].astype('category')
+        df['Chromosome'] = df['Chromosome'].astype('category')
+
+        if not add:
+            new_names = ['gene2_1', 'gene1_5']
+            new_inds = df.loc[df.Name.isin(new_names)].index
+            df.loc[new_inds, 'Name'] = np.nan
+
+        return df
+
     tests = [True, False]
     for add_ends in tests:
 
@@ -118,7 +153,8 @@ def test_agg_2_ends_1(print_dfs=True):
         order = ['Chromosome', 'Start', 'End', 'Strand', 'Name',
                  'gene_id', 'source', mode]
         bed1, bed2 = get_test()
-        df = agg_2_ends(bed1, bed2,
+
+        df, m_source = agg_2_ends(bed1, bed2,
                         strand=True,
                         gid=True,
                         slack=slack,
@@ -126,7 +162,9 @@ def test_agg_2_ends_1(print_dfs=True):
                         mode=mode)
 
         test = format_end_df(df)
+        test_m = format_end_df(m_source)
         ctrl = get_ctrl(add=add_ends)
+        ctrl_m = get_ctrl_source_map(add=add_ends)
 
         if print_dfs:
             print('test')
@@ -137,10 +175,20 @@ def test_agg_2_ends_1(print_dfs=True):
             print(ctrl)
             print(ctrl.index)
             print(ctrl.dtypes)
+            print('test source map')
+            print(test_m)
+            print(test_m.index)
+            print(test_m.dtypes)
+            print('ctrl source map')
+            print(ctrl_m)
+            print(ctrl_m.index)
+            print(ctrl_m.dtypes)
 
         pd.testing.assert_frame_equal(ctrl, test, check_like=True)
-
         assert len(ctrl.index) == len(test.index)
+
+        pd.testing.assert_frame_equal(ctrl_m, test_m, check_like=True)
+        assert len(ctrl_m.index) == len(test_m.index)
 
 def test_agg_2_ends_2(print_dfs=True):
     """
@@ -211,6 +259,26 @@ def test_agg_2_ends_2(print_dfs=True):
 
         return df
 
+    def get_ctrl_source_map(add=False):
+
+        n = 7
+        c = ['1' for i in range(n)]
+        s = ['+' for i in range(n)]
+        s[-2] = '-'
+        s[-1] = np.nan
+        st = [5, 11, 120, 200, 200, 200, 500]
+        e = [10, 21, 140, 250, 250, 250, 550]
+        n = ['gene1_1', 'gene1_1', 'gene1_3', 'gene1_2', 'gene2_1', 'gene3_1', np.nan]
+        source = 'v2'
+        mode = 'tss'
+        df = make_end_df(c,s,st,e,n, source,mode)
+        df = df.loc[df.source == 'v2']
+        df.drop(['gene_id', mode, 'id'], axis=1, inplace=True)
+        df['Strand'] = df['Strand'].astype('category')
+        df['Chromosome'] = df['Chromosome'].astype('category')
+
+        return df
+
     strand = False
     gid = False
     add_ends = False
@@ -221,14 +289,16 @@ def test_agg_2_ends_2(print_dfs=True):
     order = ['Chromosome', 'Start', 'End', 'Strand', 'Name',
              'gene_id', 'source', mode]
     bed1, bed2 = get_test()
-    df = agg_2_ends(bed1, bed2,
+    df, m_source = agg_2_ends(bed1, bed2,
                     strand=strand,
                     gid=gid,
                     slack=slack,
                     add_ends=add_ends,
                     mode=mode)
     test = format_end_df(df)
+    test_m = format_end_df(m_source)
     ctrl = get_ctrl(add=add_ends)
+    ctrl_m = get_ctrl_source_map()
 
     if print_dfs:
         print('test')
@@ -239,6 +309,17 @@ def test_agg_2_ends_2(print_dfs=True):
         print(ctrl)
         print(ctrl.index)
         print(ctrl.dtypes)
+        print('test source map')
+        print(test_m)
+        print(test_m.index)
+        print(test_m.dtypes)
+        print('ctrl source map')
+        print(ctrl_m)
+        print(ctrl_m.index)
+        print(ctrl_m.dtypes)
 
     pd.testing.assert_frame_equal(ctrl, test, check_like=True)
     assert len(ctrl.index) == len(test.index)
+
+    pd.testing.assert_frame_equal(ctrl_m, test_m, check_like=True)
+    assert len(ctrl_m.index) == len(test_m.index)
