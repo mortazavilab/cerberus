@@ -355,6 +355,18 @@ def format_agg_2_ends_bed(bed, mode):
 
     return bed, gid, strand
 
+def get_source_map_fname(o):
+    """
+    Generate file name to match output bed file from `agg_ends`.
+
+    Parameters:
+        o (str): File name
+
+    Returns:
+        o (str): File name using suffix '_source_map.bed'
+    """
+    return ''.join(os.path.splitext(o)[:-1])+'_source_map.bed'
+
 def agg_2_ends(bed1, bed2,
                strand,
                gid,
@@ -726,7 +738,10 @@ def agg_ab(df):
 
 ##### writers #####
 
-def write_h5(ic, tss, tes, oname, m=None):
+def write_h5(ic, tss, tes, oname,
+             tss_map=None,
+             tes_map=None,
+             m=None):
     """
     Write a cerberus transcriptome as an h5df file
 
@@ -735,11 +750,23 @@ def write_h5(ic, tss, tes, oname, m=None):
         tss (pandas DataFrame): DataFrame in bed format of tsss
         tes (pandas DataFrame): DataFrame in bed format of tess
         oname (str): Output file name ending in '.h5'
+        tss_map (pandas DataFrame): DataFrame in bed format of map from
+            each input tss to which cerberus tss it was assigned to
+        tes_map (pandas DataFrame): DataFrame in bed format of map from
+            each input tes to which cerberus tes it was assigned to
         m (pandas DataFrame): DataFrame of map file
     """
     ic.to_hdf(oname, 'ic', mode='w')
     tss.to_hdf(oname, 'tss', mode='a', format='table')
     tes.to_hdf(oname, 'tes', mode='a', format='table')
+
+    if not isinstance(tss_map, pd.DataFrame):
+        tss_map = pd.DataFrame()
+    tss_map.to_hdf(oname, 'tss_map', mode='a', format='table')
+
+    if not isinstance(tes_map, pd.DataFrame):
+        tes_map = pd.DataFrame()
+    tes_map.to_hdf(oname, 'tes_map', mode='a', format='table')
 
     if not isinstance(m, pd.DataFrame):
         m = pd.DataFrame()
@@ -755,7 +782,7 @@ def write_h5_to_tsv(h5, opref):
         opref (str): Output file path / prefix to give
             each of the output files
     """
-    ic, tss, tes, m = read_h5(h5)
+    ic, tss, tes, tes_map, tss_map, m = read_h5(h5, as_pyranges=True)
 
     oname = '{}_ic.tsv'.format(opref)
     ic.to_csv(oname, sep='\t', index=False)
@@ -765,6 +792,12 @@ def write_h5_to_tsv(h5, opref):
 
     oname = '{}_tes.bed'.format(opref)
     tes.to_bed(oname)
+
+    oname = '{}_tss_map.bed'.format(opref)
+    tss_map.to_bed(oname)
+
+    oname = '{}_tes_map.bed'.format(opref)
+    tes_map.to_bed(oname)
 
     oname = '{}_map.tsv'.format(opref)
     m.to_csv(oname, sep='\t', index=False)
@@ -848,22 +881,35 @@ def read_h5(h5, as_pyranges=True):
         ic (pandas DataFrame): Table detailing intron chains
         tss (pyranges PyRanges / pandas DataFrame): Bed representation of tss regions
         tes (pyranges PyRanges / pandas DataFrame): Bed represenation of tes regions
+        tss_map (pyranges PyRanges / pandas DataFrame): Bed representation of
+            all input tsss and which cerberus end they were assigned to
+        tes_map (pyranges PyRanges / pandas DataFrame): Bed representation of
+            all input tess and which cerberus end they were assigned to
         m (pandas DataFrame): Map of transcript id to tss / ic / tes
     """
 
     ic = pd.read_hdf(h5, key='ic')
     tss = pd.read_hdf(h5, key='tss')
     tes = pd.read_hdf(h5, key='tes')
-    try:
-        m = pd.read_hdf(h5, key='map')
-    except:
-        m = None
+
+    def read_empty_h5(h5, key, as_pyranges=False):
+        try:
+            df = pd.read_hdf(h5, key=key)
+            if as_pyranges:
+                df = pr.PyRanges(df)
+        except:
+            df = None
+        return df
+
+    m = read_empty_h5(h5, 'map', as_pyranges=False)
+    tss_map = read_empty_h5(h5, 'tss_map', as_pyranges=as_pyranges)
+    tes_map = read_empty_h5(h5, 'tes_map', as_pyranges=as_pyranges)
 
     if as_pyranges:
         tss = pr.PyRanges(tss)
         tes = pr.PyRanges(tes)
 
-    return ic, tss, tes, m
+    return ic, tss, tes, tss_map, tes_map, m
 
 def get_transcript_ref(fname):
     """
@@ -940,6 +986,11 @@ def read_ic_ref(ic_file, add_gid=True, add_num=True):
         drop_cols.append('ic')
     df.drop(drop_cols, axis=1, inplace=True)
 
+    order = ['Chromosome', 'Strand', 'Coordinates',
+             'Name', 'source', 'gene_id', 'ic']
+    order = [o for o in order if o in df.columns]
+    df = df[order]
+
     return df
 
 def read_cerberus_ends(bed_file, mode,
@@ -969,8 +1020,32 @@ def read_cerberus_ends(bed_file, mode,
         drop_cols.append(mode)
     df.drop(drop_cols, axis=1, inplace=True)
 
-    # remove cerberus classification in ThickStart
-    df.drop('ThickStart', axis=1, inplace=True)
+    df.rename({'ThickStart': 'source'}, axis=1, inplace=True)
+
+    order = ['Chromosome', 'Start', 'End', 'Strand',
+             'Name', 'source', 'gene_id', mode]
+    order = [o for o in order if o in df.columns]
+    df = df[order]
+
+    return df
+
+def read_cerberus_source_map(fname):
+    """
+    Read a source map file output from `agg_ends`
+
+    Parameters:
+        fname (str): Name of source map file
+
+    Returns:
+        df (pandas DataFrame): DF bed representation of source map
+    """
+    df = pr.read_bed(fname).df
+    df.rename({'ThickStart': 'source'}, axis=1, inplace=True)
+
+    order = ['Chromosome', 'Start', 'End',
+             'Strand', 'source', 'Name']
+    order = [o for o in order if o in df.columns]
+    df = df[order]
 
     return df
 
@@ -1212,7 +1287,7 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
 
     drop_cols = ['id', mode, 'gene_id']
     df.drop(drop_cols, axis=1, inplace=True)
-    return df
+    return df, m_source
 
 def aggregate_ics(ics, sources):
     """
@@ -1374,14 +1449,39 @@ def gtf_to_ics(gtf, o):
 
 def agg_ends(input, mode, slack, o):
     beds, add_ends, sources = parse_agg_ends_config(input)
-    bed = aggregate_ends(beds, sources, add_ends, slack, mode)
+    bed, source_map = aggregate_ends(beds, sources, add_ends, slack, mode)
     bed = pr.PyRanges(bed)
+    source_map = pr.PyRanges(source_map)
     bed.to_bed(o)
+    o2 = get_source_map_fname(o)
+    source_map.to_bed(o2)
 
 def agg_ics(input, o):
     ics, sources = parse_agg_ics_config(input)
     ic = aggregate_ics(ics, sources)
     ic.to_csv(o, sep='\t', index=False)
+
+def write_reference(tss_fname, tes_fname, ic_fname, o):
+    def open_source_map(fname):
+        try:
+            map_fname = get_source_map_fname(fname)
+            df = read_cerberus_source_map(map_fname)
+        except:
+            raise Warning('Could not find matching source map file for {} '.format(fname),
+                          'Resulting entry in reference will be empty.')
+            return None
+        return df
+
+    ic = read_ic_ref(ic_fname)
+    tss = read_cerberus_ends(tss_fname, mode='tss')
+    tes = read_cerberus_ends(tes_fname, mode='tes')
+
+    tss_map = open_source_map(tss_fname)
+    tes_map = open_source_map(tes_fname)
+
+    write_h5(ic, tss, tes, o,
+             tss_map=tss_map,
+             tes_map=tes_map)
 
 def gen_reference(ref_gtf, o, ref_tss, ref_tes,
                   gtf_tss_dist, gtf_tss_slack,
@@ -1441,11 +1541,11 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
     if verbosity > 0:
         print('Aggregating TSSs')
 
-    tss = aggregate_ends(tss_beds,
-                         tss_sources,
-                         tss_add_ends,
-                         tss_slack,
-                         'tss')
+    tss, tss_map = aggregate_ends(tss_beds,
+                                  tss_sources,
+                                  tss_add_ends,
+                                  tss_slack,
+                                  'tss')
 
     tes_beds = gtf_tes_beds + tes_beds
     tes_add_ends = gtf_add_ends + tes_add_ends
@@ -1454,11 +1554,11 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
     if verbosity > 0:
         print('Aggregating TESs')
 
-    tes = aggregate_ends(tes_beds,
-                         tes_sources,
-                         tes_add_ends,
-                         tes_slack,
-                         'tes')
+    tes, tes_map = aggregate_ends(tes_beds,
+                                  tes_sources,
+                                  tes_add_ends,
+                                  tes_slack,
+                                  'tes')
 
     # aggregate ics
     if verbosity > 0:
@@ -1467,7 +1567,9 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
     ics = aggregate_ics(ics, gtf_sources)
 
     # write h5df
-    write_h5(ics, tss, tes, o)
+    write_h5(ics, tss, tes, o,
+             tss_map=tss_map,
+             tes_map=tes_map)
 
     # delete tmp files
     if not keep_tmp:
@@ -1486,7 +1588,7 @@ def convert_transcriptome(gtf, h5, o):
     """
 
     # read in / format existing reference
-    ic, tss, tes, _ = read_h5(h5, as_pyranges=False)
+    ic, tss, tes, tss_map, tes_map, _ = read_h5(h5, as_pyranges=False)
     ic = split_cerberus_id(ic, 'ic')
     tss = split_cerberus_id(tss, 'tss')
     tes = split_cerberus_id(tes, 'tes')
@@ -1506,7 +1608,10 @@ def convert_transcriptome(gtf, h5, o):
     # write h5 file
     tss = tss.df
     tes = tes.df
-    write_h5(ic, tss, tes, o, m=df)
+    write_h5(ic, tss, tes, o,
+        tss_map=tss_map,
+        tes_map=tes_map,
+        m=df)
 
 def replace_ab_ids(ab, h5, agg, o):
     """
@@ -1524,7 +1629,7 @@ def replace_ab_ids(ab, h5, agg, o):
             transcript ids / names
     """
     df = pd.read_csv(ab, sep='\t')
-    _, _, _, m_df = read_h5(h5)
+    _, _, _, m_df, _, _ = read_h5(h5)
 
     df = map_transcripts(df, m_df, 'annot_transcript_name', 'annot_transcript_id')
 

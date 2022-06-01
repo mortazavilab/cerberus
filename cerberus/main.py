@@ -66,6 +66,22 @@ def agg_ends_command(input, mode, slack, o):
 def agg_ics_command(input, o):
     return agg_ics(input, o)
 
+# turn output from agg_ends and agg_ics into a cerberus ref
+@cli.command(name='write_reference')
+@click.option('--tss',
+              help='TSS bed file output from `agg_ends`',
+              required=True)
+@click.option('--tes',
+              help='TES bed file output from `agg_ends`',
+              required=True)
+@click.option('--ics',
+              help='IC tsv file output from `agg_ics`',
+              required=True)
+@click.option('-o',
+              help='Output .h5 file name')
+def write_reference_command(tss, tes, ics, o):
+    write_reference(tss, tes, ics, o)
+
 # wrapper to create a reference
 @cli.command(name='gen_reference')
 @click.option('--ref_gtf',
