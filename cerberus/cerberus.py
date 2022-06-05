@@ -736,6 +736,235 @@ def agg_ab(df):
 
     return df
 
+##### helpers for replace_gtf_ids #####
+def get_stranded_gtf_dfs(df):
+    """
+    Split a GTF df into fwd and rev strands
+
+    Parameters:
+        df (pandas DataFrame): DF of gtf
+    
+    Returns:
+        fwd (pandas DataFrame): DF of all forward-stranded entries from GTF
+        rev (pandas DataFrame): DF of all reverse-stranded entries from GTF
+    """
+    rev = df.loc[df.Strand == '-'].copy(deep=True)
+    fwd = df.loc[df.Strand == '+'].copy(deep=True)
+
+    return fwd, rev
+
+def sort_gtf(df):
+    """
+    Sort a GTF into its proper ordering
+
+    Parameters:
+        df (pandas DataFrame): DF of GTF
+
+    Returns:
+        df (pandas DataFrame): DF of GTF, sorted
+    """
+    df['feature_rank'] = df.Feature.map({'gene':0, 'transcript':1, 'exon':2})
+    df.feature_rank = df.feature_rank.astype(int)
+
+    fwd, rev = get_stranded_gtf_dfs(df)
+
+    df = pd.DataFrame()
+    for temp in [fwd, rev]:
+        if len(temp.index) > 0:
+            strand = temp.Strand.values.tolist()[0]
+            if strand == '+':
+                ascending = True
+            elif strand == '-':
+                ascending = False
+            temp.sort_values(by=['gene_id', 'transcript_id', 'feature_rank', 'Start'],
+                             ascending=[True, True, True, ascending],
+                             na_position='first', inplace=True)
+
+            df = pd.concat([df, temp], ignore_index=True)
+    df.drop('feature_rank', axis=1, inplace=True)
+    return df
+
+def get_update_ends_settings(strand, mode):
+    """
+    Returns which columns to refer to and which min/max function
+    to use depending on looking at forward / rev strand or
+    tss / tes
+
+    Parameters:
+        strand (str): {'+', '-'}
+        mode (str): {'tss', 'tes'}
+
+    Returns:
+        old_end (str): Name of column to modify; {'Start', 'End'}
+        new_end (str): Name of column to pull new value from; {'Start_end', 'End_end'}
+        gene_func (str): What function to apply to new_end; {'min', 'max'}
+    """
+    if mode == 'tss':
+        if strand == '+':
+            old_end = 'Start'
+            new_end = 'Start_end'
+            gene_func = 'min'
+        elif strand == '-':
+            old_end = 'End'
+            new_end = 'End_end'
+            gene_func = 'max'
+    elif mode == 'tes':
+        if strand == '+':
+            old_end = 'End'
+            new_end = 'End_end'
+            gene_func = 'max'
+        elif strand == '-':
+            old_end = 'Start'
+            new_end  = 'Start_end'
+            gene_func = 'min'
+
+    return old_end, new_end, gene_func
+
+def update_transcript_ends(df, mode, strand):
+    """
+    Update the ends of transcripts and the first / last exon
+    in a GTF. GTF must be sorted!
+
+    Parameters:
+        df (pandas DataFrame): Sorted DF of GTF with 'Start_end', and 'End_end'
+            columns denoting the boundaries of each end region
+        mode (str): {'tss', 'tes'}
+        strand (str): {'+', '-'}
+
+    Returns:
+        df (pandas DataFrame): DF of GTF with transcript and
+            exon ends modified
+    """
+    old_col, new_col, gene_func = get_update_ends_settings(strand, mode)
+
+    temp = df[['Feature', 'gene_id', 'transcript_id', 'Strand', 'Start', 'End', 'Start_end', 'End_end']].copy(deep=True)
+    temp = temp.loc[temp.Feature != 'gene']
+    if mode == 'tss':
+        inds = temp.groupby('transcript_id').head(2).index.tolist()
+    elif mode == 'tes':
+        inds = temp.groupby('transcript_id').head(1).index.tolist()
+        inds += temp.groupby('transcript_id').tail(1).index.tolist()
+
+    df.loc[inds, old_col] = df.loc[inds, new_col]
+
+    # convert float dtypes
+    df.Start = df.Start.astype(int)
+    df.End = df.End.astype(int)
+
+    return df
+
+def update_gene_ends(df, mode, strand):
+    """
+    Update the ends of genes in a GTF.
+
+    Parameters:
+        df (pandas DataFrame): GTF dataframe
+        mode (str): {'tss', 'tes'}
+        strand (str): {'+', '-'}
+
+    Returns:
+        df (pandas DataFrame): DataFrame of GTF with gene ends updated
+    """
+    # determine which ends we're updating and how we're doing so
+    old_col, new_col, gene_func = get_update_ends_settings(strand, mode)
+
+    # get min or max of transcript ends depending on settings
+    temp = df[['Feature', 'gene_id', old_col]].copy(deep=True)
+    temp = temp.loc[temp.Feature == 'transcript']
+    temp = temp.groupby(['gene_id', 'Feature'], observed=True).agg(gene_func).reset_index()
+    temp.drop('Feature', axis=1, inplace=True)
+
+    # add that coord to gene end
+    df = df.merge(temp, on='gene_id', suffixes=('', '_gene'))
+    inds = df.loc[df.Feature == 'gene'].index.tolist()
+    df.loc[inds, old_col] = df.loc[inds, '{}_gene'.format(old_col)]
+    df.drop('{}_gene'.format(old_col), axis=1, inplace=True)
+
+    return df
+
+def update_gtf_ends(gtf, tss, tes):
+    """
+    Update gene, transcript, and exon boundaries to be
+    furthest upstream or downstream entry for end used
+
+    Parameters:
+        gtf (pandas DataFrame): DF of GTF
+        tss (pyranges PyRanges): PyRanges object of reference TSSs
+        tes (pyranges PyRanges): PyRanges object of reference TESs
+
+    Returns:
+        gtf (pandas DataFrame): DF of GTF with updated ends
+            based on the TSSs and TESs used in the input beds
+    """
+    gtf = gtf.copy(deep=True)
+
+    for mode, ends in zip(['tss', 'tes'], [tss, tes]):
+        ends = ends.df
+        ends = ends[['Start', 'End', '{}_id'.format(mode)]]
+        gtf = gtf.merge(ends, how='left',
+                        on='{}_id'.format(mode),
+                        suffixes=('', '_end'))
+
+        fwd, rev = get_stranded_gtf_dfs(gtf)
+        df = pd.DataFrame()
+        for strand, temp in zip(['+', '-'], [fwd, rev]):
+
+            # fix exon, transcript, and gene boundaries
+            temp = update_transcript_ends(temp, mode, strand)
+            temp = update_gene_ends(temp, mode, strand)
+            df = pd.concat([df, temp], ignore_index=True)
+
+        gtf = df.copy(deep=True)
+        gtf.drop(['Start_end', 'End_end'], axis=1, inplace=True)
+
+    return gtf
+
+def agg_gtf(df):
+    """
+    Deduplicate GTF transcripts that have the same triplet id
+
+    Parameters:
+        df (pandas DataFrame): DF of gtf from `update_ends`
+
+    Returns:
+        df (pandas DataFrame): DF of gtf with deduplicated
+            transcript / exon entries based on the triplet id
+    """
+
+    def collapse_non_gb_col(x):
+        x = x.astype(str)
+        x = x.unique().tolist()
+        x = ','.join(x)
+        return(x)
+
+    gb_cols = ['Chromosome',
+                 'Feature',
+                 'Start', 'End',
+                 'Score', 'Strand', 'Frame', 'gene_id', 'gene_name',
+                 'gene_status', 'gene_type', 'talon_gene',
+                 'ic', 'ic_id', 'tss_id', 'tss', 'tes_id', 'tes', 'transcript_id',
+                 'transcript_name']
+    gb_cols = list(set(df.columns)&set(gb_cols))
+
+    # get collapsed features to add to deduplicated df
+    t_df = df.loc[df.Feature == 'transcript'].copy(deep=True)
+    non_gb_cols = list(set(t_df.columns.tolist())-set(gb_cols))
+    t_df[non_gb_cols].fillna('', inplace=True)
+    t_df = t_df.groupby(gb_cols, observed=True)[non_gb_cols].agg(collapse_non_gb_col).reset_index()
+    t_df = t_df[['transcript_id']+non_gb_cols]
+    collapsed_feats = t_df.copy(deep=True)
+
+    # deduplicate df based only on transcript id
+    temp = df[['transcript_id', 'original_transcript_id']].drop_duplicates()
+    dupe_old_tids = temp.loc[temp.transcript_id.duplicated(keep='first'), 'original_transcript_id']
+    df = df.loc[~df.original_transcript_id.isin(dupe_old_tids)]
+
+    # replace the non gb columns with the ones that we already grouped
+    df.drop(non_gb_cols, axis=1, inplace=True)
+    df = df.merge(collapsed_feats, how='left', on='transcript_id')
+
+    return df
+
 ##### writers #####
 
 def write_h5(ic, tss, tes, oname,
@@ -1644,3 +1873,65 @@ def replace_ab_ids(ab, h5, agg, o):
 
     # write to file
     df.to_csv(o, sep='\t', index=False)
+
+def replace_gtf_ids(h5, gtf, update_ends, agg, o):
+    """
+    Replace transcript ids in a gtf with the new cerberus ends.
+    Optionally update the end coordinates of each transcript
+    based on tss / tes regions and aggregate transcripts
+    that use the same triplets.
+
+    Parameters:
+        h5 (str): Path to cerberus h5 file output from `convert_transcriptome`
+        gtf (str): Path to GTF file to update
+        update_ends (bool): Update the ends of each transcript based on regions
+            in h5 tss / tes file
+        agg (bool): Collapse transcripts with the same triplet and only report one
+        o (str): Path to output file
+    """
+
+    if agg:
+        if not update_ends:
+            raise ValueError('Must update ends to aggregate transcripts')
+
+    df = pr.read_gtf(gtf).df
+    entry_types = ['gene', 'transcript', 'exon']
+    df = df.loc[df.Feature.isin(entry_types)]
+    df = sort_gtf(df)
+
+    if not update_ends:
+        _, _, _, _, _, m_df = read_h5(h5)
+    else:
+        _, tss, tes, _, _, m_df = read_h5(h5)
+        tss = tss.df
+        tes = tes.df
+        tss['tss_id'] = tss.gene_id+'_'+tss.tss.astype(str)
+        tes['tes_id'] = tes.gene_id+'_'+tes.tes.astype(str)
+        tss = pr.PyRanges(tss)
+        tes = pr.PyRanges(tes)
+
+
+    m_df.drop(['transcript_triplet',
+               'gene_name', 'gene_id'], axis=1, inplace=True)
+
+    df = df.merge(m_df, how='left',
+                    left_on=['transcript_name', 'transcript_id'],
+                    right_on=['original_transcript_name', 'original_transcript_id'],
+                    suffixes=('', '_cerberus'))
+
+    # update the ends of each transcript based on the end it was assigned to
+    if update_ends:
+        df = update_gtf_ends(df, tss, tes)
+
+    # deduplicate transcripts with the same triplets
+    if agg:
+        gtf = agg_gtf(gtf)
+
+    df.drop(['transcript_id', 'transcript_name'], axis=1, inplace=True)
+    df.rename({'transcript_id_cerberus': 'transcript_id',
+                'transcript_name_cerberus': 'transcript_name'},
+               axis=1, inplace=True)
+
+    # write gtf
+    df = pr.PyRanges(df)
+    df.to_gtf(o)

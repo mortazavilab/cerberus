@@ -169,7 +169,7 @@ def convert_transcriptome_command(gtf, h5, o):
     convert_transcriptome(gtf, h5, o)
 
 ###### replace transcript ids of an annotated transcriptome
-###### with cerberus triplet ids
+###### with cerberus triplet ids in abundance file
 @cli.command(name='replace_ab_ids')
 @click.option('--h5',
               help='cerberus reference from gen_reference',
@@ -188,35 +188,31 @@ def convert_transcriptome_command(gtf, h5, o):
 def replace_ab_ids_command(h5, ab, collapse, o):
     replace_ab_ids(ab, h5, collapse, o)
 
+###### replace transcript ids of an annotated transcriptome
+###### with cerberus triplet ids in gtf
+@cli.command(name='replace_gtf_ids')
+@click.option('--h5',
+              help='cerberus reference from gen_reference',
+              required=True)
+@click.option('--gtf',
+              help='GTF file to replace ids in',
+              required=True)
+@click.option('--update_ends',
+              help='Update ends of transcripts with ends from h5',
+              is_flag=True,
+              required=False,
+              default=False)
+@click.option('--collapse',
+              help='collapse transcripts with the same triplets',
+              is_flag=True,
+              required=False,
+              default=False)
+@click.option('-o',
+              help='Output GTF file name',
+              required=True)
+def replace_gtf_ids_command(h5, gtf, update_ends, collapse, o):
+    replace_gtf_ids(h5, gtf, update_ends, collapse, o)
 
-# @cli.command()
-# @click.option('--h5',
-#               help='h5 file output from assign-triplets')
-# @click.option('--gtf',
-#               help='GTF of isoforms',
-#               required=False,
-#               default=None)
-# @click.option('--ab',
-#               help='TALON abundance file',
-#               required=False,
-#               default=None)
-# @click.option('--collapse',
-#               help='collapse transcripts with the same triplets',
-#               is_flag=True,
-#               required=False,
-#               default=False)
-# @click.option('--opref',
-#               help='Output file prefix to save updated gtf / ab',
-#               required=True)
-# def replace_ids(h5, gtf, ab, collapse, opref):
-#     if gtf:
-#         df = replace_gtf_ids(gtf, h5, collapse)
-#         oname = '{}.gtf'.format(opref)
-#         df.to_gtf(oname)
-#     if ab:
-#         df = replace_ab_ids(ab, h5, collapse)
-#         oname = '{}.tsv'.format(opref)
-#         df.to_csv(oname, index=False, sep='\t')
 #
 # @cli.command(name='h5_to_tsv')
 # @click.option('--h5',
