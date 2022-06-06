@@ -932,9 +932,12 @@ def agg_gtf(df):
     """
 
     def collapse_non_gb_col(x):
+        x = x.fillna('')
         x = x.astype(str)
         x = x.unique().tolist()
         x = ','.join(x)
+        if x == '':
+            x = np.nan
         return(x)
 
     gb_cols = ['Chromosome',
@@ -946,11 +949,17 @@ def agg_gtf(df):
                  'transcript_name']
     gb_cols = list(set(df.columns)&set(gb_cols))
 
+    # get dictionary:function mapping for aggregation
+    agg_cols = list(set(df.columns)-set(gb_cols))
+    agg_dict = dict()
+    for c in agg_cols:
+        agg_dict[c] = collapse_non_gb_col
+
     # get collapsed features to add to deduplicated df
     t_df = df.loc[df.Feature == 'transcript'].copy(deep=True)
     non_gb_cols = list(set(t_df.columns.tolist())-set(gb_cols))
     t_df[non_gb_cols].fillna('', inplace=True)
-    t_df = t_df.groupby(gb_cols, observed=True)[non_gb_cols].agg(collapse_non_gb_col).reset_index()
+    t_df = t_df.groupby(gb_cols, observed=True).agg(agg_dict).reset_index()
     t_df = t_df[['transcript_id']+non_gb_cols]
     collapsed_feats = t_df.copy(deep=True)
 
@@ -1857,9 +1866,9 @@ def replace_gtf_ids(h5, gtf, update_ends, agg, o):
         tes = pr.PyRanges(tes)
 
 
+    print('Adding cerberus transcript ids...')
     m_df.drop(['transcript_triplet',
                'gene_name', 'gene_id'], axis=1, inplace=True)
-
     df = df.merge(m_df, how='left',
                     left_on=['transcript_name', 'transcript_id'],
                     right_on=['original_transcript_name', 'original_transcript_id'],
@@ -1867,10 +1876,12 @@ def replace_gtf_ids(h5, gtf, update_ends, agg, o):
 
     # update the ends of each transcript based on the end it was assigned to
     if update_ends:
+        print('Updating ends of transcripts...')
         df = update_gtf_ends(df, tss, tes)
 
     # deduplicate transcripts with the same triplets
     if agg:
+        print('Deduplicating transcripts...')
         df = agg_gtf(df)
 
     df.drop(['transcript_id', 'transcript_name'], axis=1, inplace=True)
