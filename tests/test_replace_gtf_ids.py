@@ -371,6 +371,10 @@ def test_update_gtf_ends(print_dfs=True):
     tes = pr.PyRanges(tes)
 
     test_df = make_test_gtf(ts)
+    test_df.rename({'transcript_id': 'original_transcript_id',
+                    'transcript_name': 'original_transcript_name'},
+                    axis=1, inplace=True)
+    # pdb.set_trace()
     # test_df = pr.PyRanges(test_df)
 
     test = update_gtf_ends(test_df, tss, tes)
@@ -452,6 +456,10 @@ def test_update_gtf_ends(print_dfs=True):
     ts.append(df)
 
     ctrl = make_test_gtf(ts)
+    ctrl = make_test_gtf(ts)
+    ctrl.rename({'transcript_id': 'original_transcript_id',
+                    'transcript_name': 'original_transcript_name'},
+                    axis=1, inplace=True)
     ctrl.reset_index(inplace=True, drop=True)
     test.reset_index(inplace=True, drop=True)
 

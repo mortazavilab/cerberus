@@ -837,13 +837,13 @@ def update_transcript_ends(df, mode, strand):
     """
     old_col, new_col, gene_func = get_update_ends_settings(strand, mode)
 
-    temp = df[['Feature', 'gene_id', 'transcript_id', 'Strand', 'Start', 'End', 'Start_end', 'End_end']].copy(deep=True)
+    temp = df[['Feature', 'gene_id', 'original_transcript_id', 'Strand', 'Start', 'End', 'Start_end', 'End_end']].copy(deep=True)
     temp = temp.loc[temp.Feature != 'gene']
     if mode == 'tss':
-        inds = temp.groupby('transcript_id').head(2).index.tolist()
+        inds = temp.groupby('original_transcript_id').head(2).index.tolist()
     elif mode == 'tes':
-        inds = temp.groupby('transcript_id').head(1).index.tolist()
-        inds += temp.groupby('transcript_id').tail(1).index.tolist()
+        inds = temp.groupby('original_transcript_id').head(1).index.tolist()
+        inds += temp.groupby('original_transcript_id').tail(1).index.tolist()
 
     df.loc[inds, old_col] = df.loc[inds, new_col]
 
@@ -1873,6 +1873,10 @@ def replace_gtf_ids(h5, gtf, update_ends, agg, o):
                     left_on=['transcript_name', 'transcript_id'],
                     right_on=['original_transcript_name', 'original_transcript_id'],
                     suffixes=('', '_cerberus'))
+    df.drop(['transcript_id', 'transcript_name'], axis=1, inplace=True)
+    df.rename({'transcript_id_cerberus': 'transcript_id',
+               'transcript_name_cerberus': 'transcript_name'},
+               axis=1, inplace=True)
 
     # update the ends of each transcript based on the end it was assigned to
     if update_ends:
@@ -1884,10 +1888,10 @@ def replace_gtf_ids(h5, gtf, update_ends, agg, o):
         print('Deduplicating transcripts...')
         df = agg_gtf(df)
 
-    df.drop(['transcript_id', 'transcript_name'], axis=1, inplace=True)
-    df.rename({'transcript_id_cerberus': 'transcript_id',
-                'transcript_name_cerberus': 'transcript_name'},
-               axis=1, inplace=True)
+    # df.drop(['transcript_id', 'transcript_name'], axis=1, inplace=True)
+    # df.rename({'transcript_id_cerberus': 'transcript_id',
+    #             'transcript_name_cerberus': 'transcript_name'},
+    #            axis=1, inplace=True)
 
     # write gtf
     df = pr.PyRanges(df)
