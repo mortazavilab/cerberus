@@ -12,6 +12,7 @@ requirements = [
     'pandas>=1.3',
     'pyranges>=0.0.71',
     'matplotlib',
+    'lapa'
 ]
 
 setup_requirements = ['pytest-runner', ]

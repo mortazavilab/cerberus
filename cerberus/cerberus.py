@@ -193,7 +193,6 @@ def number_tss_ic_tes(df, mode):
     sort_cols = ['gene_id', 'MANE_Select',
                  'appris_principal', 'basic_set']
 
-    # pdb.set_trace()
     df = df[subset_cols].groupby(gb_cols,
                            observed=True).agg({'transcript_id': ','.join,
                                      'MANE_Select': 'max',
@@ -316,7 +315,6 @@ def renumber_new_feats(df, g_maxes, mode):
                                 ascending=[True, True])\
                                 .groupby(['gene_id'])\
                                 .cumcount()+1
-    # pdb.set_trace()
     df[new_c] = df[new_c].astype(int) + df[max_c].astype(int)
 
     return df
@@ -553,7 +551,6 @@ def agg_2_ics(ic1, ic2):
 
     # if we have more than 1 set of ics, merge on chrom, strand,
     # ic coords, and gene id
-    # pdb.set_trace()
     ic1 = ic1.merge(ic2,
                   on=['Chromosome', 'Strand', 'Coordinates', 'gene_id'],
                   how='outer', suffixes=('', '_new'))
@@ -1240,7 +1237,7 @@ def read_cerberus_ends(bed_file, mode,
         bed_file (str): Path to bed file
         mode (str): {'tss', 'tes'}
         add_gid (bool): Whether to include gene id in output
-        add_num (bool): Whether to add intron chain # in output
+        add_num (bool): Whether to add end # in output
 
     Returns:
         df (pandas DataFrame): Dataframe with gene id and end number
@@ -1266,6 +1263,38 @@ def read_cerberus_ends(bed_file, mode,
     df = df[order]
 
     return df
+
+# def read_lapa_ends(bed_file,
+#                        add_gid=True):
+#     """
+#     Read end reference bed file (output from gtf_to_bed or agg_ends)
+#
+#     Parameters:
+#         bed_file (str): Path to bed file
+#         mode (str): {'tss', 'tes'}
+#         add_gid (bool): Whether to include gene id in output
+#         add_num (bool): Whether to add end chain # in output
+#
+#     Returns:
+#         df (pandas DataFrame): Dataframe with gene id and end number
+#             added in addition to existing information
+#     """
+#     df = pr.read_bed(bed_file).df
+#     df['gene_id']
+#
+#     drop_cols = []
+#     if not add_gid:
+#         drop_cols.append('gene_id')
+#     df.drop(drop_cols, axis=1, inplace=True)
+#
+#     df.rename({'ThickStart': 'source'}, axis=1, inplace=True)
+#
+#     order = ['Chromosome', 'Start', 'End', 'Strand',
+#              'Name', 'source', 'gene_id']
+#     order = [o for o in order if o in df.columns]
+#     df = df[order]
+#
+#     return df
 
 def read_cerberus_source_map(fname):
     """
@@ -1312,7 +1341,11 @@ def read_bed(bed_file, mode):
     # bed files output from gtf_to_bed with gid_number names
     if 'ThickStart' in df.columns:
         if 'cerberus' in df.ThickStart.tolist():
-            df = read_cerberus_ends(bed_file, mode)
+            df = read_cerberus_ends(bed_file, mode,
+                                    add_gid=True, add_num=True)
+        elif 'lapa' in df.ThickStart.tolist():
+            df = read_cerberus_ends(bed_file, mode,
+                                    add_gid=True, add_num=True)
 
     df = pr.PyRanges(df)
     return df
