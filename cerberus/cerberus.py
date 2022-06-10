@@ -991,16 +991,25 @@ def write_h5(ic, tss, tes, oname,
             each input tes to which cerberus tes it was assigned to
         m (pandas DataFrame): DataFrame of map file
     """
+
+    def cat_to_obj(df):
+        temp = df.dtypes.to_frame()
+        cols = temp.loc[temp[0] == 'category'].index.tolist()
+        df[cols] = df[cols].astype('object')
+        return df
+
     ic.to_hdf(oname, 'ic', mode='w')
     tss.to_hdf(oname, 'tss', mode='a', format='table')
     tes.to_hdf(oname, 'tes', mode='a', format='table')
 
     if not isinstance(tss_map, pd.DataFrame):
         tss_map = pd.DataFrame()
+    tss_map = cat_to_obj(tss_map)
     tss_map.to_hdf(oname, 'tss_map', mode='a', format='table')
 
     if not isinstance(tes_map, pd.DataFrame):
         tes_map = pd.DataFrame()
+    tes_map = cat_to_obj(tes_map)
     tes_map.to_hdf(oname, 'tes_map', mode='a', format='table')
 
     if not isinstance(m, pd.DataFrame):
