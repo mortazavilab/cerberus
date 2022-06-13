@@ -845,6 +845,7 @@ def update_transcript_ends(df, mode, strand):
     df.loc[inds, old_col] = df.loc[inds, new_col]
 
     # convert float dtypes
+    # pdb.set_trace()
     df.Start = df.Start.astype(int)
     df.End = df.End.astype(int)
 
@@ -1655,9 +1656,9 @@ def assign_triplets(gtf_df, tss, ic, tes):
     df.rename({'transcript_id': 'original_transcript_id',
                'transcript_name': 'original_transcript_name'},
                axis=1, inplace=True)
-    df['transcript_triplet'] = '['+df.tss.astype(str)+','+\
-                                   df.ic.astype(str)+','+\
-                                   df.tes.astype(str)+']'
+    df['transcript_triplet'] = '['+df.tss.astype(int).astype(str)+','+\
+                                   df.ic.astype(int).astype(str)+','+\
+                                   df.tes.astype(int).astype(str)+']'
     df['transcript_id'] = df['gene_id']+df.transcript_triplet
     df['transcript_name'] = df['gene_name']+df.transcript_triplet
 
