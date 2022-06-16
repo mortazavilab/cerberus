@@ -248,6 +248,7 @@ def test_agg_gtf(print_dfs=True):
     df['original_transcript_name'] = df['original_transcript_id']
     ts.append(df)
 
+    # pdb.set_trace()
 
     ctrl = pr.PyRanges(make_test_gtf(ts)).df
     test = pr.PyRanges(agg_gtf(test_df)).df
@@ -268,6 +269,9 @@ def test_agg_gtf(print_dfs=True):
     pd.testing.assert_frame_equal(ctrl, test, check_like=True)
 
     assert len(ctrl.index) == len(test.index)
+
+    # pdb.set_trace()
+    # assert 1 == 0
 
 # tests for update_gtf_ends
 def test_update_gtf_ends(print_dfs=True):

@@ -382,7 +382,6 @@ def agg_2_ends(bed1, bed2,
         add_ends (bool): Whether to initialize new regions from bed2
         mode (str): {'tss', 'tes'}
     """
-
     source1 = bed1.df.source.unique().tolist()[0]
     source2 = bed2.df.source.unique().tolist()[0]
 
@@ -392,6 +391,8 @@ def agg_2_ends(bed1, bed2,
     # convert into int64
     bed1 = pr.PyRanges(bed1.df, int64=True)
     bed2 = pr.PyRanges(bed2.df, int64=True)
+
+    # pdb.set_trace()
 
     # depending on whether the new bed has strand information,
     # construct the join call
@@ -421,6 +422,8 @@ def agg_2_ends(bed1, bed2,
 
     ### old ends ###
 
+    # pdb.set_trace()
+
     # situation 1: ends match across the datasets in coord and gene id
     if gid:
         temp = temp_joined.loc[temp_joined.gene_id == temp_joined.gene_id_new].copy(deep=True)
@@ -432,18 +435,28 @@ def agg_2_ends(bed1, bed2,
     # create source map for ends from this source
     m_source = df.loc[df.source_new == source2]
     m_source = m_source[['Chromosome', 'Start_new', 'End_new', 'Strand',
-                   'source_new', 'Name']].copy(deep=True)
+                   'source_new', 'Name', 'id_new']].copy(deep=True)
     m_source.rename({'Start_new': 'Start',
                      'End_new': 'End',
-                     'source_new': 'source'},
+                     'source_new': 'source',
+                     'id_new': 'id'},
                      axis=1, inplace=True)
 
     # situation 2: ends are only in the first dataset
     if gid:
-        temp = temp_joined.loc[(temp_joined.Start_new.isnull())|(temp_joined.gene_id!=temp_joined.gene_id_new)].copy(deep=True)
+        # end either didn't match something or matched wrong gid
+        temp = temp_joined.loc[(temp_joined.Start_new.isnull())|\
+                               (temp_joined.gene_id!=temp_joined.gene_id_new)].copy(deep=True)
+
+        # restrict to ends that haven't been added to our main df
+        temp = temp.loc[~temp.Name.isin(df.Name.tolist())]
+
     else:
         temp = temp_joined.loc[temp_joined.Start_new.isnull()].copy(deep=True)
     df = pd.concat([df, temp])
+
+    # pdb.set_trace()
+
 
     # restrict to relevant columns
     cols = ['Chromosome', 'Start', 'End', 'Strand',
@@ -457,24 +470,29 @@ def agg_2_ends(bed1, bed2,
 
         new_df = pd.DataFrame()
 
-        drop_cols = ['Start', 'End', 'Strand', 'gene_id', 'source', 'Name', mode]
+        drop_cols = ['Start', 'End', 'Strand', 'gene_id', 'source', 'Name', 'id', mode]
         m = {'Start_new': 'Start',
              'End_new': 'End',
              'gene_id_new': 'gene_id',
              'Strand_new': 'Strand',
              'source_new': 'source',
              'Name_new': 'Name',
+             'id_new': 'id',
              new_c: mode}
 
         # situation 3: the ends overlapped, but the gene ids didn't match
-        temp = temp_joined.loc[(temp_joined.gene_id!=temp_joined.gene_id_new)&(temp_joined.gene_id_new!='-1')].copy(deep=True)
+        temp = temp_joined.loc[(temp_joined.gene_id!=temp_joined.gene_id_new)&\
+                               (temp_joined.gene_id_new!='-1')].copy(deep=True)
+        # pdb.set_trace()
         temp.drop(drop_cols, axis=1, inplace=True)
         temp.rename(m, axis=1, inplace=True)
+        temp.drop_duplicates(inplace=True)
+
         new_df = pd.concat([new_df, temp])
 
         # situation 4: the ends are brand new and didn't overlap at all in the existing ends
         bed2 = bed2.df
-        inds = list(set(bed2.id.tolist())-set(df.id.tolist()))
+        inds = list(set(bed2.id.tolist())-set(df.id.tolist())-set(new_df.id.tolist()))
         temp = bed2.loc[inds]
         new_df = pd.concat([new_df, temp])
 
@@ -516,16 +534,23 @@ def agg_2_ends(bed1, bed2,
         temp = temp[['Chromosome', 'Start', 'End', 'Strand', 'source', 'Name']]
         m_source = pd.concat([m_source, temp])
     else:
-        merge_cols = ['Chromosome', 'Start', 'End']
+        # pdb.set_trace()
+        merge_cols = ['Chromosome', 'Start', 'End', 'id']
         if strand:
             merge_cols.append('Strand')
+        if gid:
+            merge_cols.append('gene_id')
+            # m_source = split_cerberus_id(m_source, mode)
         temp = bed2.df.copy(deep=True)
         temp = temp[merge_cols]
-        m_source = m_source.merge(temp, how='outer', on=merge_cols)
+        temp = temp.loc[~temp.id.isin(m_source.id.tolist())]
+        # m_source = m_source.merge(temp, how='outer', on=merge_cols)
+        m_source = pd.concat([m_source, temp])
         m_source['source'] = source2
         # print(len(m_source[merge_cols].drop_duplicates()))
 
-    # update dtypes
+    # update dtypes and final formatting
+    m_source.drop('id', axis=1, inplace=True)
     m_source['Start'] = m_source.Start.astype('int')
     m_source['End'] = m_source.End.astype('int')
 
@@ -938,6 +963,7 @@ def agg_gtf(df):
             x = np.nan
         return(x)
 
+    # pdb.set_trace()
     gb_cols = ['Chromosome',
                  'Feature',
                  'Start', 'End',
