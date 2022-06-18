@@ -105,6 +105,8 @@ def test_merge_ends(print_dfs=True):
     # cases where
     # - ends overlap existing ends as well as gene id
     # - ends do not overlap existing ends and we need to choose closest
+    #    - and the closest is downstream but we need to choose upstream
+    #    - fwd and rev strands, tss and tes (t5, t6)
     # - ends overlap existing ends but gene ids don't match
     # - ends overlap but are not on same strand
     # - equidistant matches?
@@ -112,40 +114,53 @@ def test_merge_ends(print_dfs=True):
     for mode in ['tss', 'tes']:
 
         # annot
-        n = 4
+        n = 6
         c = ['1' for i in range(n)]
         s = ['+' for i in range(n)]
-        st = [1, 200, 100, 300]
-        e = [2, 201, 101, 301]
-        g = ['gene1', 'gene1', 'gene2', 'gene3']
-        t = ['t1', 't2', 't3', 't4']
+        s[5] = '-'
+        st = [1, 200, 100, 300, 425, 583]
+        e = [2, 201, 101, 300, 426, 584]
+        g = ['gene1', 'gene1', 'gene2', 'gene3', 'gene5', 'gene6']
+        t = ['t1', 't2', 't3', 't4', 't5', 't6']
         annot_df = make_end_gtf_df(c,s,st,e,g,t)
         annot_df = pr.PyRanges(annot_df)
 
         # ref
-        n = 5
+        n = 9
         c = ['1' for i in range(n)]
         s = ['+' for i in range(n)]
-        s[-1] = '-'
-        st = [1, 150, 90, 200, 290]
-        e = [40, 160, 98, 250, 340]
+        s[4] = '-'
+        s[8:9] = '-'
+        st = [1, 150, 90, 200, 290, 410, 427, 570, 590]
+        e = [40, 160, 98, 250, 340, 420, 440, 580, 600]
         n = ['gene1_1', # entry in annot intersects
              'gene1_2', # entry in annot needs to choose closest
              'gene2_1', # entry in annot matches but wrong gene
              'gene3_1', #
-             'gene4_1'] # entry overlaps on the wrong strand
+             'gene4_1', # entry overlaps on the wrong strand
+             'gene5_1', # entries that is upstream (tss) but not closest, +
+             'gene5_2',
+             'gene6_1', # entries that is upstream (tss) but not closest, -
+             'gene6_2']
         source = 'test'
         ref_df = make_end_df(c,s,st,e,n, source, mode, add_id=False)
         ref_df = pr.PyRanges(ref_df)
 
         # ctrl
-        t = ['t1', 't2', 't3', 't4']
-        i = ['gene1_1', 'gene1_2', 'gene2_1', 'gene3_1']
-        ends = ['1', '2', '1', '1']
+        t = ['t1', 't2', 't3', 't4', 't5', 't6']
+        i = ['gene1_1', 'gene1_2', 'gene2_1', 'gene3_1', 'gene5_1', 'gene6_2']
+        ends = ['1', '2', '1', '1', '1', '2']
+        # needs to be downstream one if tes
+        if mode == 'tes':
+            i[4] = 'gene5_2'
+            ends[4] = '2'
+            i[5] = 'gene6_1'
+            ends[5] = '1'
         ctrl = pd.DataFrame()
         ctrl['transcript_id'] = t
         ctrl['{}_id'.format(mode)] = i
         ctrl[mode] = ends
+
 
         test = merge_ends(annot_df, ref_df, mode)
 

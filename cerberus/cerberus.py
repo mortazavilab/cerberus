@@ -641,6 +641,11 @@ def merge_ends(ends, ref, mode):
             end from the cerberus reference
     """
 
+    # whether we should look upstream (tss) or downstream (tes)
+    if mode == 'tss':
+        direction = 'upstream'
+    elif mode == 'tes':
+        direction = 'downstream'
 
     # limit to relevant columns
     ends = ends[['Chromosome', 'Start', 'End', 'Strand',
@@ -655,7 +660,8 @@ def merge_ends(ends, ref, mode):
 
     # find closest interval in ref
     ends = ends.nearest(ref,
-                        strandedness=None)
+                        strandedness=None,
+                        how=direction)
 
     # fix the ends with mismatching gene ids - this part can be slow :(
     ends = ends.df
@@ -670,7 +676,8 @@ def merge_ends(ends, ref, mode):
         gene_refs = ref.df.loc[ref.df.gene_id == gid].copy(deep=True)
         gene_refs = pr.PyRanges(gene_refs)
         gene_ends = gene_ends.nearest(gene_refs,
-                                      strandedness=None)
+                                      strandedness=None,
+                                      how='direction')
         gene_ends = gene_ends.df
         ends = pd.concat([ends, gene_ends])
 
@@ -867,6 +874,7 @@ def update_transcript_ends(df, mode, strand):
         inds = temp.groupby('original_transcript_id').head(1).index.tolist()
         inds += temp.groupby('original_transcript_id').tail(1).index.tolist()
 
+    pdb.set_trace()
     df.loc[inds, old_col] = df.loc[inds, new_col]
 
     # convert float dtypes
