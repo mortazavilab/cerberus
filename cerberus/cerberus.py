@@ -874,7 +874,7 @@ def update_transcript_ends(df, mode, strand):
         inds = temp.groupby('original_transcript_id').head(1).index.tolist()
         inds += temp.groupby('original_transcript_id').tail(1).index.tolist()
 
-    pdb.set_trace()
+    # pdb.set_trace()
     df.loc[inds, old_col] = df.loc[inds, new_col]
 
     # convert float dtypes
