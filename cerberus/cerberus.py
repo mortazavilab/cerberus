@@ -1659,6 +1659,17 @@ def assign_triplets(gtf_df, tss, ic, tes):
     # get intron chains from input transcriptome
     df = gtf_df.copy()
     df = get_ic(df)
+
+    # record locations of first splice site and last splice site
+    s_df = df.copy(deep=True)
+    s_df['coords'] = s_df.ic.str.split('-')
+    first_sd = [coords[0] for coords in s_df.coords.values.tolist()]
+    s_df['first_sd'] = first_sd
+    last_sa = [coords[-1] for coords in s_df.coords.values.tolist()]
+    s_df['last_sa'] = last_sa
+    s_df[['first_sd', 'last_sa']] = s_df[['first_sd', 'last_sa']].astype(float)
+
+    # merge ics with annotated ics
     df.rename({'ic': 'Coordinates'}, axis=1, inplace=True)
 
     df = merge_ics(df, ic)
@@ -1676,6 +1687,29 @@ def assign_triplets(gtf_df, tss, ic, tes):
         df = df.merge(t_ends, how='left', on='transcript_id')
 
     ### creating map file ###
+
+    # record whether or not this transcript has the bug
+    # add tss / tes coords
+    s_df = s_df.merge(df[['transcript_id', 'tss_id', 'tes_id']],
+        on='transcript_id', how='left')
+    for mode, ref in zip(['tss', 'tes'], [tss, tes]):
+        temp = ref.df[['Start', 'End', 'Name']].copy(deep=True)
+        temp.rename({'Start': 'Start_{}'.format(mode),
+                     'End': 'End_{}'.format(mode)},
+                     axis=1, inplace=True)
+        s_df = s_df.merge(temp, left_on='{}_id'.format(mode), right_on='Name')
+
+    fwd, rev = get_stranded_gtf_dfs(s_df)
+    fwd['new_tss'] = fwd[['Start_tss', 'End_tss']].min(axis=1)
+    fwd['new_tes'] = fwd[['Start_tes', 'End_tes']].max(axis=1)
+    fwd['tss_first_sd_issue'] = fwd.new_tss > fwd.first_sd
+    fwd['tes_last_sa_issue'] = fwd.new_tes <  fwd.last_sa
+    rev['new_tss'] = rev[['Start_tss', 'End_tss']].max(axis=1)
+    rev['new_tes'] = rev[['Start_tes', 'End_tes']].min(axis=1)
+    rev['tss_first_sd_issue'] = rev.new_tss < rev.first_sd
+    rev['tes_last_sa_issue'] = rev.new_tes >  rev.last_sa
+    s_df = pd.concat([fwd, rev])
+    s_df = s_df[['transcript_id', 'tss_first_sd_issue', 'tes_last_sa_issue']]
 
     # get gene id / name and transcript name from original gtf
     gtf_df = gtf_df.df
@@ -1695,6 +1729,8 @@ def assign_triplets(gtf_df, tss, ic, tes):
                                    df.tes.astype(int).astype(str)+']'
     df['transcript_id'] = df['gene_id']+df.transcript_triplet
     df['transcript_name'] = df['gene_name']+df.transcript_triplet
+
+    df = df.merge(s_df, how='left', left_on='original_transcript_id', right_on='transcript_id')
 
     return df
 
