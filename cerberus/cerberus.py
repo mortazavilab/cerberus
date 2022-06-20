@@ -161,6 +161,7 @@ def get_ic(gtf_pr):
     # remove tss and tes from intron chain
     df['temp'] = df.Coord.str.split('-', n=1, expand=True)[1]
     df['ic'] = df.temp.str.rsplit('-', n=1, expand=True)[0]
+    df.loc[~df.ic.str.contains('-'), 'ic'] = '' # for monoexonic transcripts
     df.drop(['temp', 'Coord'], axis=1, inplace=True)
 
     return df
