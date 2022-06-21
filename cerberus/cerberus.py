@@ -463,7 +463,6 @@ def agg_2_ends(bed1, bed2,
 
     # pdb.set_trace()
 
-
     # restrict to relevant columns
     cols = ['Chromosome', 'Start', 'End', 'Strand',
             'Name', 'gene_id', 'source', mode, 'id_new']
@@ -1177,6 +1176,9 @@ def read_h5(h5, as_pyranges=True):
     tss = pd.read_hdf(h5, key='tss')
     tes = pd.read_hdf(h5, key='tes')
 
+    # turn NaN coords into empty strings
+    ic.loc[ic.Coordinates.isnull(), 'Coordinates'] = ''
+
     def read_empty_h5(h5, key, as_pyranges=False):
         try:
             df = pd.read_hdf(h5, key=key)
@@ -1275,6 +1277,9 @@ def read_ic_ref(ic_file, add_gid=True, add_num=True):
              'Name', 'source', 'gene_id', 'ic']
     order = [o for o in order if o in df.columns]
     df = df[order]
+
+    # turn NaN coords into empty strings
+    df.loc[df.Coordinates.isnull(), 'Coordinates'] = ''
 
     return df
 
@@ -1683,6 +1688,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
     # merge ics with annotated ics
     df.rename({'ic': 'Coordinates'}, axis=1, inplace=True)
 
+    # pdb.set_trace()
     df = merge_ics(df, ic)
 
     ### ends ###
