@@ -1707,6 +1707,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
 
     # record whether or not this transcript has the bug
     # add tss / tes coords
+    pdb.set_trace()
     s_df = s_df.merge(df[['transcript_id', 'tss_id', 'tes_id']],
         on='transcript_id', how='left')
     for mode, ref in zip(['tss', 'tes'], [tss, tes]):
@@ -1727,6 +1728,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
     rev['tes_last_sa_issue'] = rev.new_tes >  rev.last_sa
     s_df = pd.concat([fwd, rev])
     s_df = s_df[['transcript_id', 'tss_first_sd_issue', 'tes_last_sa_issue']]
+    s_df.rename({'transcript_id': 'original_transcript_id'}, axis=1, inplace=True)
 
     # get gene id / name and transcript name from original gtf
     gtf_df = gtf_df.df
@@ -1748,7 +1750,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
     df['transcript_id'] = df['gene_id']+df.transcript_triplet
     df['transcript_name'] = df['gene_name']+df.transcript_triplet
 
-    df = df.merge(s_df, how='left', left_on='original_transcript_id', right_on='transcript_id')
+    df = df.merge(s_df, how='left', on='original_transcript_id')
 
     return df
 
