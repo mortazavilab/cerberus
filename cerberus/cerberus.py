@@ -1669,6 +1669,9 @@ def assign_triplets(gtf_df, tss, ic, tes):
     s_df['first_sd'] = first_sd
     last_sa = [coords[-1] for coords in s_df.coords.values.tolist()]
     s_df['last_sa'] = last_sa
+    s_df.loc[s_df.first_sd == '', 'first_sd'] = None
+    s_df.loc[s_df.last_sa == '', 'last_sa'] = None
+
     s_df[['first_sd', 'last_sa']] = s_df[['first_sd', 'last_sa']].astype(float)
 
     # merge ics with annotated ics
