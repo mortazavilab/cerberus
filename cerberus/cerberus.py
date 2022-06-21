@@ -161,7 +161,7 @@ def get_ic(gtf_pr):
     # remove tss and tes from intron chain
     df['temp'] = df.Coord.str.split('-', n=1, expand=True)[1]
     df['ic'] = df.temp.str.rsplit('-', n=1, expand=True)[0]
-    df.loc[~df.ic.str.contains('-'), 'ic'] = None # for monoexonic transcripts
+    df.loc[~df.ic.str.contains('-'), 'ic'] = '' # for monoexonic transcripts
     df.drop(['temp', 'Coord'], axis=1, inplace=True)
 
     return df
@@ -183,9 +183,13 @@ def number_tss_ic_tes(df, mode):
     """
     # groupby feature but record which feature
     # each transcript id uses
-    gb_cols =['Chromosome', 'Strand', mode, 'gene_id']
+    pdb.set_trace()
+    gb_cols = ['Chromosome', 'Strand', mode, 'gene_id']
     subset_cols = ['transcript_id', 'Chromosome', 'Strand', mode,
                    'basic_set', 'MANE_Select', 'appris_principal', 'gene_id']
+
+    # for ics that are monoexonic
+    df.loc[df[mode].isnull(), mode] = ''
 
     if mode == 'tss' or mode == 'tes':
         gb_cols += ['Start', 'End']
@@ -194,6 +198,7 @@ def number_tss_ic_tes(df, mode):
     sort_cols = ['gene_id', 'MANE_Select',
                  'appris_principal', 'basic_set']
 
+    # agg drops nan ics!
     df = df[subset_cols].groupby(gb_cols,
                            observed=True).agg({'transcript_id': ','.join,
                                      'MANE_Select': 'max',
@@ -1511,6 +1516,8 @@ def get_ics_from_gtf(gtf):
     df = pr.PyRanges(df)
     df = get_ic(df)
 
+    # pdb.set_trace()
+
     # add basic annotation, appris principal number, and gene id
     df = df.merge(t_df, on='transcript_id', how='left')
 
@@ -1663,7 +1670,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
 
     # record locations of first splice site and last splice site
     s_df = df.copy(deep=True)
-    s_df.loc[s_df.ic.isnull(), 'ic'] = ''
+    # s_df.loc[s_df.ic.isnull(), 'ic'] = ''
     s_df['coords'] = s_df.ic.str.split('-')
     first_sd = [coords[0] for coords in s_df.coords.values.tolist()]
     s_df['first_sd'] = first_sd
@@ -1671,9 +1678,6 @@ def assign_triplets(gtf_df, tss, ic, tes):
     s_df['last_sa'] = last_sa
     s_df.loc[s_df.first_sd == '', 'first_sd'] = None
     s_df.loc[s_df.last_sa == '', 'last_sa'] = None
-
-    # pdb.set_trace()
-
     s_df[['first_sd', 'last_sa']] = s_df[['first_sd', 'last_sa']].astype(float)
 
     # merge ics with annotated ics
@@ -1731,6 +1735,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
     df.rename({'transcript_id': 'original_transcript_id',
                'transcript_name': 'original_transcript_name'},
                axis=1, inplace=True)
+    pdb.set_trace()
     df['transcript_triplet'] = '['+df.tss.astype(int).astype(str)+','+\
                                    df.ic.astype(int).astype(str)+','+\
                                    df.tes.astype(int).astype(str)+']'
