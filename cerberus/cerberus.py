@@ -183,7 +183,7 @@ def number_tss_ic_tes(df, mode):
     """
     # groupby feature but record which feature
     # each transcript id uses
-    pdb.set_trace()
+    # pdb.set_trace()
     gb_cols = ['Chromosome', 'Strand', mode, 'gene_id']
     subset_cols = ['transcript_id', 'Chromosome', 'Strand', mode,
                    'basic_set', 'MANE_Select', 'appris_principal', 'gene_id']
@@ -1735,7 +1735,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
     df.rename({'transcript_id': 'original_transcript_id',
                'transcript_name': 'original_transcript_name'},
                axis=1, inplace=True)
-    pdb.set_trace()
+    # pdb.set_trace()
     df['transcript_triplet'] = '['+df.tss.astype(int).astype(str)+','+\
                                    df.ic.astype(int).astype(str)+','+\
                                    df.tes.astype(int).astype(str)+']'
