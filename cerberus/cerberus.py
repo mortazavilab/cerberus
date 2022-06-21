@@ -131,6 +131,7 @@ def get_ic(gtf_pr):
     df = gtf_pr.df.copy(deep=True)
 
     # restrict to exon entries
+    # pdb.set_trace()
     df = df.loc[df.Feature == 'exon']
     cols = ['Chromosome', 'Strand', 'Start', 'End',
             'transcript_id', 'gene_id']
@@ -1707,7 +1708,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
 
     # record whether or not this transcript has the bug
     # add tss / tes coords
-    pdb.set_trace()
+    # pdb.set_trace()
     s_df = s_df.merge(df[['transcript_id', 'tss_id', 'tes_id']],
         on='transcript_id', how='left')
     for mode, ref in zip(['tss', 'tes'], [tss, tes]):
