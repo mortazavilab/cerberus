@@ -1663,6 +1663,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
 
     # record locations of first splice site and last splice site
     s_df = df.copy(deep=True)
+    s_df.loc[s_df.ic.isnull(), 'ic'] = ''
     s_df['coords'] = s_df.ic.str.split('-')
     first_sd = [coords[0] for coords in s_df.coords.values.tolist()]
     s_df['first_sd'] = first_sd
