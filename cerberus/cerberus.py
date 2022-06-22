@@ -1949,6 +1949,10 @@ def replace_ab_ids(ab, h5, agg, o):
     df = pd.read_csv(ab, sep='\t')
     _, _, _, _, _, m_df = read_h5(h5)
 
+    # temporary fix for problematic transcripts
+    rm_tids = m_df.loc[(m_df.tss_first_sd_issue)|(m_df.tes_last_sa_issue), 'original_transcript_id'].tolist()
+    df = df.loc[~df.annot_transcript_id.isin(rm_tids)]
+
     df = map_transcripts(df, m_df, 'annot_transcript_name', 'annot_transcript_id')
 
     # aggregate counts if requested
@@ -1999,6 +2003,9 @@ def replace_gtf_ids(h5, gtf, update_ends, agg, o):
         tss = pr.PyRanges(tss)
         tes = pr.PyRanges(tes)
 
+    # temporary fix for problematic transcripts
+    rm_tids = m_df.loc[(m_df.tss_first_sd_issue)|(m_df.tes_last_sa_issue), 'original_transcript_id'].tolist()
+    df = df.loc[~df.transcript_id.isin(tids)]
 
     print('Adding cerberus transcript ids...')
     m_df.drop(['transcript_triplet',

@@ -1,3 +1,5 @@
+*.snakemake/
+*.DS*
 test_output
 *bed
 *gtf
