@@ -460,6 +460,10 @@ def agg_2_ends(bed1, bed2,
 
     else:
         temp = temp_joined.loc[temp_joined.Start_new.isnull()].copy(deep=True)
+
+    # mark these ends with a -1 id so we don't count them as already
+    # processed
+    temp['id_new'] = -1
     df = pd.concat([df, temp])
 
     # pdb.set_trace()
@@ -486,9 +490,12 @@ def agg_2_ends(bed1, bed2,
              'id_new': 'id',
              new_c: mode}
 
-        # situation 3: the ends overlapped, but the gene ids didn't match
-        temp = temp_joined.loc[(temp_joined.gene_id!=temp_joined.gene_id_new)&\
-                               (temp_joined.gene_id_new!='-1')].copy(deep=True)
+        # situation 3: the ends overlapped, but the gene ids didn't match AND
+        # the end hasn't been added yet
+        # temp = temp_joined.loc[(temp_joined.gene_id!=temp_joined.gene_id_new)&\
+        #                        (temp_joined.gene_id_new!='-1')&\
+        #                        (~temp_joined.id_new.isin(df.id.tolist()))].copy(deep=True)
+        temp = temp_joined.loc[(temp_joined.gene_id!=temp_joined.gene_id_new)&(temp_joined.gene_id_new!='-1')&(~temp_joined.id_new.isin(df.id.tolist()))].copy(deep=True)
         # pdb.set_trace()
         temp.drop(drop_cols, axis=1, inplace=True)
         temp.rename(m, axis=1, inplace=True)
