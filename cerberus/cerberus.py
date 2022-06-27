@@ -399,7 +399,8 @@ def agg_2_ends(bed1, bed2,
     bed1 = pr.PyRanges(bed1.df, int64=True)
     bed2 = pr.PyRanges(bed2.df, int64=True)
 
-    # pdb.set_trace()
+    if source2 == 'lapa':
+        pdb.set_trace()
 
     # depending on whether the new bed has strand information,
     # construct the join call
@@ -1391,6 +1392,7 @@ def read_bed(bed_file, mode):
     Returns:
         df (pandas DataFrame): DataFrame representation of bed file
     """
+    pdb.set_trace()
 
     df = pr.read_bed(bed_file).df
 
@@ -1604,10 +1606,10 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
         # more than one bed; merge and reconcile ends
         else:
 
-            # if 'gene_id' not in bed.df.columns or 'Strand' not in bed.df.columns:
-            #     if add:
-            #         raise Exception('Cannot add new ends from {} because '+\
-            #                         'it does not contain gene_id information.'.format(source))
+            if 'gene_id' not in bed.df.columns or 'Strand' not in bed.df.columns:
+                if add:
+                    print('Cannot add new ends from {} because '+\
+                          'it does not contain gene_id information.'.format(source))
 
             # add missing columns but keep track of what information we'll be
             # able to merge on
