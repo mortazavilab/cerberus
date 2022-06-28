@@ -131,7 +131,6 @@ def get_ic(gtf_pr):
     df = gtf_pr.df.copy(deep=True)
 
     # restrict to exon entries
-    # pdb.set_trace()
     df = df.loc[df.Feature == 'exon']
     cols = ['Chromosome', 'Strand', 'Start', 'End',
             'transcript_id', 'gene_id']
@@ -184,7 +183,6 @@ def number_tss_ic_tes(df, mode):
     """
     # groupby feature but record which feature
     # each transcript id uses
-    # pdb.set_trace()
     gb_cols = ['Chromosome', 'Strand', mode, 'gene_id']
     subset_cols = ['transcript_id', 'Chromosome', 'Strand', mode,
                    'basic_set', 'MANE_Select', 'appris_principal', 'gene_id']
@@ -399,9 +397,6 @@ def agg_2_ends(bed1, bed2,
     bed1 = pr.PyRanges(bed1.df, int64=True)
     bed2 = pr.PyRanges(bed2.df, int64=True)
 
-    if source2 == 'lapa':
-        pdb.set_trace()
-
     # depending on whether the new bed has strand information,
     # construct the join call
     if strand:
@@ -429,8 +424,6 @@ def agg_2_ends(bed1, bed2,
     df = pd.DataFrame()
 
     ### old ends ###
-
-    # pdb.set_trace()
 
     # situation 1: ends match across the datasets in coord and gene id
     if gid:
@@ -467,8 +460,6 @@ def agg_2_ends(bed1, bed2,
     temp['id_new'] = -1
     df = pd.concat([df, temp])
 
-    # pdb.set_trace()
-
     # restrict to relevant columns
     cols = ['Chromosome', 'Start', 'End', 'Strand',
             'Name', 'gene_id', 'source', mode, 'id_new']
@@ -497,7 +488,6 @@ def agg_2_ends(bed1, bed2,
         #                        (temp_joined.gene_id_new!='-1')&\
         #                        (~temp_joined.id_new.isin(df.id.tolist()))].copy(deep=True)
         temp = temp_joined.loc[(temp_joined.gene_id!=temp_joined.gene_id_new)&(temp_joined.gene_id_new!='-1')&(~temp_joined.id_new.isin(df.id.tolist()))].copy(deep=True)
-        # pdb.set_trace()
         temp.drop(drop_cols, axis=1, inplace=True)
         temp.rename(m, axis=1, inplace=True)
         temp.drop_duplicates(inplace=True)
@@ -548,7 +538,6 @@ def agg_2_ends(bed1, bed2,
         temp = temp[['Chromosome', 'Start', 'End', 'Strand', 'source', 'Name']]
         m_source = pd.concat([m_source, temp])
     else:
-        # pdb.set_trace()
         merge_cols = ['Chromosome', 'Start', 'End', 'id']
         if strand:
             merge_cols.append('Strand')
@@ -888,11 +877,9 @@ def update_transcript_ends(df, mode, strand):
         inds = temp.groupby('original_transcript_id').head(1).index.tolist()
         inds += temp.groupby('original_transcript_id').tail(1).index.tolist()
 
-    # pdb.set_trace()
     df.loc[inds, old_col] = df.loc[inds, new_col]
 
     # convert float dtypes
-    # pdb.set_trace()
     df.Start = df.Start.astype(int)
     df.End = df.End.astype(int)
 
@@ -985,7 +972,6 @@ def agg_gtf(df):
             x = np.nan
         return(x)
 
-    # pdb.set_trace()
     gb_cols = ['Chromosome',
                  'Feature',
                  'Start', 'End',
@@ -1392,7 +1378,6 @@ def read_bed(bed_file, mode):
     Returns:
         df (pandas DataFrame): DataFrame representation of bed file
     """
-    pdb.set_trace()
 
     df = pr.read_bed(bed_file).df
 
@@ -1530,8 +1515,6 @@ def get_ics_from_gtf(gtf):
     df = add_stable_gid(df)
     df = pr.PyRanges(df)
     df = get_ic(df)
-
-    # pdb.set_trace()
 
     # add basic annotation, appris principal number, and gene id
     df = df.merge(t_df, on='transcript_id', how='left')
@@ -1698,7 +1681,6 @@ def assign_triplets(gtf_df, tss, ic, tes):
     # merge ics with annotated ics
     df.rename({'ic': 'Coordinates'}, axis=1, inplace=True)
 
-    # pdb.set_trace()
     df = merge_ics(df, ic)
 
     ### ends ###
@@ -1717,7 +1699,6 @@ def assign_triplets(gtf_df, tss, ic, tes):
 
     # record whether or not this transcript has the bug
     # add tss / tes coords
-    # pdb.set_trace()
     s_df = s_df.merge(df[['transcript_id', 'tss_id', 'tes_id']],
         on='transcript_id', how='left')
     for mode, ref in zip(['tss', 'tes'], [tss, tes]):
@@ -1753,7 +1734,6 @@ def assign_triplets(gtf_df, tss, ic, tes):
     df.rename({'transcript_id': 'original_transcript_id',
                'transcript_name': 'original_transcript_name'},
                axis=1, inplace=True)
-    # pdb.set_trace()
     df['transcript_triplet'] = '['+df.tss.astype(int).astype(str)+','+\
                                    df.ic.astype(int).astype(str)+','+\
                                    df.tes.astype(int).astype(str)+']'
