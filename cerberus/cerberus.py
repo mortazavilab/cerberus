@@ -55,14 +55,11 @@ def get_nov_ranks():
         nov_rank (dict): Dictionary of novelty category: int rank
         rank_nov (dict): Dictionary of int rank: novelty category
     """
-    nov_rank = {'Known': 0,
-           'NIC': 1,
-           'ISM': 2,
-           'NNC': 3,
-           'Genomic': 4,
-           'Antisense': 5,
-           'Intergenic': 6}
-
+    novs = ['Known', 'NIC', 'ISM_rescue',
+            'ISM', 'NNC', 'Genomic', 'Antisense',
+            'Intergenic']
+    ranks = [i for i in range(len(novs))]
+    nov_rank = dict([(nov, rank) for nov, rank in zip(novs, ranks)])
     rank_nov = dict()
     for key, item in nov_rank.items():
         rank_nov[item] = key
