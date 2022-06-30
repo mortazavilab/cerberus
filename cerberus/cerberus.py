@@ -1080,6 +1080,31 @@ def write_h5_to_tsv(h5, opref):
 
 ##### readers #####
 
+def get_stable_gid(df, col):
+    """
+    Get a list of stable gene ids from a dataframe
+
+    Parameters:
+        df (pandas DataFrame): DF w/ ENSEMBL gids in some column
+        col (str): Column name of gids
+
+    Returns:
+        gids (list of str): List of stable gids
+    """
+    df = df.copy(deep=True)
+    try:
+        df[['temp', 'par_region_1', 'par_region_2']] = df[col]str.split('_', n=2, expand=True)
+        df[col] = df[col].str.split('.', expand=True)[0]
+        df[['par_region_1', 'par_region_2']] = df[['par_region_1',
+                                                           'par_region_2']].fillna('')
+        df[col] = df[col]+df.par_region_1+df.par_region_2
+        df.drop(['temp', 'par_region_1', 'par_region_2'], axis=1, inplace=True)
+    except:
+        df[col] = df[col].str.split('.', expand=True)[0]
+
+    return df[col].tolist()
+
+
 def add_stable_gid(gtf):
     """
     Add stable gene id that accounts for PAR_X and PAR_Y
@@ -1092,15 +1117,16 @@ def add_stable_gid(gtf):
         gtf (pandas DataFrame): GTF dataframe with gene id turned into its
             stable version
     """
-    try:
-        gtf[['temp', 'par_region_1', 'par_region_2']] = gtf.gene_id.str.split('_', n=2, expand=True)
-        gtf['gene_id'] = gtf.gene_id.str.split('.', expand=True)[0]
-        gtf[['par_region_1', 'par_region_2']] = gtf[['par_region_1',
-                                                           'par_region_2']].fillna('')
-        gtf['gene_id'] = gtf.gene_id+gtf.par_region_1+gtf.par_region_2
-        gtf.drop(['temp', 'par_region_1', 'par_region_2'], axis=1, inplace=True)
-    except:
-        gtf['gene_id'] = gtf.gene_id.str.split('.', expand=True)[0]
+    # try:
+    #     gtf[['temp', 'par_region_1', 'par_region_2']] = gtf.gene_id.str.split('_', n=2, expand=True)
+    #     gtf['gene_id'] = gtf.gene_id.str.split('.', expand=True)[0]
+    #     gtf[['par_region_1', 'par_region_2']] = gtf[['par_region_1',
+    #                                                        'par_region_2']].fillna('')
+    #     gtf['gene_id'] = gtf.gene_id+gtf.par_region_1+gtf.par_region_2
+    #     gtf.drop(['temp', 'par_region_1', 'par_region_2'], axis=1, inplace=True)
+    # except:
+    #     gtf['gene_id'] = gtf.gene_id.str.split('.', expand=True)[0]
+    gtf[col] = get_stable_gid(gtf, 'gene_id')
 
     return gtf
 
