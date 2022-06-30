@@ -1093,7 +1093,7 @@ def get_stable_gid(df, col):
     """
     df = df.copy(deep=True)
     try:
-        df[['temp', 'par_region_1', 'par_region_2']] = df[col]str.split('_', n=2, expand=True)
+        df[['temp', 'par_region_1', 'par_region_2']] = df[col].str.split('_', n=2, expand=True)
         df[col] = df[col].str.split('.', expand=True)[0]
         df[['par_region_1', 'par_region_2']] = df[['par_region_1',
                                                            'par_region_2']].fillna('')
