@@ -1048,6 +1048,12 @@ def write_h5(ic, tss, tes, oname,
 
     if not isinstance(m, pd.DataFrame):
         m = pd.DataFrame()
+    pdb.set_trace()
+    print('you also need to fix this')
+    for c in ['tss_first_sd_issue', 'tes_last_sa_issue']:
+        print('# issues w/ {} nan issue: {}'.format(c, len(m.loc[m[c].isnull()].index)))
+        m.loc[m[c].isnull(), c] = True
+        m[c] = m[c].astype('str')
     m.to_hdf(oname, 'map', mode='a', format='table')
 
 def write_h5_to_tsv(h5, opref):
