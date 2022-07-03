@@ -1051,7 +1051,7 @@ def write_h5(ic, tss, tes, oname,
 def write_h5_to_tsv(h5, opref):
     """
     Write a cerberus transcriptome h5 file to a series
-    of 4 flat tsv files
+    of flat tsv files
 
     Parameters:
         h5 (str): h5 file to convert to tables
@@ -1126,7 +1126,7 @@ def add_stable_gid(gtf):
     #     gtf.drop(['temp', 'par_region_1', 'par_region_2'], axis=1, inplace=True)
     # except:
     #     gtf['gene_id'] = gtf.gene_id.str.split('.', expand=True)[0]
-    gtf[col] = get_stable_gid(gtf, 'gene_id')
+    gtf['gene_id'] = get_stable_gid(gtf, 'gene_id')
 
     return gtf
 
