@@ -662,6 +662,7 @@ def merge_ends(ends, ref, mode):
     ends = ends.nearest(ref,
                         strandedness=None,
                         how=direction)
+    # pdb.set_trace()
 
     # fix the ends with mismatching gene ids - this part can be slow :(
     ends = ends.df
@@ -683,6 +684,7 @@ def merge_ends(ends, ref, mode):
 
         if i % 100 == 0:
             print('Processed {} / {} genes'.format(i, len(fix_ends.gene_id.unique().tolist())))
+    # pdb.set_trace()
 
     # merge back in to get transcript ids
     t_ends = t_ends.merge(ends, how='left',
@@ -1705,6 +1707,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
     df.rename({'ic': 'Coordinates'}, axis=1, inplace=True)
 
     df = merge_ics(df, ic)
+    print('merged ic')
 
     ### ends ###
     for mode, ref in zip(['tss', 'tes'], [tss, tes]):
@@ -1714,6 +1717,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
             ends = gtf_df.features.tes()
 
         t_ends = merge_ends(ends, ref, mode)
+        print('merge ends')
 
         # merge with ic ids
         df = df.merge(t_ends, how='left', on='transcript_id')
@@ -1757,6 +1761,13 @@ def assign_triplets(gtf_df, tss, ic, tes):
     df.rename({'transcript_id': 'original_transcript_id',
                'transcript_name': 'original_transcript_name'},
                axis=1, inplace=True)
+    # pdb.set_trace()
+
+    print('fixing issue that you need to debug later...')
+    for beep in ['tss', 'tes', 'ic']:
+        print('# affected transcripts w/ null {}: {}'.format(beep,len(df[beep]loc[df[beep].isnull()].index)))
+        df[beep] = df[beep].fillna(1)
+
     df['transcript_triplet'] = '['+df.tss.astype(int).astype(str)+','+\
                                    df.ic.astype(int).astype(str)+','+\
                                    df.tes.astype(int).astype(str)+']'
@@ -1924,9 +1935,11 @@ def convert_transcriptome(gtf, h5, o):
     tes = split_cerberus_id(tes, 'tes')
     tss = pr.PyRanges(tss)
     tes = pr.PyRanges(tes)
+    print('wow look at that im actually runing')
 
     # read in transcriptome to convert to cerberus
     gtf_df = pr.read_gtf(gtf).df
+    print('read gtf')
 
     # format gid
     gtf_df = add_stable_gid(gtf_df)
