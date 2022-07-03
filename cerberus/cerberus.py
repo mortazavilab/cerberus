@@ -1048,7 +1048,7 @@ def write_h5(ic, tss, tes, oname,
 
     if not isinstance(m, pd.DataFrame):
         m = pd.DataFrame()
-    pdb.set_trace()
+    # pdb.set_trace()
     print('you also need to fix this')
     for c in ['tss_first_sd_issue', 'tes_last_sa_issue']:
         print('# issues w/ {} nan issue: {}'.format(c, len(m.loc[m[c].isnull()].index)))
