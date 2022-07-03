@@ -1765,7 +1765,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
 
     print('fixing issue that you need to debug later...')
     for beep in ['tss', 'tes', 'ic']:
-        print('# affected transcripts w/ null {}: {}'.format(beep,len(df[beep]loc[df[beep].isnull()].index)))
+        print('# affected transcripts w/ null {}: {}'.format(beep,len(df.loc[df[beep].isnull()].index)))
         df[beep] = df[beep].fillna(1)
 
     df['transcript_triplet'] = '['+df.tss.astype(int).astype(str)+','+\
