@@ -879,6 +879,7 @@ def update_transcript_ends(df, mode, strand):
     df.loc[inds, old_col] = df.loc[inds, new_col]
 
     # convert float dtypes
+    # pdb.set_trace()
     df.Start = df.Start.astype(int)
     df.End = df.End.astype(int)
 
@@ -2003,7 +2004,8 @@ def replace_ab_ids(ab, h5, agg, o):
 def fix_prob_col_dtypes(df):
     for c in ['tss_first_sd_issue', 'tes_last_sa_issue']:
         m = {'False': False, 'True': True}
-        df[c] = df[c].map(m).head()
+        df[c] = df[c].map(m)
+        df[c] = df[c].fillna(True)
     return df
 
 
@@ -2044,6 +2046,7 @@ def replace_gtf_ids(h5, gtf, update_ends, agg, o):
         tes = pr.PyRanges(tes)
 
     # temporary fix for problematic transcripts
+    # pdb.set_trace()
     m_df = fix_prob_col_dtypes(m_df)
     rm_tids = m_df.loc[(m_df.tss_first_sd_issue)|(m_df.tes_last_sa_issue), 'original_transcript_id'].tolist()
     df = df.loc[~df.transcript_id.isin(rm_tids)]
