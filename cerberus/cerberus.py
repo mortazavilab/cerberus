@@ -2035,6 +2035,8 @@ def replace_gtf_ids(h5, gtf, update_ends, agg, o):
         tes = pr.PyRanges(tes)
 
     # temporary fix for problematic transcripts
+    for c in ['tss_first_sd_issue', 'tes_last_sa_issue']:
+        m_df[c] = m_df[c].astype(bool)
     rm_tids = m_df.loc[(m_df.tss_first_sd_issue)|(m_df.tes_last_sa_issue), 'original_transcript_id'].tolist()
     df = df.loc[~df.transcript_id.isin(rm_tids)]
 
