@@ -1981,6 +1981,7 @@ def replace_ab_ids(ab, h5, agg, o):
     _, _, _, _, _, m_df = read_h5(h5)
 
     # temporary fix for problematic transcripts
+    pdb.set_trace()
     m_df = fix_prob_col_dtypes(m_df)
     rm_tids = m_df.loc[(m_df.tss_first_sd_issue)|(m_df.tes_last_sa_issue), 'original_transcript_id'].tolist()
     df = df.loc[~df.annot_transcript_id.isin(rm_tids)]
@@ -2001,7 +2002,8 @@ def replace_ab_ids(ab, h5, agg, o):
 
 def fix_prob_col_dtypes(df):
     for c in ['tss_first_sd_issue', 'tes_last_sa_issue']:
-        df[c] = df[c].astype(bool)
+        m = {'False': False, 'True': True}
+        df[c] = df[c].map(m).head()
     return df
 
 
