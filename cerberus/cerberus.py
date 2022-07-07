@@ -141,8 +141,7 @@ def get_ic(gtf_pr):
 
     # sort to order coordinates correctly
     df.Coord = df.Coord.astype(int)
-    fwd = df.loc[df.Strand == '+'].copy(deep=True)
-    rev = df.loc[df.Strand == '-'].copy(deep=True)
+    fwd, rev = get_stranded_gtf_dfs(df)
 
     fwd.sort_values(by=['Chromosome', 'transcript_id', 'Coord'],
                     ascending=[True, True, True], inplace=True)
