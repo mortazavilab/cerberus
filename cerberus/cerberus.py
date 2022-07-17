@@ -601,7 +601,7 @@ def agg_2_ics(ic1, ic2):
 
     return df
 
-##### helpers for convert_transcriptome #####
+##### helpers for annotate_transcriptome #####
 def merge_ics(df, ic):
     """
     Assign each transcript in df to an intron chain in ic
@@ -1156,6 +1156,17 @@ def check_files(files, sources):
 
     if len(set(sources)) < len(sources):
         raise Exception('Sources must be unique')
+
+def check_source(df, source):
+    """
+    Check if a source is in a given df. Raise error if not
+
+    Parameters:
+        df (pandas DataFrame): DF with source column
+        source (str): Source name
+    """
+    if source not in df.source.unique().tolist():
+        raise ValueError('Source {} not found'.format(source))
 
 def parse_gtf_config(fname):
     """
@@ -1770,7 +1781,9 @@ def assign_triplets(gtf_df, tss, ic, tes):
     # pdb.set_trace()
 
     print('fixing issue that you need to debug later...')
+    print('these are sirvs / erccs')
     for beep in ['tss', 'tes', 'ic']:
+        pdb.set_trace()
         print('# affected transcripts w/ null {}: {}'.format(beep,len(df.loc[df[beep].isnull()].index)))
         df[beep] = df[beep].fillna(1)
 
@@ -1923,7 +1936,7 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
         for f in tmp_files:
             os.remove(f)
 
-def convert_transcriptome(gtf, h5, o):
+def annotate_transcriptome(gtf, h5, source, o):
     """
     Create an h5 cerberus transcriptome from a GTF using an existing
     cerberus annotation
@@ -1931,21 +1944,20 @@ def convert_transcriptome(gtf, h5, o):
     Parameters:
         gtf (str): Path to GTF to annotate
         h5 (str): Path to cerberus annotation in h5 format
+        source (str): Name of source to annotate (ie v40, v29, talon)
         o (str): Output .h5 file path / name
     """
 
     # read in / format existing reference
-    ic, tss, tes, tss_map, tes_map, _ = read_h5(h5, as_pyranges=False)
+    ic, tss, tes, tss_map, tes_map, t_map = read_h5(h5, as_pyranges=False)
     ic = split_cerberus_id(ic, 'ic')
     tss = split_cerberus_id(tss, 'tss')
     tes = split_cerberus_id(tes, 'tes')
     tss = pr.PyRanges(tss)
     tes = pr.PyRanges(tes)
-    print('wow look at that im actually runing')
 
     # read in transcriptome to convert to cerberus
     gtf_df = pr.read_gtf(gtf).df
-    print('read gtf')
 
     # format gid
     gtf_df = add_stable_gid(gtf_df)
@@ -1953,6 +1965,13 @@ def convert_transcriptome(gtf, h5, o):
     gtf_df = pr.PyRanges(gtf_df)
 
     df = assign_triplets(gtf_df, tss, ic, tes)
+    df['source'] = source
+
+    # if we already have a transcript map,
+    # append to that
+    if isinstance(t_map, pd.DataFrame):
+        pdb.set_trace()
+        df = pd.concat([t_map, df])
 
     # write h5 file
     tss = tss.df
@@ -1962,7 +1981,7 @@ def convert_transcriptome(gtf, h5, o):
         tes_map=tes_map,
         m=df)
 
-def replace_ab_ids(ab, h5, agg, o):
+def replace_ab_ids(ab, h5, source, agg, o):
     """
     Replace the transcript ids and transcript names in a TALON abundance file
     with the new transcript ids that contain the triplet
@@ -1970,18 +1989,19 @@ def replace_ab_ids(ab, h5, agg, o):
     Parameters:
         ab (str): Path to TALON abundance file
         h5 (str): Path to h5 annotation (output from assign)
+        source (str): Name of source in transcript map to pull fromå
         agg (bool): Aggregate / collapse transcripts with the same triplets
             and sum up their count values
-
-    Returns:
-        df (pandas DataFrame): TALON abundance file with updated
-            transcript ids / names
+        o (str): Output file name
     """
     df = pd.read_csv(ab, sep='\t')
     _, _, _, _, _, m_df = read_h5(h5)
 
+    # restrict to source
+    check_source(m_df, source)
+    m_df = m_df.loc[m_df.source == source]
+
     # temporary fix for problematic transcripts
-    # pdb.set_trace()
     m_df = fix_prob_col_dtypes(m_df)
     rm_tids = m_df.loc[(m_df.tss_first_sd_issue)|(m_df.tes_last_sa_issue), 'original_transcript_id'].tolist()
     df = df.loc[~df.annot_transcript_id.isin(rm_tids)]
@@ -2008,7 +2028,7 @@ def fix_prob_col_dtypes(df):
     return df
 
 
-def replace_gtf_ids(h5, gtf, update_ends, agg, o):
+def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
     """
     Replace transcript ids in a gtf with the new cerberus ends.
     Optionally update the end coordinates of each transcript
@@ -2016,8 +2036,9 @@ def replace_gtf_ids(h5, gtf, update_ends, agg, o):
     that use the same triplets.
 
     Parameters:
-        h5 (str): Path to cerberus h5 file output from `convert_transcriptome`
+        h5 (str): Path to cerberus h5 file output from `annotate_transcriptome`
         gtf (str): Path to GTF file to update
+        source (str): Name of source in transcript map to pull from
         update_ends (bool): Update the ends of each transcript based on regions
             in h5 tss / tes file
         agg (bool): Collapse transcripts with the same triplet and only report one
@@ -2043,6 +2064,10 @@ def replace_gtf_ids(h5, gtf, update_ends, agg, o):
         tes['tes_id'] = tes.gene_id+'_'+tes.tes.astype(str)
         tss = pr.PyRanges(tss)
         tes = pr.PyRanges(tes)
+
+    # restrict to source
+    check_source(m_df, source)
+    m_df = m_df.loc[m_df.source == source]
 
     # temporary fix for problematic transcripts
     # pdb.set_trace()

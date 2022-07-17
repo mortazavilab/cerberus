@@ -155,18 +155,21 @@ def gen_reference_command(ref_gtf, o,
                   keep_tmp)
 
 ####### annotate a transcriptome ######
-@cli.command(name='convert_transcriptome')
+@cli.command(name='annotate_transcriptome')
 @click.option('--gtf',
               help='GTF file',
               required=True)
 @click.option('--h5',
             help='cerberus reference from gen_reference',
             required=True)
+@click.option('--source',
+              help='Name of GTF source',
+              required=True)
 @click.option('-o',
             help='Output file name',
             required=True)
-def convert_transcriptome_command(gtf, h5, o):
-    convert_transcriptome(gtf, h5, o)
+def annotate_transcriptome_command(gtf, h5, source, o):
+    annotate_transcriptome(gtf, h5, source, o)
 
 ###### replace transcript ids of an annotated transcriptome
 ###### with cerberus triplet ids in abundance file
@@ -177,6 +180,9 @@ def convert_transcriptome_command(gtf, h5, o):
 @click.option('--ab',
               help='TALON abundance file to replace ids in',
               required=True)
+@click.option('--source',
+              help='name of source in cerberus object to map from',
+              required=True)
 @click.option('--collapse',
               help='collapse transcripts with the same triplets',
               is_flag=True,
@@ -185,8 +191,8 @@ def convert_transcriptome_command(gtf, h5, o):
 @click.option('-o',
               help='Output file name',
               required=True)
-def replace_ab_ids_command(h5, ab, collapse, o):
-    replace_ab_ids(ab, h5, collapse, o)
+def replace_ab_ids_command(h5, ab, source, collapse, o):
+    replace_ab_ids(ab, h5, source, collapse, o)
 
 ###### replace transcript ids of an annotated transcriptome
 ###### with cerberus triplet ids in gtf
@@ -197,6 +203,9 @@ def replace_ab_ids_command(h5, ab, collapse, o):
 @click.option('--gtf',
               help='GTF file to replace ids in',
               required=True)
+@click.option('--source',
+            help='name of source in cerberus object to map from',
+            required=True)
 @click.option('--update_ends',
               help='Update ends of transcripts with ends from h5',
               is_flag=True,
@@ -210,8 +219,8 @@ def replace_ab_ids_command(h5, ab, collapse, o):
 @click.option('-o',
               help='Output GTF file name',
               required=True)
-def replace_gtf_ids_command(h5, gtf, update_ends, collapse, o):
-    replace_gtf_ids(h5, gtf, update_ends, collapse, o)
+def replace_gtf_ids_command(h5, gtf, source, update_ends, collapse, o):
+    replace_gtf_ids(h5, gtf, source, update_ends, collapse, o)
 
 #
 # @cli.command(name='h5_to_tsv')

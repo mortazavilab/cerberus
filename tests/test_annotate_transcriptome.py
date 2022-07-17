@@ -99,8 +99,6 @@ def format_ics_df(df):
     df.reset_index(drop=True, inplace=True)
     return df
 
-
-
 def test_merge_ends(print_dfs=True):
     # cases where
     # - ends overlap existing ends as well as gene id
