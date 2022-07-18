@@ -1048,12 +1048,12 @@ def write_h5(ic, tss, tes, oname,
 
     if not isinstance(m, pd.DataFrame):
         m = pd.DataFrame()
-    # pdb.set_trace()
-    print('you also need to fix this')
-    for c in ['tss_first_sd_issue', 'tes_last_sa_issue']:
-        print('# issues w/ {} nan issue: {}'.format(c, len(m.loc[m[c].isnull()].index)))
-        m.loc[m[c].isnull(), c] = True
-        m[c] = m[c].astype('str')
+    else:
+        print('you also need to fix this')
+        for c in ['tss_first_sd_issue', 'tes_last_sa_issue']:
+            print('# issues w/ {} nan issue: {}'.format(c, len(m.loc[m[c].isnull()].index)))
+            m.loc[m[c].isnull(), c] = True
+            m[c] = m[c].astype('str')
     m.to_hdf(oname, 'map', mode='a', format='table')
 
 def write_h5_to_tsv(h5, opref):
@@ -1783,7 +1783,7 @@ def assign_triplets(gtf_df, tss, ic, tes):
     print('fixing issue that you need to debug later...')
     print('these are sirvs / erccs')
     for beep in ['tss', 'tes', 'ic']:
-        pdb.set_trace()
+        # pdb.set_trace()
         print('# affected transcripts w/ null {}: {}'.format(beep,len(df.loc[df[beep].isnull()].index)))
         df[beep] = df[beep].fillna(1)
 
@@ -1970,7 +1970,7 @@ def annotate_transcriptome(gtf, h5, source, o):
     # if we already have a transcript map,
     # append to that
     if isinstance(t_map, pd.DataFrame):
-        pdb.set_trace()
+        # pdb.set_trace()
         df = pd.concat([t_map, df])
 
     # write h5 file
