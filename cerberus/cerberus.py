@@ -157,7 +157,7 @@ def get_ic(gtf_pr):
     # remove tss and tes from intron chain
     df['temp'] = df.Coord.str.split('-', n=1, expand=True)[1]
     df['ic'] = df.temp.str.rsplit('-', n=1, expand=True)[0]
-    df.loc[~df.ic.str.contains('-'), 'ic'] = '' # for monoexonic transcripts
+    df.loc[~df.ic.str.contains('-'), 'ic'] = '-' # for monoexonic transcripts
     df.drop(['temp', 'Coord'], axis=1, inplace=True)
 
     return df
@@ -183,8 +183,8 @@ def number_tss_ic_tes(df, mode):
     subset_cols = ['transcript_id', 'Chromosome', 'Strand', mode,
                    'basic_set', 'MANE_Select', 'appris_principal', 'gene_id']
 
-    # for ics that are monoexonic
-    df.loc[df[mode].isnull(), mode] = ''
+    # # for ics that are monoexonic
+    # df.loc[df[mode].isnull(), mode] = '-'
 
     if mode == 'tss' or mode == 'tes':
         gb_cols += ['Start', 'End']
@@ -195,10 +195,11 @@ def number_tss_ic_tes(df, mode):
 
     # agg drops nan ics!
     df = df[subset_cols].groupby(gb_cols,
-                           observed=True).agg({'transcript_id': ','.join,
-                                     'MANE_Select': 'max',
-                                     'basic_set': 'max',
-                                     'appris_principal': 'min'}).reset_index()
+                           observed=True,
+                           drop_na=False).agg({'transcript_id': ','.join,
+                                                 'MANE_Select': 'max',
+                                                 'basic_set': 'max',
+                                                 'appris_principal': 'min'}).reset_index()
 
     # compute feature number based on tags
     df['{}_num'.format(mode)] = df.sort_values(by=sort_cols,
@@ -614,6 +615,7 @@ def merge_ics(df, ic):
         df (pandas DataFrame): DataFrame indicating which intron chain is used
             for each transcript
     """
+    # pdb.set_trace()
     # merge on intron chain, strand, chromosome, and gene id
     df = df.merge(ic, how='left',
                   on=['Chromosome', 'Strand',
@@ -1125,15 +1127,6 @@ def add_stable_gid(gtf):
         gtf (pandas DataFrame): GTF dataframe with gene id turned into its
             stable version
     """
-    # try:
-    #     gtf[['temp', 'par_region_1', 'par_region_2']] = gtf.gene_id.str.split('_', n=2, expand=True)
-    #     gtf['gene_id'] = gtf.gene_id.str.split('.', expand=True)[0]
-    #     gtf[['par_region_1', 'par_region_2']] = gtf[['par_region_1',
-    #                                                        'par_region_2']].fillna('')
-    #     gtf['gene_id'] = gtf.gene_id+gtf.par_region_1+gtf.par_region_2
-    #     gtf.drop(['temp', 'par_region_1', 'par_region_2'], axis=1, inplace=True)
-    # except:
-    #     gtf['gene_id'] = gtf.gene_id.str.split('.', expand=True)[0]
     gtf['gene_id'] = get_stable_gid(gtf, 'gene_id')
 
     return gtf
@@ -1566,14 +1559,10 @@ def get_ics_from_gtf(gtf):
 
     # make coords into tuple and perform additional
     # formatting for this table
-    # df['ic'] = df.ic.str.split('-')
-    # df['ic'] = [tuple(c) for c in df.ic.tolist()]
     ic = df.copy(deep=True)
     ic.rename({'ic': 'Coordinates'},
                axis=1, inplace=True)
-    # ic['gene_id'] = ic.gene_id.str.split('.', n=1, expand=True)[0]
     ic['Name'] = ic['gene_id']+'_'+ic.ic_num.astype(str)
-    # print(ic.loc[ic.transcript_id == 'ENCODEHT000206942'])
 
     cols = ['transcript_id', 'MANE_Select', 'basic_set', 'appris_principal',
             'gene_id', 'ic_num']
@@ -1782,10 +1771,11 @@ def assign_triplets(gtf_df, tss, ic, tes):
 
     print('fixing issue that you need to debug later...')
     print('these are sirvs / erccs')
+    print('and monoexonic transcripts')
     for beep in ['tss', 'tes', 'ic']:
         # pdb.set_trace()
         print('# affected transcripts w/ null {}: {}'.format(beep,len(df.loc[df[beep].isnull()].index)))
-        df[beep] = df[beep].fillna(1)
+        df[beep] = df[beep].fillna('0')
 
     df['transcript_triplet'] = '['+df.tss.astype(int).astype(str)+','+\
                                    df.ic.astype(int).astype(str)+','+\
@@ -1798,7 +1788,6 @@ def assign_triplets(gtf_df, tss, ic, tes):
     return df
 
 ###### routines called from main #####
-####### actual routines #######
 def gtf_to_bed(gtf, mode, o, dist=50, slack=50):
     bed = get_ends_from_gtf(gtf, mode, dist, slack)
     bed.to_bed(o)

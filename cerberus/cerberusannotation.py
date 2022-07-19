@@ -139,7 +139,6 @@ class CerberusAnnotation():
         t_df.reset_index(inplace=True)
         t_df.rename({'index': 'tid'}, axis=1, inplace=True)
 
-
         # limit only to isoforms that are in the subset set
         if isinstance(subset, pd.DataFrame):
             temp = t_df.melt(id_vars=['tid', 'gene_id'], var_name=gb, value_name='detected')

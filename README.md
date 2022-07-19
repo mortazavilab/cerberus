@@ -209,7 +209,8 @@ cerberus write_reference \
 ```
 
 ### Annotate an existing GTF transcriptome with the intron chains, TSSs, and TESs from a cerberus reference
-Using the reference from `cerberus write_reference`, determine which end regions and intron chain each transcript
+Using the reference from `cerberus write_reference`, or a reference from a previous run of
+`cerberus annotate_transcriptome` (this function), determine which end regions and intron chain each transcript
 in the input GTF uses and output the results to an h5 transcriptome representation.
 
 ```
@@ -332,4 +333,4 @@ cerberus h5-to-tsv \
 cerberus h5-to-tsv \
   --h5 tests/files/Canx_triplet.h5 \
   --opref tests/files/Canx_triplet
-``` --> 
+``` -->
