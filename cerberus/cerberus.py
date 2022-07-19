@@ -196,7 +196,7 @@ def number_tss_ic_tes(df, mode):
     # agg drops nan ics!
     df = df[subset_cols].groupby(gb_cols,
                            observed=True,
-                           drop_na=False).agg({'transcript_id': ','.join,
+                           dropna=False).agg({'transcript_id': ','.join,
                                                  'MANE_Select': 'max',
                                                  'basic_set': 'max',
                                                  'appris_principal': 'min'}).reset_index()
