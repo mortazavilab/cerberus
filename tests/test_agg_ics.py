@@ -5,7 +5,7 @@ from click.testing import CliRunner
 from conftest import *
 from cerberus.main import *
 
-def make_ics_df(c,s,co,n, source):
+def make_ics_df(c,s,co,n, source,nov):
     df = pd.DataFrame()
     cols = ['Chromosome', 'Strand', 'Coordinates', 'Name']
     var = [c,s,co,n]
@@ -18,6 +18,10 @@ def make_ics_df(c,s,co,n, source):
     df['gene_id'] = df.Name.str.split('_', expand=True)[0]
     df['ic'] = df.Name.str.split('_', expand=True)[1]
     df['source'] = source
+
+    if nov:
+        df['novelty'] = nov
+
     df.ic = df.ic.astype(int)
 
     return df
@@ -25,7 +29,7 @@ def make_ics_df(c,s,co,n, source):
 def format_ics_df(df):
     sort_cols = ['Chromosome', 'Strand', 'Coordinates']
     df = df.sort_values(by=sort_cols)
-    order = ['Chromosome', 'Strand', 'Coordinates', 'Name', 'gene_id', 'ic', 'source']
+    order = ['Chromosome', 'Strand', 'Coordinates', 'Name', 'gene_id', 'ic', 'source', 'novelty']
     order = [o for o in order if o in df.columns]
     df = df[order]
     df.reset_index(drop=True, inplace=True)
@@ -44,7 +48,8 @@ def test_agg_2_ics_1(print_dfs=True):
         co = ['1-2-3', '1-4-3', '5-2-3']
         n = ['gene1_1', 'gene1_2', 'gene1_3']
         source = 'v1'
-        df1 = make_ics_df(c,s,co,n, source)
+        ref = 'Known'
+        df1 = make_ics_df(c,s,co,n, source, ref)
 
         n = 3
         c = ['1' for i in range(n)]
@@ -52,7 +57,8 @@ def test_agg_2_ics_1(print_dfs=True):
         co = ['1-4-3', '1-2-6', '11-12-13']
         n = ['gene1_1', 'gene1_2', 'gene2_1']
         source = 'v2'
-        df2 = make_ics_df(c,s,co,n, source)
+        ref = 'Novel'
+        df2 = make_ics_df(c,s,co,n, source, ref)
 
         return df1, df2
 
@@ -63,7 +69,8 @@ def test_agg_2_ics_1(print_dfs=True):
         co = ['1-2-3', '1-4-3', '5-2-3', '1-2-6', '11-12-13']
         n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene1_4', 'gene2_1']
         source = ['v1', 'v2', 'v1,v2', 'v2', 'v1']
-        df = make_ics_df(c,s,co,n, source)
+        ref = ['Known' if 'v1' in s else 'Novel' for s in source]
+        df = make_ics_df(c,s,co,n, source, ref)
         # df.drop(['gene_id', 'ic'], axis=1, inplace=True)
 
         return df

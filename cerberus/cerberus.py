@@ -266,6 +266,22 @@ def number_gtf_ends(bed, gtf, mode):
 
 ##### for aggregating ends and intron chains #####
 
+def update_novelty(df):
+    """
+    Update comma-separated novelties after aggregating intron chains
+    or ends; remove new novelty columns
+
+    Parameters:
+        df (pandas DataFrame): DF with columns 'novelty', 'novelty_new'
+
+    Returns:
+        df (pandas DataFrame): DF w/ column 'novelty' w/ values {'Known', 'Novel'}
+    """
+    df.loc[df.novelty.str.contains('Known'), 'novelty'] = 'Known'
+    if 'novelty_new' in df.columns:
+        df.drop('novelty_new', axis=1, inplace=True)
+    return df
+
 def get_gene_feat_max(df, mode):
     """
     Get the maximum current number of a feature in an existing df
@@ -428,6 +444,7 @@ def agg_2_ends(bed1, bed2,
     else:
         temp = temp_joined.loc[~temp_joined.Start_new.isnull()].copy(deep=True)
     temp.source = temp.source+','+temp.source_new
+    temp.novelty = temp.novelty+','+temp.novelty_new
     df = pd.concat([df, temp])
 
     # create source map for ends from this source
@@ -459,7 +476,7 @@ def agg_2_ends(bed1, bed2,
 
     # restrict to relevant columns
     cols = ['Chromosome', 'Start', 'End', 'Strand',
-            'Name', 'gene_id', 'source', mode, 'id_new']
+            'Name', 'gene_id', 'source', 'novelty', mode, 'id_new']
     df = df[cols]
     df.rename({'id_new': 'id'}, axis=1, inplace=True)
 
@@ -469,12 +486,13 @@ def agg_2_ends(bed1, bed2,
 
         new_df = pd.DataFrame()
 
-        drop_cols = ['Start', 'End', 'Strand', 'gene_id', 'source', 'Name', 'id', mode]
+        drop_cols = ['Start', 'End', 'Strand', 'gene_id', 'source', 'novelty', 'Name', 'id', mode]
         m = {'Start_new': 'Start',
              'End_new': 'End',
              'gene_id_new': 'gene_id',
              'Strand_new': 'Strand',
              'source_new': 'source',
+             'novelty_new': 'novelty',
              'Name_new': 'Name',
              'id_new': 'id',
              new_c: mode}
@@ -507,6 +525,9 @@ def agg_2_ends(bed1, bed2,
         # finally, concatenate new and old df
         df = pd.concat([df, new_df])
 
+    # reconcile novelties
+    df = update_novelty(df)
+
     # drop duplicates that could have arisen from entries
     # on multiple strands or from multiple subregions in bed2
     df['n_sources'] = df.source.str.count(pat=',')
@@ -521,7 +542,7 @@ def agg_2_ends(bed1, bed2,
     df['Name'] = df.gene_id+'_'+df[mode].astype(str)
     df[mode] = df[mode].astype(int)
     df['Start'] = df.Start.astype(int)
-    keep_cols = ['Chromosome', 'Start', 'End', 'Strand', 'Name', 'gene_id', mode, 'source']
+    keep_cols = ['Chromosome', 'Start', 'End', 'Strand', 'Name', 'gene_id', mode, 'source', 'novelty']
     df = df[keep_cols]
 
     df = df.sort_values(by=['Chromosome', 'Start'])
@@ -574,6 +595,8 @@ def agg_2_ics(ic1, ic2):
     max_c = '{}_max'.format(mode)
     new_c = '{}_new'.format(mode)
 
+    # pdb.set_trace()
+
     # if we have more than 1 set of ics, merge on chrom, strand,
     # ic coords, and gene id
     ic1 = ic1.merge(ic2,
@@ -581,6 +604,10 @@ def agg_2_ics(ic1, ic2):
                   how='outer', suffixes=('', '_new'))
     # https://stackoverflow.com/questions/62681371/python-combining-names-with-missing-values/62681510#62681510
     ic1['source'] = ic1[['source', 'source_new']].stack().groupby(level=0).agg(','.join)
+
+    # update novelty types
+    ic1['novelty'] = ic1[['novelty', 'novelty_new']].stack().groupby(level=0).agg(','.join)
+    ic1 = update_novelty(ic1)
 
     # get new ic numbers for duplicate entries
     old = ic1.loc[~ic1.ic.isnull()].copy(deep=True)
@@ -1304,7 +1331,7 @@ def read_ic_ref(ic_file, add_gid=True, add_num=True):
     df.drop(drop_cols, axis=1, inplace=True)
 
     order = ['Chromosome', 'Strand', 'Coordinates',
-             'Name', 'source', 'gene_id', 'ic']
+             'Name', 'source', 'novelty', 'gene_id', 'ic']
     order = [o for o in order if o in df.columns]
     df = df[order]
 
@@ -1340,46 +1367,17 @@ def read_cerberus_ends(bed_file, mode,
         drop_cols.append(mode)
     df.drop(drop_cols, axis=1, inplace=True)
 
-    df.rename({'ThickStart': 'source'}, axis=1, inplace=True)
+    # pdb.set_trace()
+
+    df.rename({'ThickStart': 'source',
+               'ThickEnd': 'novelty'}, axis=1, inplace=True)
 
     order = ['Chromosome', 'Start', 'End', 'Strand',
-             'Name', 'source', 'gene_id', mode]
+             'Name', 'source', 'novelty', 'gene_id', mode]
     order = [o for o in order if o in df.columns]
     df = df[order]
 
     return df
-
-# def read_lapa_ends(bed_file,
-#                        add_gid=True):
-#     """
-#     Read end reference bed file (output from gtf_to_bed or agg_ends)
-#
-#     Parameters:
-#         bed_file (str): Path to bed file
-#         mode (str): {'tss', 'tes'}
-#         add_gid (bool): Whether to include gene id in output
-#         add_num (bool): Whether to add end chain # in output
-#
-#     Returns:
-#         df (pandas DataFrame): Dataframe with gene id and end number
-#             added in addition to existing information
-#     """
-#     df = pr.read_bed(bed_file).df
-#     df['gene_id']
-#
-#     drop_cols = []
-#     if not add_gid:
-#         drop_cols.append('gene_id')
-#     df.drop(drop_cols, axis=1, inplace=True)
-#
-#     df.rename({'ThickStart': 'source'}, axis=1, inplace=True)
-#
-#     order = ['Chromosome', 'Start', 'End', 'Strand',
-#              'Name', 'source', 'gene_id']
-#     order = [o for o in order if o in df.columns]
-#     df = df[order]
-#
-#     return df
 
 def read_cerberus_source_map(fname):
     """
@@ -1445,14 +1443,17 @@ def parse_agg_ics_config(fname):
     Returns:
         ics (list of str): List of fnames to ic files
         sources (list of str): Source names for each ic file
+        refs (list of bool): List of whether or not to
+            consider ends from each bed as a reference
     """
     df = pd.read_csv(fname, header=None, sep=',')
-    df.columns = ['fname', 'source']
+    df.columns = ['fname', 'ref', 'source']
 
     ics = df.fname.tolist()
     sources = df.source.tolist()
+    refs = df.ref.tolist()
 
-    return ics, sources
+    return ics, refs, sources
 
 def parse_agg_ends_config(fname):
     """
@@ -1465,19 +1466,22 @@ def parse_agg_ends_config(fname):
         beds (list of str): List of fnames to beds
         add_ends (list of bool): List of whether or not
             to add new ends from each bed
+        refs (list of bool): List of whether or not to
+            consider ends from each bed as a reference
         sources (list of str): Source names for each bed
     """
     if not fname:
-        return [], [], []
+        return [], [], [], []
 
     df = pd.read_csv(fname, header=None, sep=',')
-    df.columns = ['fname', 'add_ends', 'source']
+    df.columns = ['fname', 'add_ends', 'ref', 'source']
 
     beds = df.fname.tolist()
     add_ends = df.add_ends.tolist()
     sources = df.source.tolist()
+    refs = df.ref.tolist()
 
-    return beds, add_ends, sources
+    return beds, add_ends, refs, sources
 
 ##### main methods #####
 
@@ -1571,7 +1575,7 @@ def get_ics_from_gtf(gtf):
 
     return ic
 
-def aggregate_ends(beds, sources, add_ends, slack, mode):
+def aggregate_ends(beds, sources, add_ends, refs, slack, mode):
     """
     Aggregate ends from more than one bed source.
 
@@ -1580,6 +1584,8 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
         sources (list of str): List of source names for each bed
         add_ends (list of bool): List of booleans indicating whether
             to add novel ends for each bed file
+        refs (list of bool): List of whether or not to
+            consider ends from each bed as a reference
         slack (int): Allowable distance to an existing end for new
             ends to be called the same end
         mode (str): {'tss', 'tes'}
@@ -1593,14 +1599,22 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
 
     df = pd.DataFrame()
     i = 0
-    for bed_fname, source, add in zip(beds, sources, add_ends):
+    for bed_fname, source, add, ref in zip(beds, sources, add_ends, refs):
 
         # read in bed file and do some formatting
         bed = read_bed(bed_fname, mode)
         bed = bed.df
+        # pdb.set_trace()
         bed['source'] = source
+        if ref:
+            nov = 'Known'
+        else:
+            nov = 'Novel'
+        bed['novelty'] = nov
         bed['id'] = [i for i in range(len(bed.index))]
         bed = pr.PyRanges(bed)
+
+        # pdb.set_trace()
 
         # first bed; just accept all these ends
         if len(df.index) == 0:
@@ -1637,11 +1651,15 @@ def aggregate_ends(beds, sources, add_ends, slack, mode):
             m_source = pd.concat([m_source, temp])
             i += 1
 
+    # drop unnecessary columns and reorder those that are already there
     drop_cols = ['id', mode, 'gene_id']
     df.drop(drop_cols, axis=1, inplace=True)
+    order = ['Chromosome', 'Start', 'End', 'Strand',
+             'Name', 'source', 'novelty']
+    df = df[order]
     return df, m_source
 
-def aggregate_ics(ics, sources):
+def aggregate_ics(ics, sources, refs):
     """
     Aggregate intron chains from multiple gtf_to_ics calls into one
     ics tsv table. Preferentially number intron chains based on their
@@ -1652,6 +1670,8 @@ def aggregate_ics(ics, sources):
             number each unique ic
         sources (list of str): List of strings describing the source of each
             ic file
+        refs (list of bool): List of whether or not to
+            consider ends from each bed as a reference
 
     Returns:
         df (pandas DataFrame): Dataframe detailing the chromosome, strand,
@@ -1659,9 +1679,14 @@ def aggregate_ics(ics, sources):
             chain
     """
     df = pd.DataFrame()
-    for ic, source in zip(ics, sources):
+    for ic, source, ref in zip(ics, sources, refs):
         temp = read_ic_ref(ic)
         temp['source'] = source
+        if ref:
+            nov = 'Known'
+        else:
+            nov = 'Novel'
+        temp['novelty'] = nov
 
         # start with priority 1
         if len(df.index) == 0:
@@ -1797,17 +1822,17 @@ def gtf_to_ics(gtf, o):
     df.to_csv(o, index=False, sep='\t')
 
 def agg_ends(input, mode, slack, o):
-    beds, add_ends, sources = parse_agg_ends_config(input)
-    bed, source_map = aggregate_ends(beds, sources, add_ends, slack, mode)
+    beds, add_ends, refs, sources = parse_agg_ends_config(input)
+    bed, source_map = aggregate_ends(beds, sources, add_ends, refs, slack, mode)
     bed = pr.PyRanges(bed)
     source_map = pr.PyRanges(source_map)
-    bed.to_bed(o)
+    bed = bed.to_bed(o, chain=True)
     o2 = get_source_map_fname(o)
     source_map.to_bed(o2)
 
 def agg_ics(input, o):
-    ics, sources = parse_agg_ics_config(input)
-    ic = aggregate_ics(ics, sources)
+    ics, refs, sources = parse_agg_ics_config(input)
+    ic = aggregate_ics(ics, sources, refs)
     ic.to_csv(o, sep='\t', index=False)
 
 def write_reference(tss_fname, tes_fname, ic_fname, o):

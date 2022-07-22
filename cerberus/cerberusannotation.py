@@ -145,7 +145,7 @@ class CerberusAnnotation():
             temp['gene_id'] = get_stable_gid(temp, 'gene_id')
 
             subset['gene_id'] = get_stable_gid(subset, 'gid')
-            subset = subset[['gene_id', 'sample', 'tid']]
+            subset = subset[['gene_id', gb, 'tid']]
             # pdb.set_trace()
 
             temp = temp.merge(subset, how='inner', on=['gene_id', gb, 'tid'])

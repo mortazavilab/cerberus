@@ -5,7 +5,7 @@ from click.testing import CliRunner
 from conftest import *
 from cerberus.main import *
 
-def make_end_df(c,s,st,e,n, source,mode):
+def make_end_df(c,s,st,e,n, source,nov,mode):
     df = pd.DataFrame()
     cols = ['Chromosome', 'Strand', 'Start', 'End', 'Name']
     var = [c,s,st,e,n]
@@ -13,8 +13,11 @@ def make_end_df(c,s,st,e,n, source,mode):
         if type(var) == list:
             df[col] = var
 
-    # add source
+    # add source + novelty
     df['source'] = source
+
+    if nov:
+        df['novelty'] = nov
 
     df = format_end_df(df)
 
@@ -34,7 +37,7 @@ def make_end_df(c,s,st,e,n, source,mode):
 def format_end_df(df):
     sort_cols = ['Chromosome', 'Start', 'End', 'Strand']
     df = df.sort_values(by=sort_cols)
-    order = ['Chromosome', 'Start', 'End', 'Strand', 'Name', 'source']
+    order = ['Chromosome', 'Start', 'End', 'Strand', 'Name', 'source', 'novelty']
     order = [o for o in order if o in df.columns]
     df = df[order]
     df.reset_index(drop=True, inplace=True)
@@ -85,7 +88,8 @@ def test_agg_2_ends_1(print_dfs=True):
         e = [15, 250, 110, 340, 750, 770, 870]
         n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene1_4', 'gene3_1', 'gene3_2', 'gene5_1']
         source = 'v1'
-        bed1 = make_end_df(c,s,st,e,n, source, mode)
+        ref = 'Known'
+        bed1 = make_end_df(c,s,st,e,n, source, ref, mode)
         bed1 = pr.PyRanges(bed1)
 
         n = 9
@@ -95,7 +99,8 @@ def test_agg_2_ends_1(print_dfs=True):
         e = [10, 25, 140, 550, 250, 775, 775, 870, 855]
         n = ['gene1_1', 'gene1_4', 'gene1_2', 'gene1_3', 'gene2_1', 'gene3_1', 'gene4_1', 'gene5_1', 'gene5_2']
         source = 'v2'
-        bed2 = make_end_df(c,s,st,e,n, source, mode)
+        ref = 'Novel'
+        bed2 = make_end_df(c,s,st,e,n, source, ref, mode)
         bed2 = pr.PyRanges(bed2)
 
         return bed1, bed2
@@ -111,7 +116,8 @@ def test_agg_2_ends_1(print_dfs=True):
         e = [15,250,110,340,750,770,870, 250,550,775]
         n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene1_4', 'gene3_1', 'gene3_2', 'gene5_1', 'gene2_1', 'gene1_5', 'gene4_1']
         source = ['v1,v2','v1','v1,v2','v1','v1,v2','v1,v2','v1,v2', 'v2','v2','v2']
-        df = make_end_df(c,s,st,e,n, source,mode)
+        nov = ['Known' if 'v1' in s else 'Novel' for s in source]
+        df = make_end_df(c,s,st,e,n, source,nov,mode)
 
         # convert a few dtypes
         df['Strand'] = df['Strand'].astype('category')
@@ -151,7 +157,8 @@ def test_agg_2_ends_1(print_dfs=True):
         n = ['gene1_1', 'gene1_1', 'gene1_3', 'gene1_5', 'gene2_1', 'gene3_1', 'gene3_2', 'gene4_1', 'gene5_1', 'gene5_1']
         source = 'v2'
         mode = 'tss'
-        df = make_end_df(c,s,st,e,n, source,mode)
+        nov = None
+        df = make_end_df(c,s,st,e,n, source,nov,mode)
         df = df.loc[df.source == 'v2']
         df.drop(['gene_id', mode, 'id'], axis=1, inplace=True)
         df['Strand'] = df['Strand'].astype('category')
@@ -242,7 +249,8 @@ def test_agg_2_ends_2(print_dfs=True):
         e = [15, 250, 110, 340, 290, 290, 750, 770]
         n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene1_4', 'gene2_1', 'gene3_1', 'gene4_1', 'gene4_2']
         source = 'v1'
-        bed1 = make_end_df(c,s,st,e,n, source, mode)
+        nov = 'Known'
+        bed1 = make_end_df(c,s,st,e,n, source, nov, mode)
         bed1 = pr.PyRanges(bed1)
 
         n = 6
@@ -252,7 +260,8 @@ def test_agg_2_ends_2(print_dfs=True):
         e = [10, 21, 140, 550, 250, 775]
         n = [np.nan for i in range(n)]
         source = 'v2'
-        bed2 = make_end_df(c,s,st,e,n, source, mode)
+        nov = 'Novel'
+        bed2 = make_end_df(c,s,st,e,n, source, nov, mode)
         bed2 = pr.PyRanges(bed2)
 
         return bed1, bed2
@@ -269,7 +278,8 @@ def test_agg_2_ends_2(print_dfs=True):
         e = [15,250,110,340, 290,290, 750,770]
         n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene1_4', 'gene2_1', 'gene3_1', 'gene4_1', 'gene4_2']
         source = ['v1,v2','v1,v2','v1,v2','v1', 'v1,v2', 'v1,v2', 'v1,v2', 'v1,v2']
-        df = make_end_df(c,s,st,e,n, source,mode)
+        nov = ['Known' if 'v1' in s else 'Novel' for s in source ]
+        df = make_end_df(c,s,st,e,n, source,nov,mode)
 
         # convert a few dtypes
         df['Strand'] = df['Strand'].astype('category')
@@ -299,7 +309,8 @@ def test_agg_2_ends_2(print_dfs=True):
         n = ['gene1_1', 'gene1_1', 'gene1_3', 'gene1_2', 'gene2_1', 'gene3_1', np.nan, 'gene4_1', 'gene4_2']
         source = 'v2'
         mode = 'tss'
-        df = make_end_df(c,s,st,e,n, source,mode)
+        nov = None
+        df = make_end_df(c,s,st,e,n, source,nov,mode)
         df = df.loc[df.source == 'v2']
         df.drop(['gene_id', mode, 'id'], axis=1, inplace=True)
         df['Strand'] = df['Strand'].astype('category')
