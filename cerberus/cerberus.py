@@ -278,7 +278,7 @@ def update_novelty(df):
         df (pandas DataFrame): DF w/ column 'novelty' w/ values {'Known', 'Novel'}
     """
     df.loc[df.novelty.str.contains('Known'), 'novelty'] = 'Known'
-    df.loc[~df.novelty == 'Known'] = 'Novel'
+    df.loc[df.novelty != 'Known', 'novelty'] = 'Novel'
     if 'novelty_new' in df.columns:
         df.drop('novelty_new', axis=1, inplace=True)
     return df
