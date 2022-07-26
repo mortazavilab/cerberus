@@ -4,6 +4,8 @@ import pdb
 import h5py
 import numpy as np
 import os
+import multiprocessing
+from pandarallel import pandarallel
 
 ##### helper functions #####
 
@@ -627,6 +629,73 @@ def agg_2_ics(ic1, ic2):
     # and do some extra formatting
     df['Name'] = df.gene_id+'_'+df[mode].astype(str)
     df.drop(['Name_new', new_c, 'source_new'], axis=1, inplace=True)
+
+    return df
+
+def get_ic_novelty(df):
+    """
+    Assign each novel intron chain a novelty type based on
+    support for each splice site in the reference intron chains.
+    In order:
+        ** All comparisons are on the basis of the same gene, strand, and chrom
+        * Novel monoexonic transcripts
+        * NNC transcripts based on lack of support from annotated splice sites
+        * Everything else has all splice sites supported and is labelled NIC
+        * All labelled NIC transcripts are checked for if they are subsequences
+        * Any ic that is a substring of an existing ic is ISM
+
+    Parameters:
+        df (pandas DataFrame): DF from `aggregate_ics` w/ column `novelty`
+
+    Returns:
+        df (pandas DataFrame): DF w/ specific ic novelty indicated
+    """
+
+    # get ref and ctrl dfs and explode to splice sites
+    ref = df.loc[df.novelty == 'Known'].copy(deep=True)
+    pdb.set_trace()
+    ref = get_ss_from_ic(ref)
+
+    # ic identity of sss in ref doesn't matter so drop
+    ref.drop('Name', axis=1, inplace=True)
+    ref.drop_duplicates(inplace=True)
+
+    nov = df.loc[df.novelty == 'Novel'].copy(deep=True)
+    nov = get_ss_from_ic(nov)
+
+    # monoexonic -- no splice sites
+    ics = nov.loc[nov.coord == '', 'Name'].unique().tolist()
+    df.loc[df.Name.isin(ics), 'novelty'] = 'Monoexonic'
+    nov = nov.loc[~nov.Name.isin(ics)]
+
+    # NNC -- 1+ splice sites aren't annotated
+    temp = nov.merge(ref, on=['Chromosome', 'Strand', 'gene_id', 'coord'],
+                     how='left')
+    ics = temp.loc[temp.novelty_y.isnull(), 'Name'].unique().tolist()
+    df.loc[df.Name.isin(ics), 'novelty'] = 'NNC'
+    nov = nov.loc[~nov.Name.isin(ics)]
+
+    # assume NIC at first
+    ics = nov.Name.unique().tolist()
+    df.loc[df.Name.isin(ics), 'novelty'] = 'NIC'
+
+    # check for substring occurrence of coordinates in
+    # reference intron chains from same gene
+    ref = df.loc[df.novelty == 'Known'].copy(deep=True)
+    ref.drop(['Name', 'ic', 'source', 'novelty'], axis=1, inplace=True)
+    nov = df.loc[df.novelty == 'NIC'].copy(deep=True)
+    nov = nov.merge(ref, on=['Chromosome', 'Strand', 'gene_id'], how='left',
+                    suffixes=('', '_ref'))
+    t = multiprocessing.cpu_count()
+    if t == 1:
+        nov['ISM'] = nov.apply(lambda x: str(x.Coordinates) in \
+                               str(x.Coordinates_ref), axis=1)
+    else:
+        pandarallel.initialize(nb_workers=t, verbose=0)
+        nov['ISM'] = nov.parallel_apply(lambda x: str(x.Coordinates) in \
+                               str(x.Coordinates_ref), axis=1)
+    ics = nov.loc[nov.ISM, 'Name'].unique().tolist()
+    df.loc[df.Name.isin(ics), 'novelty'] = 'ISM'
 
     return df
 
@@ -1532,6 +1601,56 @@ def get_ends_from_gtf(gtf, mode, dist, slack):
 
     return bed
 
+def get_sj_from_ic(df):
+    """
+    Get a df w/ each splice junction as an entry from an ic
+    dataframe.
+
+    Parameters:
+        df (pandas DataFrame): DF w/ hyphen-separated intron
+            chain coords
+    """
+    df = get_ss_from_ic(df)
+    df = df.loc[df.coord != '']
+    df = pd.DataFrame({'Start':df['coord'].iloc[0::2].values,
+                      'End':df['coord'].iloc[1::2].values,
+                      'Chromosome':df['Chromosome'].iloc[0::2].values,
+                      'Strand':df['Strand'].iloc[::2].values,
+                      'Name':df['Name'].iloc[::2].values,
+                      'gene_id':df['gene_id'].iloc[::2].values})
+    return df
+
+
+def get_ss_from_ic(df):
+    """
+    Get a df w/ each splice site as an entry from an ic
+    dataframe.
+
+    Parameters:
+        df (pandas DataFrame): DF w/ hyphen-separated
+            intron chain coords
+
+    Returns:
+        df (pandas DataFrame): DF w/ splice site coord,
+            chromosome, strand, gene id, and intron chain
+            name
+    """
+
+    # list representation of each ic
+    df.loc[df.Coordinates == '-', 'Coordinates'] = ''
+    df['coord'] = df.Coordinates.str.split('-')
+
+    # drop unnecessary columns
+    df.drop(['Coordinates', 'ic',
+             'source'],
+             axis=1, inplace=True)
+
+    # explode into splice sites and dedupe
+    df = df.explode('coord')
+    df.drop_duplicates(inplace=True)
+
+    return df
+
 def get_ics_from_gtf(gtf):
     """
     Get a file for each intron chain in a gtf and number them
@@ -1694,6 +1813,9 @@ def aggregate_ics(ics, sources, refs):
             df = temp.copy(deep=True)
         else:
             df = agg_2_ics(df, temp)
+
+    # determine ic novelty for novel ics
+    df = get_ic_novelty(df)
 
     # drop gene id and ic number as they are captured in name
     df.drop(['gene_id', 'ic'], axis=1, inplace=True)

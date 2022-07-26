@@ -13,8 +13,6 @@ def make_ics_df(c,s,co,n, source,nov):
         if type(var) == list:
             df[col] = var
 
-    df = format_ics_df(df)
-
     df['gene_id'] = df.Name.str.split('_', expand=True)[0]
     df['ic'] = df.Name.str.split('_', expand=True)[1]
     df['source'] = source
@@ -23,6 +21,7 @@ def make_ics_df(c,s,co,n, source,nov):
         df['novelty'] = nov
 
     df.ic = df.ic.astype(int)
+    df = format_ics_df(df)
 
     return df
 
@@ -42,11 +41,11 @@ def test_agg_2_ics_1(print_dfs=True):
         # new df has a novel ic that needs a new number
         # new df has a novel gene
 
-        n = 3
+        n = 4
         c = ['1' for i in range(n)]
         s = ['+' for i in range(n)]
-        co = ['1-2-3', '1-4-3', '5-2-3']
-        n = ['gene1_1', 'gene1_2', 'gene1_3']
+        co = ['1-2-3', '1-4-3', '5-2-3', '11-12-13-14']
+        n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene2_1']
         source = 'v1'
         ref = 'Known'
         df1 = make_ics_df(c,s,co,n, source, ref)
@@ -63,12 +62,12 @@ def test_agg_2_ics_1(print_dfs=True):
         return df1, df2
 
     def get_ctrl():
-        n = 5
+        n = 6
         c = ['1' for i in range(n)]
         s = ['+' for i in range(n)]
-        co = ['1-2-3', '1-4-3', '5-2-3', '1-2-6', '11-12-13']
-        n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene1_4', 'gene2_1']
-        source = ['v1', 'v2', 'v1,v2', 'v2', 'v1']
+        co = ['1-2-3', '1-4-3', '5-2-3', '1-2-6', '11-12-13', '11-12-13-14']
+        n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene1_4', 'gene2_2', 'gene2_1']
+        source = ['v1', 'v1,v2', 'v1', 'v2', 'v2', 'v1']
         ref = ['Known' if 'v1' in s else 'Novel' for s in source]
         df = make_ics_df(c,s,co,n, source, ref)
         # df.drop(['gene_id', 'ic'], axis=1, inplace=True)
@@ -79,6 +78,56 @@ def test_agg_2_ics_1(print_dfs=True):
     ctrl = get_ctrl()
 
     test = agg_2_ics(df1, df2)
+    test = format_ics_df(test)
+
+    if print_dfs:
+        print('test')
+        print(test)
+        print(test.index)
+        print(test.dtypes)
+        print('ctrl')
+        print(ctrl)
+        print(ctrl.index)
+        print(ctrl.dtypes)
+
+    pd.testing.assert_frame_equal(ctrl, test, check_like=True)
+    assert len(ctrl.index) == len(test.index)
+
+def test_get_novelty(print_dfs=True):
+
+    def get_test():
+        n = 10
+        c = ['1' for i in range(n)]
+        s = ['+' for i in range(n)]
+        co = ['1-2-3', '1-4-3', '5-2-3', '11-12-13-14', '2-3-4-5',
+              '1-2-6', '11-12-13', '1-3', '-', '3-5'] # NNC, ISM, NIC, Monexonic, NNC
+        n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene2_1', 'gene2_3',
+             'gene1_4', 'gene2_2', 'gene1_5', 'gene1_6', 'gene2_4']
+        source = ['v1', 'v1,v2', 'v1', 'v1', 'v1',
+                  'v2', 'v2', 'v2', 'v2', 'v2']
+        ref = ['Known' if 'v1' in s else 'Novel' for s in source]
+        df = make_ics_df(c,s,co,n, source, ref)
+        return df
+
+    def get_ctrl():
+        n = 10
+        c = ['1' for i in range(n)]
+        s = ['+' for i in range(n)]
+        co = ['1-2-3', '1-4-3', '5-2-3', '11-12-13-14', '2-3-4-5',
+              '1-2-6', '11-12-13', '1-3', '-', '3-5'] # NNC, ISM, NIC, Monexonic, NNC
+        n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene2_1', 'gene2_3',
+             'gene1_4', 'gene2_2', 'gene1_5', 'gene1_6', 'gene2_4']
+        source = ['v1', 'v1,v2', 'v1', 'v1', 'v1',
+                  'v2', 'v2', 'v2', 'v2', 'v2']
+        ref = ['Known', 'Known', 'Known', 'Known', 'Known',
+               'NNC', 'ISM', 'NIC', 'Monoexonic', 'NNC']
+        df = make_ics_df(c,s,co,n, source, ref)
+        return df
+
+    df = get_test()
+    ctrl = get_ctrl()
+
+    test = get_ic_novelty(df)
     test = format_ics_df(test)
 
     if print_dfs:
