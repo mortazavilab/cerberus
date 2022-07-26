@@ -96,31 +96,31 @@ def test_agg_2_ics_1(print_dfs=True):
 def test_get_novelty(print_dfs=True):
 
     def get_test():
-        n = 10
+        n = 11
         c = ['1' for i in range(n)]
         s = ['+' for i in range(n)]
         co = ['1-2-3', '1-4-3', '5-2-3', '11-12-13-14', '2-3-4-5',
-              '1-2-6', '11-12-13', '1-3', '-', '3-5'] # NNC, ISM, NIC, Monexonic, NNC
+              '1-2-6', '11-12-13', '1-3', '-', '3-5', '11-14'] # NNC, ISM, NNC, Monexonic, NNC, NIC
         n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene2_1', 'gene2_3',
-             'gene1_4', 'gene2_2', 'gene1_5', 'gene1_6', 'gene2_4']
+             'gene1_4', 'gene2_2', 'gene1_5', 'gene1_6', 'gene2_4', 'gene2_5']
         source = ['v1', 'v1,v2', 'v1', 'v1', 'v1',
-                  'v2', 'v2', 'v2', 'v2', 'v2']
+                  'v2', 'v2', 'v2', 'v2', 'v2', 'v2']
         ref = ['Known' if 'v1' in s else 'Novel' for s in source]
         df = make_ics_df(c,s,co,n, source, ref)
         return df
 
     def get_ctrl():
-        n = 10
+        n = 11
         c = ['1' for i in range(n)]
         s = ['+' for i in range(n)]
         co = ['1-2-3', '1-4-3', '5-2-3', '11-12-13-14', '2-3-4-5',
-              '1-2-6', '11-12-13', '1-3', '-', '3-5'] # NNC, ISM, NIC, Monexonic, NNC
+              '1-2-6', '11-12-13', '1-3', '-', '3-5', '11-14'] # NNC, ISM, NNC, Monexonic, NNC, NIC
         n = ['gene1_1', 'gene1_2', 'gene1_3', 'gene2_1', 'gene2_3',
-             'gene1_4', 'gene2_2', 'gene1_5', 'gene1_6', 'gene2_4']
+             'gene1_4', 'gene2_2', 'gene1_5', 'gene1_6', 'gene2_4', 'gene2_5']
         source = ['v1', 'v1,v2', 'v1', 'v1', 'v1',
-                  'v2', 'v2', 'v2', 'v2', 'v2']
+                  'v2', 'v2', 'v2', 'v2', 'v2', 'v2']
         ref = ['Known', 'Known', 'Known', 'Known', 'Known',
-               'NNC', 'ISM', 'NIC', 'Monoexonic', 'NNC']
+               'NNC', 'ISM', 'NNC', 'Monoexonic', 'NNC', 'NIC']
         df = make_ics_df(c,s,co,n, source, ref)
         return df
 

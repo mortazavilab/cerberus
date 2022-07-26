@@ -653,7 +653,6 @@ def get_ic_novelty(df):
 
     # get ref and ctrl dfs and explode to splice sites
     ref = df.loc[df.novelty == 'Known'].copy(deep=True)
-    pdb.set_trace()
     ref = get_ss_from_ic(ref)
 
     # ic identity of sss in ref doesn't matter so drop
@@ -663,13 +662,16 @@ def get_ic_novelty(df):
     nov = df.loc[df.novelty == 'Novel'].copy(deep=True)
     nov = get_ss_from_ic(nov)
 
+    # pdb.set_trace()
+
     # monoexonic -- no splice sites
     ics = nov.loc[nov.coord == '', 'Name'].unique().tolist()
     df.loc[df.Name.isin(ics), 'novelty'] = 'Monoexonic'
     nov = nov.loc[~nov.Name.isin(ics)]
 
     # NNC -- 1+ splice sites aren't annotated
-    temp = nov.merge(ref, on=['Chromosome', 'Strand', 'gene_id', 'coord'],
+    temp = nov.merge(ref, on=['Chromosome', 'Strand', 'gene_id',
+                              'coord', 'ss_type'],
                      how='left')
     ics = temp.loc[temp.novelty_y.isnull(), 'Name'].unique().tolist()
     df.loc[df.Name.isin(ics), 'novelty'] = 'NNC'
@@ -1640,14 +1642,30 @@ def get_ss_from_ic(df):
     df.loc[df.Coordinates == '-', 'Coordinates'] = ''
     df['coord'] = df.Coordinates.str.split('-')
 
+    # pull out monoexonic transcripts and
     # drop unnecessary columns
     df.drop(['Coordinates', 'ic',
              'source'],
              axis=1, inplace=True)
 
-    # explode into splice sites and dedupe
-    df = df.explode('coord')
-    df.drop_duplicates(inplace=True)
+    # get exon and intron start coordinates seperately
+    df['i_start'] = df.apply(lambda x: x.coord[::2], axis=1)
+    df['e_start'] = df.apply(lambda x: x.coord[1::2], axis=1)
+
+    # annotate coords and ss types
+    temp2 = pd.DataFrame()
+    for ss_type in ['i_start', 'e_start']:
+        if ss_type == 'i_start':
+            drop_col = 'e_start'
+        elif ss_type == 'e_start':
+            drop_col = 'i_start'
+        temp = df.drop([drop_col, 'coord'], axis=1).explode(ss_type)
+        temp.rename({ss_type: 'coord'}, axis=1, inplace=True)
+        temp['ss_type'] = ss_type
+        temp.loc[temp.coord == '', 'ss_type'] = 'Monoexonic'
+        temp2 = pd.concat([temp2, temp])
+
+    df = temp2.copy(deep=True)
 
     return df
 
