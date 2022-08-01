@@ -980,9 +980,10 @@ def update_transcript_ends(df, mode, strand):
     df.loc[inds, old_col] = df.loc[inds, new_col]
 
     # convert float dtypes
-    # pdb.set_trace()
-    print('removing problematic transcript...')
-    df = df.loc[df.original_transcript_id != 'ENSMUST00000082422.1#0']
+    print('removing problematic things ...')
+    for feat in ['Start', 'End']:
+        print('{} entries w/ null {}'.format(len(df.loc[df[feat].isnull()].index),feat))
+        df = df.loc[~df[feat].isnull()]
     df.Start = df.Start.astype(int)
     df.End = df.End.astype(int)
 
