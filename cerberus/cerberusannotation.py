@@ -92,6 +92,18 @@ class CerberusAnnotation():
             df = df.merge(tes, on='gene_id', how='outer')
             df = df.merge(ic, on='gene_id', how='outer')
             df['source'] = source
+
+            # add n_isos, if possible
+            if source in self.t_map.source.unique().tolist() or source == 'all':
+                if source != 'all':
+                    iso = self.t_map.loc[self.t_map.source == source].copy(deep=True)
+                else:
+                    iso = self.t_map.copy(deep=True)
+                iso = iso[['transcript_id', 'gene_id']].drop_duplicates()
+                iso = iso.groupby('gene_id').count().reset_index()
+                iso.rename({'transcript_id': 'n_iso'}, axis=1, inplace=True)
+                df = df.merge(iso, how='left', on='gene_id')
+
             trip_df = pd.concat([trip_df, df])
 
         # add splicing ratio
@@ -155,6 +167,11 @@ class CerberusAnnotation():
             temp = temp.merge(t_df, how='left', on='tid')
             t_df = temp.copy(deep=True)
 
+        t_df['gid_stable'] = get_stable_gid(t_df, col='gene_id')
+        t_df.drop('gene_id', axis=1, inplace=True)
+        t_df.rename({'gid_stable': 'gene_id'}, axis=1, inplace=True)
+        # add stable gid to t_df here
+
         # count the unique tss, ic, tes, and isoforms from each expressed
         # isoform in each sample
         trip_df = pd.DataFrame()
@@ -198,7 +215,6 @@ class CerberusAnnotation():
         trip_df = trip_df.merge(temp, how='left', on='gid')
 
         return trip_df
-
 
 # helper functions
 def flatten(list_of_lists):

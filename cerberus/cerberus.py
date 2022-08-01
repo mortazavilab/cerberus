@@ -746,6 +746,7 @@ def merge_ends(ends, ref, mode):
         direction = 'upstream'
     elif mode == 'tes':
         direction = 'downstream'
+        # pdb.set_trace()
 
     # limit to relevant columns
     ends = ends[['Chromosome', 'Start', 'End', 'Strand',
@@ -1941,7 +1942,8 @@ def assign_triplets(gtf_df, tss, ic, tes):
     for beep in ['tss', 'tes', 'ic']:
         # pdb.set_trace()
         print('# affected transcripts w/ null {}: {}'.format(beep,len(df.loc[df[beep].isnull()].index)))
-        df[beep] = df[beep].fillna('0')
+        # df[beep] = df[beep].fillna('0')
+        df = df.loc[~df[beep].isnull()]
 
     df['transcript_triplet'] = '['+df.tss.astype(int).astype(str)+','+\
                                    df.ic.astype(int).astype(str)+','+\
