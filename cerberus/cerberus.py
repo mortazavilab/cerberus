@@ -981,6 +981,8 @@ def update_transcript_ends(df, mode, strand):
 
     # convert float dtypes
     # pdb.set_trace()
+    print('removing problematic transcript...')
+    df = df.loc[df.original_transcript_id != 'ENSMUST00000082422.1#0']
     df.Start = df.Start.astype(int)
     df.End = df.End.astype(int)
 
