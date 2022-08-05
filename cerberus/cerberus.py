@@ -666,7 +666,7 @@ def get_ic_novelty(df):
 
     # monoexonic -- no splice sites
     ics = nov.loc[nov.coord == '', 'Name'].unique().tolist()
-    df.loc[df.Name.isin(ics), 'novelty'] = 'Monoexonic'
+    df.loc[df.Name.isin(ics), 'novelty'] = 'Unspliced'
     nov = nov.loc[~nov.Name.isin(ics)]
 
     # NNC -- 1+ splice sites aren't annotated
@@ -1115,7 +1115,8 @@ def agg_gtf(df):
 def write_h5(ic, tss, tes, oname,
              tss_map=None,
              tes_map=None,
-             m=None):
+             m=None,
+             triplets=None):
     """
     Write a cerberus transcriptome as an h5df file
 
@@ -1160,6 +1161,11 @@ def write_h5(ic, tss, tes, oname,
             m.loc[m[c].isnull(), c] = True
             m[c] = m[c].astype('str')
     m.to_hdf(oname, 'map', mode='a', format='table')
+
+    if not isinstance(triplets, pd.DataFrame):
+        triplets = pd.DataFrame()
+    triplets = cat_to_obj(triplets)
+    triplets.to_hdf(oname, 'triplets', mode='a', format='table')
 
 def write_h5_to_tsv(h5, opref):
     """
@@ -1234,6 +1240,47 @@ def add_stable_gid(gtf):
 
     return gtf
 
+def get_gid_from_tids(tids):
+    """
+    Get a list of gene ids from a given list of transcript triplets
+
+    Parameters:
+        tids (list of str): List of tripletized transcript ids
+
+    Returns:
+        gids (list of str): List of gene ids
+    """
+    df = pd.DataFrame()
+    df['tid'] = tids
+    df['gid'] = df.tid.str.split('[', expand=True)[0]
+    gids = df.gid.tolist()
+    return gids
+
+def get_feats_from_tids(tids):
+    """
+    Get a DF w/ tid, tss id, ic id, tes id, gene id for each input tid
+
+    Parameters:
+        tids (list of str): List of tripletized transcript ids
+
+    Returns:
+        df (pandas DataFrame): DF with each feature's ID indicates
+            for the list of input transcripts
+    """
+
+    df = pd.DataFrame()
+    df['transcript_id'] = tids
+    df['transcript_triplet'] = df.transcript_id.str.split('[', expand=True)[1].str.split(']', expand=True)[0]
+    df['gene_id'] = df.transcript_id.str.split('[', expand=True)[0]
+    df['tss_id'] = df.transcript_triplet.str.split(',', expand=True)[0]
+    df['ic_id'] = df.transcript_triplet.str.split(',', expand=True)[1]
+    df['tes_id'] = df.transcript_triplet.str.split(',', expand=True)[2]
+
+    for feat in ['tss_id', 'ic_id', 'tes_id']:
+        df[feat] = df['gene_id']+'_'+df[feat]
+
+    return df
+
 def check_files(files, sources):
     """
     Check if a series of files exists and whether their
@@ -1303,6 +1350,7 @@ def read_h5(h5, as_pyranges=True):
         tes_map (pyranges PyRanges / pandas DataFrame): Bed representation of
             all input tess and which cerberus end they were assigned to
         m (pandas DataFrame): Map of transcript id to tss / ic / tes
+        triplets (pandas DataFrame): Triplets DF
     """
 
     ic = pd.read_hdf(h5, key='ic')
@@ -1324,12 +1372,13 @@ def read_h5(h5, as_pyranges=True):
     m = read_empty_h5(h5, 'map', as_pyranges=False)
     tss_map = read_empty_h5(h5, 'tss_map', as_pyranges=as_pyranges)
     tes_map = read_empty_h5(h5, 'tes_map', as_pyranges=as_pyranges)
+    triplets = read_empty_h5(h5, 'triplets', as_pyranges=False)
 
     if as_pyranges:
         tss = pr.PyRanges(tss)
         tes = pr.PyRanges(tes)
 
-    return ic, tss, tes, tss_map, tes_map, m
+    return ic, tss, tes, tss_map, tes_map, m, triplets
 
 def get_transcript_ref(fname):
     """
@@ -1666,7 +1715,7 @@ def get_ss_from_ic(df):
         temp = df.drop([drop_col, 'coord'], axis=1).explode(ss_type)
         temp.rename({ss_type: 'coord'}, axis=1, inplace=True)
         temp['ss_type'] = ss_type
-        temp.loc[temp.coord == '', 'ss_type'] = 'Monoexonic'
+        temp.loc[temp.coord == '', 'ss_type'] = 'Unspliced'
         temp2 = pd.concat([temp2, temp])
 
     df = temp2.copy(deep=True)
