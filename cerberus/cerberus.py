@@ -1401,9 +1401,12 @@ def get_transcript_ref(fname):
 
     df['MANE_Select'] = df.tag.str.contains('MANE_Select')
     df['basic_set'] = df.tag.str.contains('basic')
-    df['temp'] = df.tag.str.split('appris_principal_', n=1, expand=True)[1]
-    df['appris_principal'] = df.temp.str.split(',', n=1, expand=True)[0]
-    df['appris_principal'] = df.appris_principal.astype(float)
+    try:
+        df['temp'] = df.tag.str.split('appris_principal_', n=1, expand=True)[1]
+        df['appris_principal'] = df.temp.str.split(',', n=1, expand=True)[0]
+        df['appris_principal'] = df.appris_principal.astype(float)
+    except:
+        df['appris_principal'] = 0
 
     # if this tag didn't exist in the annotation replace it with
     # 0s so the aggregation function won't fail
