@@ -1395,6 +1395,8 @@ def get_transcript_ref(fname):
     df = df.loc[df.Feature == 'transcript']
 
     # for some transcripts, there are no tags. replace w/ empty strings
+    if 'tag' not in df.columns:
+        df['tag'] = np.nan
     df.loc[df.tag.isnull(), 'tag'] = ''
 
     df['MANE_Select'] = df.tag.str.contains('MANE_Select')
