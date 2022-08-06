@@ -1177,7 +1177,7 @@ def write_h5_to_tsv(h5, opref):
         opref (str): Output file path / prefix to give
             each of the output files
     """
-    ic, tss, tes, tes_map, tss_map, m = read_h5(h5, as_pyranges=True)
+    ic, tss, tes, tes_map, tss_map, m, triplets = read_h5(h5, as_pyranges=True)
 
     oname = '{}_ic.tsv'.format(opref)
     ic.to_csv(oname, sep='\t', index=False)
@@ -1541,6 +1541,8 @@ def read_bed(bed_file, mode):
     Returns:
         df (pandas DataFrame): DataFrame representation of bed file
     """
+
+    print(bed_file)
 
     df = pr.read_bed(bed_file).df
 
@@ -2163,7 +2165,7 @@ def annotate_transcriptome(gtf, h5, source, o):
     """
 
     # read in / format existing reference
-    ic, tss, tes, tss_map, tes_map, t_map = read_h5(h5, as_pyranges=False)
+    ic, tss, tes, tss_map, tes_map, t_map, triplets = read_h5(h5, as_pyranges=False)
     ic = split_cerberus_id(ic, 'ic')
     tss = split_cerberus_id(tss, 'tss')
     tes = split_cerberus_id(tes, 'tes')
@@ -2209,7 +2211,7 @@ def replace_ab_ids(ab, h5, source, agg, o):
         o (str): Output file name
     """
     df = pd.read_csv(ab, sep='\t')
-    _, _, _, _, _, m_df = read_h5(h5)
+    _, _, _, _, _, m_df, _ = read_h5(h5)
 
     # restrict to source
     check_source(m_df, source)
@@ -2269,9 +2271,9 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
     df = sort_gtf(df)
 
     if not update_ends:
-        _, _, _, _, _, m_df = read_h5(h5)
+        _, _, _, _, _, m_df, _ = read_h5(h5)
     else:
-        _, tss, tes, _, _, m_df = read_h5(h5)
+        _, tss, tes, _, _, m_df, _ = read_h5(h5)
         tss = tss.df
         tes = tes.df
         tss['tss_id'] = tss.gene_id+'_'+tss.tss.astype(str)
