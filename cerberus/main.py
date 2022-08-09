@@ -165,11 +165,15 @@ def gen_reference_command(ref_gtf, o,
 @click.option('--source',
               help='Name of GTF source',
               required=True)
+@click.option('--gene_source',
+              help='Source that is already in cerberus object to use gene names from',
+              default=None,
+              required=False)
 @click.option('-o',
             help='Output file name',
             required=True)
-def annotate_transcriptome_command(gtf, h5, source, o):
-    annotate_transcriptome(gtf, h5, source, o)
+def annotate_transcriptome_command(gtf, h5, source, gene_source, o):
+    annotate_transcriptome(gtf, h5, source, gene_source, o)
 
 ###### replace transcript ids of an annotated transcriptome
 ###### with cerberus triplet ids in abundance file

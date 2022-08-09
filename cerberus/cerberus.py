@@ -1900,16 +1900,20 @@ def aggregate_ics(ics, sources, refs):
 
     return df
 
-def assign_triplets(gtf_df, tss, ic, tes):
+def assign_triplets(gtf_df, tss, ic, tes, gene_source, t_map):
     """
     Determines which tss, intron chain, and tes are used from a cerberus
     reference are used in a specific gtf.
 
     Parameters:
         gtf (pyranges PyRanges): PyRanges GTF object for transcriptome to assign triplets to
-        ic_file (pandas DataFrame): df of intron chains from cerberus ref.
-        tss_bed (str): PyRanges obj of tsss from cerberus ref
-        tes_bed (str): PyRanges obj of tess from cerberus ref
+        ic (pandas DataFrame): df of intron chains from cerberus ref
+        tss (pyranges PyRanges): PyRanges obj of tsss from cerberus ref
+        tes (pyranges PyRanges): PyRanges obj of tess from cerberus ref
+        gene_source (str): Name of source already in cerberus annotation to
+            use gene names from
+        t_map (pandas DataFrame): Transcript map from previous transcriptome
+            annotations using the cerberus ref
 
     Returns:
         df (pandas DataFrame): File that maps each transcript from gtf to
@@ -2008,6 +2012,15 @@ def assign_triplets(gtf_df, tss, ic, tes):
                                    df.ic.astype(int).astype(str)+','+\
                                    df.tes.astype(int).astype(str)+']'
     df['transcript_id'] = df['gene_id']+df.transcript_triplet
+
+    # use gene name from alternative source
+    if gene_source:
+        g_map = t_map.loc[t_map.source == gene_source, ['gene_name', 'gene_id']].drop_duplicates()
+        df = df.merge(g_map, how='left', on='gene_id', suffixes=('', '_new'))
+        df.loc[df.gene_name_new.isnull(), 'gene_name_new'] = df.loc[df.gene_name_new.isnull(), 'gene_name']
+        df.drop('gene_name', axis=1, inplace=True)
+        df.rename({'gene_name_new': 'gene_name'}, axis=1, inplace=True)
+
     df['transcript_name'] = df['gene_name']+df.transcript_triplet
 
     df = df.merge(s_df, how='left', on='original_transcript_id')
@@ -2152,7 +2165,7 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
         for f in tmp_files:
             os.remove(f)
 
-def annotate_transcriptome(gtf, h5, source, o):
+def annotate_transcriptome(gtf, h5, source, gene_source, o):
     """
     Create an h5 cerberus transcriptome from a GTF using an existing
     cerberus annotation
@@ -2161,6 +2174,8 @@ def annotate_transcriptome(gtf, h5, source, o):
         gtf (str): Path to GTF to annotate
         h5 (str): Path to cerberus annotation in h5 format
         source (str): Name of source to annotate (ie v40, v29, talon)
+        gene_source (str): Name of source already in cerberus annotation to
+            use gene names from.
         o (str): Output .h5 file path / name
     """
 
@@ -2172,6 +2187,10 @@ def annotate_transcriptome(gtf, h5, source, o):
     tss = pr.PyRanges(tss)
     tes = pr.PyRanges(tes)
 
+    # check if gene source is in t_map
+    if gene_source:
+        check_source(t_map, gene_source)
+
     # read in transcriptome to convert to cerberus
     gtf_df = pr.read_gtf(gtf).df
 
@@ -2180,7 +2199,8 @@ def annotate_transcriptome(gtf, h5, source, o):
 
     gtf_df = pr.PyRanges(gtf_df)
 
-    df = assign_triplets(gtf_df, tss, ic, tes)
+    df = assign_triplets(gtf_df, tss, ic, tes,
+        gene_source, t_map)
     df['source'] = source
 
     # if we already have a transcript map,
@@ -2292,8 +2312,9 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
     df = df.loc[~df.transcript_id.isin(rm_tids)]
 
     print('Adding cerberus transcript ids...')
-    m_df.drop(['transcript_triplet',
-               'gene_name', 'gene_id'], axis=1, inplace=True)
+    # pdb.set_trace()
+    m_df.drop(['transcript_triplet', 'gene_id'], axis=1, inplace=True)
+    df.drop(['gene_name'], axis=1, inplace=True)
     df = df.merge(m_df, how='left',
                     left_on=['transcript_name', 'transcript_id'],
                     right_on=['original_transcript_name', 'original_transcript_id'],
@@ -2302,6 +2323,13 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
     df.rename({'transcript_id_cerberus': 'transcript_id',
                'transcript_name_cerberus': 'transcript_name'},
                axis=1, inplace=True)
+
+    # for the gene entries
+    g_df = df.loc[df.Feature!='gene', ['gene_id', 'gene_name']].drop_duplicates()
+    df = df.merge(g_df, how='left', on='gene_id', suffixes=('_old', ''))
+    df.drop('gene_name_old', axis=1, inplace=True)
+
+    # pdb.set_trace()
 
     # update the ends of each transcript based on the end it was assigned to
     if update_ends:
