@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from sklearn import preprocessing
 from collections import defaultdict
+import matplotlib.ticker as tck
+
 
 class CerberusAnnotation():
     def __init__(self):
@@ -379,7 +381,7 @@ class CerberusAnnotation():
         #### subset dataset and transform numbers as needed ####
         temp = self.triplets.copy(deep=True)
 
-        # pl
+        # plot settings
         mpl.rcParams['font.family'] = 'Arial'
         mpl.rcParams['pdf.fonttype'] = 42
 
@@ -426,7 +428,7 @@ class CerberusAnnotation():
         if density:
             if 'hue' in kwargs:
                 hue = kwargs['hue']
-                if counts[hue].dtype.name == 'object':
+                if temp[hue].dtype.name == 'object':
                     pad = 0.1
                 else:
                     pad = 0.0
@@ -471,16 +473,20 @@ class CerberusAnnotation():
         # title handler
         if not title:
             if gene:
-                title = '$\it{}$\n'.format(gene)
+                # title = '$\it{}$\n'.format(gene)
+                title = '{}'.format(gene)
+                fdict = {'fontstyle': 'italic'}
             else:
                 title = ''
         else:
             if gene:
                 title = '{} $\it{}$\n'.format(title, gene)
+                fdict = {}
             else:
                 title = '{}\n'.format(title)
 
-        tax.set_title(title, fontsize=20)
+        tax.set_title(title, fontsize=20,
+                      fontdict=fdict)
         tax.boundary(linewidth=2, c='#e5ecf6')
         labels = ['{:.1f}'.format(n) for n in np.arange(0, 1.2, .2)]
         tax.ticks(ticks=labels,
@@ -493,21 +499,28 @@ class CerberusAnnotation():
         tax.set_background_color('#e5ecf6')
 
         if top == 'splicing_ratio':
-            top_label = 'Splicing ratio $\\beta$'
+            # top_label = 'Splicing ratio $\\beta$'
+            top_label = 'Splicing ratio'
         elif top == 'intron_chain':
-            top_label = 'Intron chains $\\delta$'
+            # top_label = 'Intron chains $\\delta$'
+            top_label = 'Intron chains'
+
         # tax.left_corner_label('# TSSs $\\alpha$', fontsize=fontsize)
         # tax.top_corner_label(top_label, fontsize=fontsize)
         # tax.right_corner_label('# TESs $\\gamma$', fontsize=fontsize)
-        tax.left_axis_label('TSS $\\alpha$', fontsize=fontsize, offset=0.12)
-        tax.right_axis_label(top_label, fontsize=fontsize, offset=0.12)
-        tax.bottom_axis_label('TES $\\gamma$', fontsize=fontsize, offset=0.00)
+        tax.left_axis_label('TSS', fontsize=fontsize,
+                            offset=0.12)
+        tax.right_axis_label(top_label, fontsize=fontsize,
+                             offset=0.12)
+        tax.bottom_axis_label('TES', fontsize=fontsize,
+                              offset=0.00)
 
         figure.set_facecolor('white')
 
         # save figure
         if fname:
-            plt.savefig(fname, dpi=500, bbox_inches='tight')
+            # plt.savefig(fname, dpi=500, bbox_inches='tight')
+            tax.savefig(fname, dpi=500, bbox_inches='tight')
 
         return temp
 
@@ -713,8 +726,8 @@ class CerberusAnnotation():
         min_val = min(flat)
         max_val = max(flat)
 
-        if vmax:
-            max_val = vmax
+        if density_vmax:
+            max_val = density_vmax
 
         # print(min_val)
         # print(max_val)

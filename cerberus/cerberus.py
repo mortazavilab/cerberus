@@ -664,7 +664,7 @@ def get_ic_novelty(df):
 
     # pdb.set_trace()
 
-    # monoexonic -- no splice sites
+    # unspliced -- no splice sites
     ics = nov.loc[nov.coord == '', 'Name'].unique().tolist()
     df.loc[df.Name.isin(ics), 'novelty'] = 'Unspliced'
     nov = nov.loc[~nov.Name.isin(ics)]
