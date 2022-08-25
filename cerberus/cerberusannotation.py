@@ -330,9 +330,12 @@ class CerberusAnnotation():
                 jitter=False, # used in main
 
                 density_scale=1, # used in main
+                density_cbar=False, # used in main
                 scale=True, # used in main
                 title=None, # used in main
                 top='splicing_ratio', # used in main
+
+                size_scale=1,
 
                 # # scatter args
                 # cmap='magma', # passed to scatter
@@ -375,8 +378,60 @@ class CerberusAnnotation():
             scale (bool): Whether to scale values b/w 1 and 0.
             alpha (float): Alpha value of points
             title (str): Title to give plot
-            opref (str): Output file prefix to save fig
+            size_scale (float): Amount to scale elements sizes by
+            fname (str): Output file name
         """
+
+        # figure size handling
+        size_dict = {}
+
+        # heights / widths
+        size_dict['height'] = 10
+        size_dict['width1'] = 13.6
+        size_dict['width2'] = 17.2
+        size_dict['width3'] = 10.716
+        # size_dict['width3'] = 11.2
+
+
+        # linewidths
+        size_dict['linewidth'] = 3
+        size_dict['linewidth2'] = 2
+
+        # marker sizes
+        size_dict['big_marker'] = 100
+        size_dict['small_marker'] = 20
+        size_dict['marker_max'] = 300
+        size_dict['marker_min'] = 10
+
+        # jitter
+        size_dict['sigma'] = (1/250)*scale
+
+        # ticks
+        size_dict['tick_linewidth'] = 2
+
+        # fontsizes
+        size_dict['tick_size'] = 30
+        size_dict['cbar_size'] = 16
+        size_dict['title_size'] = 36.6
+        size_dict['label_size'] = 36.6
+        size_dict['cbar_tick_size'] = 16
+
+        size_dict['title_pad'] = 50
+
+        for key, item in size_dict.items():
+            # area scale
+            if 'marker' in key:
+                size_dict[key] = item*size_scale*size_scale
+            # linear scale
+            else:
+                size_dict[key] = item*size_scale
+
+
+        # offsets don't need to be scaled
+        size_dict['left_label_offset'] = 0.15
+        size_dict['right_label_offset'] = 0.18
+        size_dict['bottom_label_offset'] = 0.1
+        size_dict['tick_offset'] = 0.025
 
         #### subset dataset and transform numbers as needed ####
         temp = self.triplets.copy(deep=True)
@@ -434,16 +489,22 @@ class CerberusAnnotation():
                     pad = 0.0
             else:
                 pad = 0.1
+            # pad = pad*size_scale
             figure, tax, temp = self.density_dorito(temp, c,
+                                     size_dict,
                                      density_scale=density_scale,
                                      pad=pad,
+                                     density_cbar=density_cbar,
                                      **kwargs)
             scale = density_scale
-            figure.set_size_inches(13,10)
+            if density_cbar:
+                figure.set_size_inches(size_dict['width1'],size_dict['height'])
+            else:
+                figure.set_size_inches(size_dict['width3'], size_dict['height'])
 
         # if we're jittering, adjust the points for each thing
         if jitter:
-            temp, c = self.jitter_dorito(temp, c, density_scale)
+            temp, c = self.jitter_dorito(temp, c, density_scale, size_dict)
 
         # figure layout parameters
         fontsize = 18
@@ -457,20 +518,26 @@ class CerberusAnnotation():
             figure.set_facecolor('white')
 
         # plot gridlines below the scatterplot
-        tax.gridlines(linewidth=3, multiple=mult,
-                color='white', zorder=1, linestyle=None)
+        tax.gridlines(linewidth=size_dict['linewidth'],
+                multiple=mult,
+                color='white',
+                zorder=1,
+                linestyle=None)
 
         # scatter
         if scatter:
             figure, tax = self.scatter_dorito(temp, c,
                             figure, tax,
-                            density, **kwargs)
+                            density,
+                            size_dict,
+                            **kwargs)
 
         # sectors
         if sectors:
-            self.line_dorito(figure, tax, scale, **kwargs)
+            self.line_dorito(figure, tax, scale, size_dict, **kwargs)
 
         # title handler
+        fdict = {}
         if not title:
             if gene:
                 # title = '$\it{}$\n'.format(gene)
@@ -481,18 +548,17 @@ class CerberusAnnotation():
         else:
             if gene:
                 title = '{} $\it{}$\n'.format(title, gene)
-                fdict = {}
             else:
                 title = '{}\n'.format(title)
 
-        tax.set_title(title, fontsize=20,
-                      fontdict=fdict)
-        tax.boundary(linewidth=2, c='#e5ecf6')
+        tax.set_title(title, fontsize=size_dict['title_size'],
+                      fontdict=fdict, pad=size_dict['title_pad'])
+        tax.boundary(linewidth=size_dict['linewidth2'], c='#e5ecf6')
         labels = ['{:.1f}'.format(n) for n in np.arange(0, 1.2, .2)]
         tax.ticks(ticks=labels,
-            axis='lbr', linewidth=1, multiple=mult,
-            tick_formats="%.1f", offset=0.014,
-            fontsize=14)
+            axis='lbr', linewidth=size_dict['tick_linewidth'], multiple=mult,
+            tick_formats="%.1f", offset=size_dict['tick_offset'],
+            fontsize=size_dict['tick_size'])
 
         tax.clear_matplotlib_ticks()
         tax.get_axes().axis('off')
@@ -508,12 +574,12 @@ class CerberusAnnotation():
         # tax.left_corner_label('# TSSs $\\alpha$', fontsize=fontsize)
         # tax.top_corner_label(top_label, fontsize=fontsize)
         # tax.right_corner_label('# TESs $\\gamma$', fontsize=fontsize)
-        tax.left_axis_label('TSS', fontsize=fontsize,
-                            offset=0.12)
-        tax.right_axis_label(top_label, fontsize=fontsize,
-                             offset=0.12)
-        tax.bottom_axis_label('TES', fontsize=fontsize,
-                              offset=0.00)
+        tax.left_axis_label('TSS', fontsize=size_dict['label_size'],
+                            offset=size_dict['left_label_offset'])
+        tax.right_axis_label(top_label, fontsize=size_dict['label_size'],
+                             offset=size_dict['right_label_offset'])
+        tax.bottom_axis_label('TES', fontsize=size_dict['label_size'],
+                              offset=size_dict['bottom_label_offset'])
 
         figure.set_facecolor('white')
 
@@ -530,6 +596,7 @@ class CerberusAnnotation():
                      figure,
                      tax,
                      density,
+                     size_dict,
                      hue=None,
                      cmap='magma',
                      marker_style=None,
@@ -546,7 +613,13 @@ class CerberusAnnotation():
               indexed by 'a', 'b', 'c'
         """
 
-        def scale_col(points, counts, col, log=False, how='color'):
+        def scale_col(points, counts, col,
+                      min_size=10,
+                      max_size=300,
+                      log=False,
+                      how='color'):
+            print(min_size)
+            print(max_size)
             if log:
                 log_col = '{}_log'.format(col)
                 counts[log_col] = np.log10(counts[col])
@@ -554,13 +627,13 @@ class CerberusAnnotation():
             vals = counts[[col]]
             max_val = vals[col].max()
             min_val = vals[col].min()
-            min_max_scaler = preprocessing.MinMaxScaler(feature_range=(10, 300))
+            min_max_scaler = preprocessing.MinMaxScaler(feature_range=(min_size, max_size))
             vals = min_max_scaler.fit_transform(vals)
             max_scaled = max(vals)
             min_scaled = min(vals)
 
-            # replace nans w/ 100
-            vals = [100 if np.isnan(v) else v for v in vals]
+            # replace nans w/ big marker size
+            vals = [size_dict['big_marker'] if np.isnan(v) else v for v in vals]
 
             return vals, min_val, max_val, min_scaled, max_scaled
 
@@ -568,12 +641,12 @@ class CerberusAnnotation():
         points = [(x[0], x[1], x[2]) for x in zip_pts(counts, c)]
         labels = ['' for i in range(len(points))]
         hue_type = None
-        figsize = (10,10)
+        figsize = (size_dict['width3'],size_dict['height'])
         colors = '#e78424'
         if len(points) < 60:
-            sizes = [100 for i in range(len(points))]
+            sizes = [size_dict['big_marker'] for i in range(len(points))]
         else:
-            sizes =  [20 for i in range(len(points))]
+            sizes =  [size_dict['small_marker'] for i in range(len(points))]
         markers = 'o'
         vmin = 0
         vmax = 1
@@ -593,11 +666,15 @@ class CerberusAnnotation():
             # continuous
             else:
                 hue_type = 'cont'
-                colors, abs_min, abs_max, vmin, vmax = scale_col(points, counts, hue)
+                colors, abs_min, abs_max, vmin, vmax = scale_col(points, counts, hue,
+                                                                 min_size=size_dict['marker_min'],
+                                                                 max_size=size_dict['marker_max'])
 
         # get sizes
         if size:
-            sizes,_,_,_,_ = scale_col(points, counts, size, log_size)
+            sizes,_,_,_,_ = scale_col(points, counts, size, log=log_size,
+                                                             min_size=size_dict['marker_min'],
+                                                             max_size=size_dict['marker_max'])
 
         # get marker styles
         if marker_style:
@@ -605,12 +682,12 @@ class CerberusAnnotation():
         else:
             markers = ['o' for i in range(len(counts.index))]
 
-        # figure size handling
-        if hue_type == 'cat' and density: figsize = (13,10)
-        elif hue_type == 'cat' and not density: figsize = (10,10)
-        elif hue_type == 'cont' and density: figsize = (16,10)
-        elif hue_type == 'cont' and not density: figsize = (13,10)
-        elif density: figsize = (13,10)
+        if hue_type == 'cat' and density: figsize = (size_dict['width1'], size_dict['height'])
+        elif hue_type == 'cat' and not density: figsize = (size_dict['width3'], size_dict['height'])
+        elif hue_type == 'cont' and density: figsize = (size_dict['width2'], size_dict['height'])
+        elif hue_type == 'cont' and not density: figsize = (size_dict['width1'], size_dict['height'])
+        elif density: figsize = (size_dict['width1'], size_dict['height'])
+        print(figsize)
         figure.set_size_inches(figsize[0], figsize[1])
 
         # actual scatter call
@@ -619,11 +696,15 @@ class CerberusAnnotation():
                 tax.scatter([point], vmin=vmin, vmax=vmax,
                         s=size, c=color,
                         marker=marker,label=label,
-                        alpha=alpha, zorder=3)
+                        alpha=alpha, zorder=3,
+                        linewidths=0,
+                        edgecolors=None)
         else:
             tax.scatter(points, vmin=vmin, vmax=vmax,
                         s=sizes, c=colors, cmap=cmap, marker=markers,
-                        alpha=alpha, zorder=3)
+                        alpha=alpha, zorder=3,
+                        linewidths=0,
+                        edgecolors=None)
 
         # legend handling
         if hue_type == 'cat' and legend:
@@ -637,7 +718,7 @@ class CerberusAnnotation():
             ax = tax.get_axes()
             lgnd = ax.get_legend()
             for handle in lgnd.legendHandles:
-                handle._sizes = [100]
+                handle._sizes = [size_dict['big_marker']]
 
         # colorbar handling
         if hue_type == 'cont':
@@ -647,7 +728,7 @@ class CerberusAnnotation():
             sm._A = []
             cb = plt.colorbar(sm, ax=ax, pad=0.1)
             for t in cb.ax.get_yticklabels():
-                 t.set_fontsize(16)
+                 t.set_fontsize(size_dict['cbar_size'])
             if hue == 'tss' or hue == 'tes':
                 cb.set_label('# {}s'.format(hue.upper()), size=16)
             elif hue == 'intron_chain':
@@ -658,11 +739,13 @@ class CerberusAnnotation():
     def density_dorito(self,
                     counts,
                     c,
+                    size_dict,
                     density_scale=20,
                     density_cmap='viridis',
                     density_vmax=None,
                     log_density=False,
                     pad=0.15,
+                    density_cbar=False,
                     **kwargs):
         """
         Plot the density of a dataset on a ternary plot
@@ -719,43 +802,44 @@ class CerberusAnnotation():
             counts[c[key]] = counts[c[key]]*scale
 
         # colorbar - hacked together by broken ternary code
-        ax = tax.get_axes()
-        flat = []
-        for key, item in hm_dict.items():
-            flat.append(item)
-        min_val = min(flat)
-        max_val = max(flat)
+        if density_cbar:
+            ax = tax.get_axes()
+            flat = []
+            for key, item in hm_dict.items():
+                flat.append(item)
+            min_val = min(flat)
+            max_val = max(flat)
 
-        if density_vmax:
-            max_val = density_vmax
+            if density_vmax:
+                max_val = density_vmax
 
-        # print(min_val)
-        # print(max_val)
-        norm = plt.Normalize(vmin=min_val, vmax=max_val)
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-        sm._A = []
+            # print(min_val)
+            # print(max_val)
+            norm = plt.Normalize(vmin=min_val, vmax=max_val)
+            sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+            sm._A = []
 
-        def exp_format(x,pos):
-            x = int(x)
-            return r'$2^{{{}}}$'.format(x)
+            def exp_format(x,pos):
+                x = int(x)
+                return r'$2^{{{}}}$'.format(x)
 
-        if not log:
-            cb = plt.colorbar(sm, ax=ax, pad=pad)
-        else:
-            cb = plt.colorbar(sm, ax=ax, pad=pad,
-                format=tck.FuncFormatter(exp_format))
+            if not log:
+                cb = plt.colorbar(sm, ax=ax, pad=pad)
+            else:
+                cb = plt.colorbar(sm, ax=ax, pad=pad,
+                    format=tck.FuncFormatter(exp_format))
 
-        for t in cb.ax.get_yticklabels():
-            t.set_fontsize(16)
-        if not log:
-            cb.ax.set_yticklabels([])
-            cb.ax.set_yticks([])
+            for t in cb.ax.get_yticklabels():
+                t.set_fontsize(size_dict['cbar_tick_size'])
+            if not log:
+                cb.ax.set_yticklabels([])
+                cb.ax.set_yticks([])
 
-        cb.set_label('Density', size=16)
+            cb.set_label('Density', size=size_dict['cbar_size'])
 
         return figure, tax, counts
 
-    def jitter_dorito(self, counts, c, scale):
+    def jitter_dorito(self, counts, c, scale, size_dict):
         """
             Parameters:
                 counts
@@ -768,7 +852,7 @@ class CerberusAnnotation():
         """
 
         # figure out how much to jitter by
-        sigma = (1/250)*scale
+        sigma = size_dict['sigma']
         for d in c.keys():
             d_jitter = '{}_jitter'.format(d)
             counts[d_jitter] = counts[c[d]].apply(lambda x: np.random.normal(x, sigma))
@@ -780,6 +864,7 @@ class CerberusAnnotation():
                 figure,
                 tax,
                 scale,
+                size_dict,
                 sect_alpha=0.5,
                 sect_beta=0.5,
                 sect_gamma=0.5,
@@ -791,7 +876,7 @@ class CerberusAnnotation():
         beta = sect_beta*scale
         gamma = sect_gamma*scale
 
-        linewidth = 3
+        linewidth = size_dict['linewidth']
 
         # splicing line
         tax.horizontal_line(beta, linewidth=linewidth,
