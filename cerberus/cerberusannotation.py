@@ -244,6 +244,7 @@ class CerberusAnnotation():
         # isoform in each sample
         trip_df = pd.DataFrame()
         for c in dataset_cols:
+            # ensures that we're only looking at isoforms >= 1 TPM in each sample
             temp = self.get_subset_triplets(t_df.loc[t_df[c], 'tid'].tolist())
             temp[gb] = c
             trip_df = pd.concat([trip_df, temp])
@@ -331,6 +332,7 @@ class CerberusAnnotation():
 
                 density_scale=1, # used in main
                 density_cbar=False, # used in main
+                density_vmax=None, # not used in main but needs explicit passing
                 scale=True, # used in main
                 title=None, # used in main
                 top='splicing_ratio', # used in main
@@ -404,7 +406,7 @@ class CerberusAnnotation():
         size_dict['marker_min'] = 10
 
         # jitter
-        size_dict['sigma'] = (1/250)*scale
+        size_dict['sigma'] = (1/250)*scale*density_scale
 
         # ticks
         size_dict['tick_linewidth'] = 2
@@ -442,31 +444,24 @@ class CerberusAnnotation():
 
         # if we have a gene name, limit to those entries
         if gene:
-            temp = temp.loc[temp.gname == gene]
-            if temp.empty:
-                temp = temp.loc[temp.gid == gene]
-                gene = temp.gname.values[0]
+            temp, gene = subset_df_on_gene(temp, gene)
 
         # if we have a list of allowed sources, limit to those entries
         if subset:
-            for col, val in subset.items():
-                if type(val) != list:
-                    val = [val]
-                temp = temp.loc[temp[col].isin(val)]
+            temp = subset_df(temp, subset)
 
         # scale and assign which columns to use
         c = dict()
         if scale:
-            if top == 'splicing_ratio':
-                temp['total'] = temp.n_tss+temp.n_tes+temp.splicing_ratio
-            elif top == 'n_ic':
-                temp['total'] = temp.n_tss+temp.n_tes+temp.n_ic
-            temp['tss_ratio'] = temp.n_tss/temp.total
-            temp['tes_ratio'] = temp.n_tes/temp.total
-            temp['top_ratio'] = temp[top]/temp.total
+            # temp['total'] = temp.n_tss+temp.n_tes+temp[top]
+            # temp['tss_ratio'] = temp.n_tss/temp.total
+            # temp['tes_ratio'] = temp.n_tes/temp.total
+            # temp['spl_ratio'] = temp[top]/temp.total
+
+            temp = compute_simplex_coords(temp, top)
 
             c['a'] = 'tss_ratio'
-            c['b'] = 'top_ratio'
+            c['b'] = 'spl_ratio'
             c['c'] = 'tes_ratio'
         else:
             c['a'] = 'n_tss'
@@ -495,6 +490,7 @@ class CerberusAnnotation():
                                      density_scale=density_scale,
                                      pad=pad,
                                      density_cbar=density_cbar,
+                                     density_vmax=density_vmax,
                                      **kwargs)
             scale = density_scale
             if density_cbar:
@@ -528,7 +524,7 @@ class CerberusAnnotation():
         if scatter:
             figure, tax = self.scatter_dorito(temp, c,
                             figure, tax,
-                            density,
+                            density_cbar,
                             size_dict,
                             **kwargs)
 
@@ -547,9 +543,9 @@ class CerberusAnnotation():
                 title = ''
         else:
             if gene:
-                title = '{} $\it{}$\n'.format(title, gene)
+                title = '{} $\it{}$'.format(title, gene)
             else:
-                title = '{}\n'.format(title)
+                title = '{}'.format(title)
 
         tax.set_title(title, fontsize=size_dict['title_size'],
                       fontdict=fdict, pad=size_dict['title_pad'])
@@ -597,6 +593,7 @@ class CerberusAnnotation():
                      tax,
                      density,
                      size_dict,
+                     order_marker_sizes=False,
                      hue=None,
                      cmap='magma',
                      marker_style=None,
@@ -690,8 +687,35 @@ class CerberusAnnotation():
         print(figsize)
         figure.set_size_inches(figsize[0], figsize[1])
 
+        def sort_points(points, colors, sizes, labels, markers):
+            # https://stackoverflow.com/questions/6618515/sorting-list-based-on-values-from-another-list
+            # attr = [points, colors, labels, markers]
+            # for att in attr:
+            def sort_attr(attr, sizes):
+                attr = [a for (a,size) in sorted(zip(attr, sizes),
+                        key=lambda pair: pair[1],
+                        reverse=True)]
+                return attr
+
+            points = sort_attr(points, sizes)
+            colors = sort_attr(colors, sizes)
+            labels = sort_attr(labels, sizes)
+            markers = sort_attr(markers, sizes)
+            sizes = sort_attr(sizes, sizes)
+            return points, colors, sizes, labels, markers
+
         # actual scatter call
         if hue_type == 'cat':
+
+            # sort points based on their sizes so that smallest will be visible
+            # on top of the bigger ones
+            if order_marker_sizes:
+                points, colors, sizes, labels, markers = sort_points(points,
+                                                                     colors,
+                                                                     sizes,
+                                                                     labels,
+                                                                     markers)
+
             for point, color, size, label, marker in zip(points, colors, sizes, labels, markers):
                 tax.scatter([point], vmin=vmin, vmax=vmax,
                         s=size, c=color,
@@ -776,16 +800,29 @@ class CerberusAnnotation():
                         else:
                             temp = temp.loc[(temp.tss_ratio*scale>=i)&(temp.tss_ratio*scale<=i+1)]
                         if j != scale:
-                            temp = temp.loc[(temp.top_ratio*scale>=j)&(temp.top_ratio*scale<j+1)]
+                            temp = temp.loc[(temp.spl_ratio*scale>=j)&(temp.spl_ratio*scale<j+1)]
                         else:
-                            temp = temp.loc[(temp.top_ratio*scale>=j)&(temp.top_ratio*scale<=j+1)]
+                            temp = temp.loc[(temp.spl_ratio*scale>=j)&(temp.spl_ratio*scale<=j+1)]
                         n = len(temp.index)
                         hm_dict[i,j] += n
+
+        # for key, item in hm_dict.items():
+        #     blop = 0
+        #     if item > 0:
+        #         print(key)
+        #         print(item)
+        #         print()
+        #         blop+=1
+        #     if blop > 3:
+        #         break
+        # print(hm_dict)
 
         # log values if necessary
         if log:
             for key, item in hm_dict.items():
                 hm_dict[key] = np.log2(item+1)
+            if density_vmax:
+                density_vmax = np.log2(density_vmax+1)
 
         # double checking stuff
         df = pd.DataFrame.from_dict(hm_dict, orient='index')
@@ -795,7 +832,7 @@ class CerberusAnnotation():
 
         figure, tax = ternary.figure(scale=scale, permutation='210')
         tax.heatmap(hm_dict, colorbar=False, style='t',
-                    adj_vlims=True, cmap=cmap)
+                    adj_vlims=True, cmap=cmap, vmax=density_vmax)
 
         # scale according to chosen resolution
         for key in c.keys():
@@ -813,8 +850,8 @@ class CerberusAnnotation():
             if density_vmax:
                 max_val = density_vmax
 
-            # print(min_val)
-            # print(max_val)
+            print(min_val)
+            print(max_val)
             norm = plt.Normalize(vmin=min_val, vmax=max_val)
             sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
             sm._A = []
@@ -956,6 +993,65 @@ def count_instances(df, mode):
     df = df[['gene_id', 'Name']].groupby('gene_id').count().reset_index()
     df = df.rename({'Name': count_col}, axis=1)
     df[count_col] = df[count_col].astype(int)
+    return df
+
+def subset_df_on_gene(df, gene):
+    """
+    Subset a dataframe based on gene name or id
+
+    Parameters:
+        df (pandas DataFrame): DF to subset
+        gene (str): Gene ID or name to subset on
+
+    Returns:
+        df (pandas DataFrame): DF subset on gene
+        gene (str): Gene name
+    """
+    temp = df.loc[df.gname == gene]
+    if temp.empty:
+        temp = df.loc[df.gid == gene]
+        gene = df.gname.values[0]
+
+    df = temp.copy()
+    return temp, gene
+
+def subset_df(df, subset):
+    """
+    Subset a dataframe based on meeting all of the conditions given
+
+    Parameters:
+        df (pandas DataFrame): DF to subset
+        subset (dictionary of str): Dictionary mapping {column name :
+                                    acceptable values}
+
+    Returns:
+        df (pandas DataFrame): DF subset on the dictionary values
+    """
+    for col, val in subset.items():
+        if type(val) != list:
+            val = [val]
+        df = df.loc[df[col].isin(val)]
+    return df
+
+def compute_simplex_coords(df, spl_col):
+    """
+    Compute simplex coordinates from gene triplets
+
+    Parameters:
+        df (pandas DataFrame): DF holding values for n tss, tes, and
+            column to approximate amount of splicing
+        spl_col (str): {'splicing_ratio', 'n_ic'}
+
+    Returns:
+        df (pandas DataFrame): DF w/ simplex coordinates values in columns
+            ['tss_ratio', 'spl_ratio', 'tes_ratio']
+    """
+    df['total'] = df.n_tss+df.n_tes+df[spl_col]
+    df['tss_ratio'] = df.n_tss/df.total
+    df['tes_ratio'] = df.n_tes/df.total
+    df['spl_ratio'] = df[spl_col]/df.total
+    df.drop('total', axis=1, inplace=True)
+
     return df
 
 def compute_splicing_ratio(df):

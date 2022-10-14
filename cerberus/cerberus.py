@@ -1988,7 +1988,12 @@ def assign_triplets(gtf_df, tss, ic, tes, gene_source, t_map):
     gtf_df = gtf_df.df
     gtf_df = gtf_df.loc[gtf_df.Feature == 'transcript']
     if 'gene_name' not in gtf_df.columns:
-        gtf_df['gene_name'] = gtf_df.transcript_name.str.split('-', n=1, expand=True)[0]
+        if 'transcript_name' not in gtf_df.columns:
+            gtf_df['gene_name'] = gtf_df.transcript_name.str.split('-', n=1, expand=True)[0]
+        else:
+            gtf_df['gene_name'] = gtf_df['gene_id']
+            gtf_df['transcript_name'] = gtf_df['transcript_id']
+
     gtf_df = gtf_df[['gene_id', 'gene_name',
                  'transcript_id', 'transcript_name']]
     df = df.merge(gtf_df, how='left', on='transcript_id')
@@ -2285,7 +2290,7 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
         if not update_ends:
             raise ValueError('Must update ends to aggregate transcripts')
 
-    df = pr.read_gtf(gtf).df
+    df = pr.read_gtf(gtf, duplicate_attr).df
     entry_types = ['gene', 'transcript', 'exon']
     df = df.loc[df.Feature.isin(entry_types)]
     df = sort_gtf(df)

@@ -6,6 +6,7 @@ Cerberus is a set of tools designed to characterize and enhance transcriptome an
 * integrate TSSs and TESs from multiple GTFs as well as from outside BED sources to create end annotations from the union of them all
 * number intron chains, TSSs, and TESs found by their priority in a reference GTF
 * use the enhanced intron chain and 5'/3' end sets to annotate an existing GTF transcriptome and to modify the GTF and corresponding abundance matrices to reflect the new naming scheme / identities of the transcripts
+* Compute gene triplets for different sets of isoforms for each gene based on their
 
 # CLI documentation
 
