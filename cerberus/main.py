@@ -39,8 +39,9 @@ def gtf_to_ics_command(gtf, o):
 
 @cli.command(name='agg_ends')
 @click.option('--input',
-              help='Path to config file. Each line contains'+\
-                   'file path,whether to add ends (True / False),source name',
+              help='Path to config file. Each line contains '+\
+                   'file path, whether to add ends (True / False), '+\
+                   'whether to use as a reference, source name',
               required=True)
 @click.option('--mode',
             help='Choose tss or tes',
@@ -57,8 +58,8 @@ def agg_ends_command(input, mode, slack, o):
 
 @cli.command(name='agg_ics')
 @click.option('--input',
-              help='Path to config file. Each line contains'+\
-                   'file path,source name',
+              help='Path to config file. Each line contains '+\
+                   'file path, whether to use as a reference, source name',
               required=True)
 @click.option('-o',
               help='Output file name',
@@ -86,7 +87,8 @@ def write_reference_command(tss, tes, ics, o):
 @cli.command(name='gen_reference')
 @click.option('--ref_gtf',
               help='Path to config file for each GTF, in priority order. '+\
-                   'Each line contains file path, whether to add ends, source name',
+                   'Each line contains file path, whether to add ends, '+\
+                   'whether to use as reference, source name',
               required=True)
 @click.option('-o',
               help='Output h5 file name',
