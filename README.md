@@ -8,7 +8,11 @@ Cerberus is a set of tools designed to characterize and enhance transcriptome an
 * use the enhanced intron chain and 5'/3' end sets to annotate an existing GTF transcriptome and to modify the GTF and corresponding abundance matrices to reflect the new naming scheme / identities of the transcripts
 * Compute gene triplets for different sets of isoforms for each gene based on their
 
-# CLI documentation
+Please visit the [cerberus website](https://fairliereese.github.io/cerberus/html/index.html) for documentation.
+
+**Note:** Cerberus is under active development and the documentation is currently incomplete. Please feel free to open an issue or email me ( freese {at} uci.edu ) if you're interested in using it!
+
+<!-- # CLI documentation
 
 Cerberus can be run from the command line or used as an API in Python.
 
@@ -46,7 +50,7 @@ cerberus gtf_to_bed \
   -o test_output/Canx_tes.bed \
   --dist 50 \
   --slack 50
-```
+``` -->
 
 <!-- Calls to generate test files:
 ```bash
@@ -79,7 +83,7 @@ cerberus gtf_to_bed \
   --slack 50
 ``` -->
 
-### Calling unique intron chains from a transcriptome
+<!-- ### Calling unique intron chains from a transcriptome
 Create a tab-separated file detailing unique intron chains present in a
 transcriptome annotation (GTF) file.
 
@@ -97,7 +101,7 @@ Example call:
 cerberus gtf_to_ics \
   --gtf tests/files/Canx.gtf \
   -o test_output/Canx_ics.tsv
-```
+``` -->
 
 <!-- Calls to generate test files:
 ```bash
@@ -114,7 +118,7 @@ cerberus gtf_to_ics \
   -o tests/files/Canx_2_ics.tsv
 ``` -->
 
-### Aggregate end regions from multiple bed files
+<!-- ### Aggregate end regions from multiple bed files
 Create consensus end regions from multiple bed files. The intent is for some
 of these files to come from `cerberus gtf_to_bed`.
 
@@ -142,7 +146,7 @@ cerberus agg_ends \
   --mode tes \
   --input tests/files/Canx_tes.bed \
   -o test_output/Canx_tes_agg.bed
-```
+``` -->
 
 <!-- Calls to generate test files
 ```bash
@@ -157,7 +161,7 @@ cerberus agg_ends \
   -o tests/files/Canx_tes_agg.bed
 ``` -->
 
-### Aggregate intron chains from multiple intron chain files
+<!-- ### Aggregate intron chains from multiple intron chain files
 Create consensus intron chain annotations from multiple intron chain files
 (output from `cerberus gtf_to_ics`).
 
@@ -177,7 +181,7 @@ Example call:
 cerberus agg_ics \
   --input tests/files/Canx_1_ics.tsv,tests/files/Canx_2_ics.tsv \
   -o test_output/Canx_ic_agg.tsv
-```
+``` -->
 
 <!-- Calls to generate test files
 ```bash
@@ -186,7 +190,7 @@ cerberus agg_ics \
   -o tests/files/Canx_ic_agg.tsv
 ``` -->
 
-### Create a reference using aggregated intron chains, TSSs, and TESs
+<!-- ### Create a reference using aggregated intron chains, TSSs, and TESs
 Using regions and intron chains from `cerberus agg_ends` and `cerberus agg_ics` respectively, create a `.h5` reference that holds all the information.
 
 ```
@@ -232,7 +236,7 @@ cerberus assign-triplets \
   --h5 test_output/Canx_ref.h5 \
   --source canx \
   -o test_output/Canx_annot.h5
-```
+``` -->
 
 <!-- Calls to generate test files:
 ```bash
@@ -244,7 +248,7 @@ cerberus assign-triplets \
   -o tests/files/Canx_triplet.h5
 ``` -->
 
-### Update transcript ids in abundance file
+<!-- ### Update transcript ids in abundance file
 Using the map generated in `cerberus annotate_transcriptome`, update the transcript ids
 and transcript names that are used a TALON abundance matrix with the new
 triplet versions of the transcript ids / names
@@ -297,7 +301,7 @@ cerberus replace_gtf_ids \
   --source canx \
   --collapse \
   -o test_output/Canx_triplet_updated.gtf
-```
+``` -->
 
 <!-- ## Utilites
 
