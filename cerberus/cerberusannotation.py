@@ -29,6 +29,16 @@ class CerberusAnnotation():
         self.triplet_sources = []
 
     def get_sources(self, df):
+        """
+        Get list of source names that were used to generate the triplet features
+        in df
+
+        Parameters:
+            df (pandas DataFrame): DataFrame of TSSs, TESs, or ICs
+
+        Returns:
+            s (list of str): List of sources from df
+        """
         s = [s.split(',') for s in df.source.unique().tolist()]
         s = list(set(flatten(s)))
         return s
@@ -64,6 +74,17 @@ class CerberusAnnotation():
 ################################################################################
 
     def add_sg_info(self, df, sg=None):
+        """
+        Add information about transcripts from corresponding SwanGraph
+
+        Parameters:
+            df (pandas DataFrame): DF of transcripts
+            sg (swan_vis SwanGraph): SwanGraph with transcript IDs that match
+                those in the CerberusAnnotation
+
+        Returns:
+            df (pandas DataFrame): DF with SwanGraph t_df info added
+        """
         if sg is not None:
             temp = sg.t_df[['gid', 'gname']].copy(deep=True)
             df.rename({'gene_id': 'gid'}, axis=1, inplace=True)
@@ -119,8 +140,6 @@ class CerberusAnnotation():
         Returns:
             trip_df (pandas DataFrame): DF indicating how many tss, tes, and ic
                 features are found in each source
-            sg (swan_vis SwanGraph): SwanGraph holding abundance information
-                but also other metadata about each gene
         """
         sources = self.all_sources + ['all']
         trip_df = pd.DataFrame()
@@ -171,15 +190,7 @@ class CerberusAnnotation():
         trip_df.rename({'gene_id': 'gid'}, axis=1, inplace=True)
 
         trip_df = self.add_sg_info(trip_df, **kwargs)
-        # if sg is not None:
-        #     temp = sg.t_df[['gid', 'gname']].copy(deep=True)
-        #     temp.rename({'gid':'gene_id'}, axis=1, inplace=True)
-        #     temp = add_stable_gid(temp)
-        #     temp.reset_index(drop=True)
-        #     temp.drop_duplicates(inplace=True)
-        #     temp.rename({'gene_id': 'gid'}, axis=1, inplace=True)
-        #     trip_df = trip_df.merge(temp, how='left', on='gid')
-
+        
         return trip_df
 
     def get_expressed_triplets(self, sg, obs_col, min_tpm,
@@ -278,6 +289,7 @@ class CerberusAnnotation():
 
         Parameters:
             tids (list of str): List of tids
+            source (str): Name to use for triplets source
         """
         df = get_feats_from_tids(tids)
         df.drop('transcript_triplet', axis=1, inplace=True)
@@ -333,56 +345,39 @@ class CerberusAnnotation():
                 density_scale=1, # used in main
                 density_cbar=False, # used in main
                 density_vmax=None, # not used in main but needs explicit passing
-                scale=True, # used in main
                 title=None, # used in main
                 top='splicing_ratio', # used in main
 
                 size_scale=1,
 
-                # # scatter args
-                # cmap='magma', # passed to scatter
-                # marker_style=None, # passed to scatter
-                # mmap=None, # passed to scatter
-                # size=None, # passed to scatter
-                # legend=True, # passed to scatter
-                # log_size=False, # passed to scatter
-                # alpha=1, # passed to scatter
-
-                # # density args
-                # density_cmap='viridis', # passed to density
-                # density_vmax=None, # passed to density
-                # log_density=False, # passed to density
-
-                # # line args
-                # sect_alpha=0.5, # passed to line
-                # sect_beta=0.5, # passed to line
-                # sect_gamma=0.5, # passed to line
-
                 fname=None,
                 **kwargs):
         """
-        Plot a dorito from counts with the given subset in a given
-        color
+        Plot a simplex plot from CerberusAnnotation triplets
 
         Parameters:
-            counts (pandas DataFrame): DF of the counts per gene
-                of ic, tss, tes
-            top (str): Column name to plot as apex of dorito.
-                Choose from 'ic' or 'splicing_ratio'
             subset (dict of lists): List mapping counts column names
                 to values in said columns to include in the data
-            hue (str): Column from counts to color by
-            cmap (str or dict of str): Either a dictionary mapping
-                categorical column values from hue or a valid
-                matplotlib continuous named color palette
-            mmap (str or dict of str): Dictionary mapping categorical
-                column values from hue to marker styles
-            scale (bool): Whether to scale values b/w 1 and 0.
-            alpha (float): Alpha value of points
-            title (str): Title to give plot
-            size_scale (float): Amount to scale elements sizes by
-            fname (str): Output file name
+                ie {'source': 'v40', 'sample': ['brain', 'heart']}
+            gene (str): Gene name to subset on
+            density (bool): Plot density plot
+            sectors (bool): Include lines that bound each sector
+            scatter (bool): Plot scatter plot
+            jitter (bool): Jitter scattered points
+            density_scale (float): Number of triangles to plot per side
+            density_cbar (bool): Include reference colorbar
+            density_vmax (float): Value to serve as max. in density colorbar
+            title (str): Title to display on plot
+            size_scale (float): How large to make figure
+            fname (str): File to save figure as
+
+            **kwargs: Arguments to pass to TODO
+
+        Returns:
+            temp (pandas DataFrame): Points plotted in this plot
         """
+
+        scale = True
 
         # figure size handling
         size_dict = {}
@@ -605,9 +600,27 @@ class CerberusAnnotation():
                      **kwargs):
         """
         Parameters
-          counts (pandas DataFrame): subset the thing
+          counts (pandas DataFrame): Subset of self.triplets being plotted
           c (dict of str): Dictionary of column names to plot as a, b, c
               indexed by 'a', 'b', 'c'
+          figure (matplotlib figure): Figure to plot on
+          tax (matplotlib ternary axes): Axes to plot on
+          density (bool): Plot density
+          size_dict (dict of floats): Sizes for different plotted features
+          order_marker_sizes (bool): Order markers based on their sizes such
+            that the smallest markers are on top
+        hue (str): Column in self.triplets to color each point by
+        cmap (str): Colormap to use for hue
+        marker_style (str): Column in self.triplets to use to plot different
+            shapes of markers
+        mmap (dict): Dictionary mapping marker styles to different column values
+            in self.triplets[marker_style]
+        size (str): Column in self.triplets to use to control size of markers
+        log_size (bool): Log marker sizes
+        alpha (float): Alpha value for plotted markers
+        legend (bool): Include legend
+
+        **kwargs
         """
 
         def scale_col(points, counts, col,
@@ -615,8 +628,6 @@ class CerberusAnnotation():
                       max_size=300,
                       log=False,
                       how='color'):
-            print(min_size)
-            print(max_size)
             if log:
                 log_col = '{}_log'.format(col)
                 counts[log_col] = np.log10(counts[col])
@@ -684,7 +695,6 @@ class CerberusAnnotation():
         elif hue_type == 'cont' and density: figsize = (size_dict['width2'], size_dict['height'])
         elif hue_type == 'cont' and not density: figsize = (size_dict['width1'], size_dict['height'])
         elif density: figsize = (size_dict['width1'], size_dict['height'])
-        print(figsize)
         figure.set_size_inches(figsize[0], figsize[1])
 
         def sort_points(points, colors, sizes, labels, markers):
