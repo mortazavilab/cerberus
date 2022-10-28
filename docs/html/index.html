@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>cerberus: triplet-based transcriptome aggregation and annotation &mdash; cerberus 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tutorials" href="tutorials.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="#" class="icon icon-home"> cerberus
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html#transcriptome-reference-generation">Transcriptome reference generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html#transcriptome-annnotation">Transcriptome annnotation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html#calculating-gene-triplets">Calculating gene triplets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli_api.html">CLI API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">cerberus</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li>cerberus: triplet-based transcriptome aggregation and annotation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="cerberus-triplet-based-transcriptome-aggregation-and-annotation">
+<h1>cerberus: triplet-based transcriptome aggregation and annotation<a class="headerlink" href="#cerberus-triplet-based-transcriptome-aggregation-and-annotation" title="Permalink to this heading"></a></h1>
+<p>cerberus is a set of command-line and Python tools to create triplet-based transcriptomes from a variety of input
+sources, compute gene triplets for different sets of isoforms, and produce triangular gene-isoform simplex plots.</p>
+<a class="reference internal image-reference" href="_images/cerberus_logo.png"><img alt="_images/cerberus_logo.png" src="_images/cerberus_logo.png" style="width: 200px;" /></a>
+<p><strong>Note:</strong> Cerberus is under active development and the documentation currently
+has some missing details. Please feel free to reach out through GitHub issues
+if you have any questions.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html#transcriptome-reference-generation">Transcriptome reference generation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#extracting-triplet-features-from-gtfs">Extracting triplet features from GTFs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#aggregating-tsss-and-tess-across-multiple-sources">Aggregating TSSs and TESs across multiple sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#aggregating-ics-across-multiple-sources">Aggregating ICs across multiple sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#generating-a-cerberus-reference-in-h5-format">Generating a cerberus reference in h5 format</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html#transcriptome-annnotation">Transcriptome annnotation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#assigning-isoform-triplets-to-a-transcriptome">Assigning isoform triplets to a transcriptome</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#update-counts-matrix-with-cerberus-ids">Update counts matrix with cerberus IDs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#update-gtf-with-cerberus-ids">Update GTF with cerberus IDs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html#calculating-gene-triplets">Calculating gene triplets</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#calculating-gene-triplets-from-cerberus-sources">Calculating gene triplets from cerberus sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#calculating-gene-triplets-from-a-list-of-transcriptomes">Calculating gene triplets from a list of transcriptomes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#calculating-gene-triplets-based-on-isoforms-expressed-in-a-sample">Calculating gene triplets based on isoforms expressed in a sample</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#calculating-gene-triplets-from-custom-subset-files">Calculating gene triplets from custom subset files</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="cli_api.html">CLI API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cli_api.html#cerberus-agg-ends">cerberus agg_ends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli_api.html#cerberus-agg-ics">cerberus agg_ics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli_api.html#cerberus-annotate-transcriptome">cerberus annotate_transcriptome</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli_api.html#cerberus-gen-reference">cerberus gen_reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli_api.html#cerberus-gtf-to-bed">cerberus gtf_to_bed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli_api.html#cerberus-gtf-to-ics">cerberus gtf_to_ics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli_api.html#cerberus-replace-ab-ids">cerberus replace_ab_ids</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli_api.html#cerberus-replace-gtf-ids">cerberus replace_gtf_ids</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli_api.html#cerberus-write-reference">cerberus write_reference</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="tutorials.html" class="btn btn-neutral float-right" title="Tutorials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Fairlie Reese.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

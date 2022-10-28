@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tutorials &mdash; cerberus 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="CLI API" href="cli_api.html" />
+    <link rel="prev" title="cerberus: triplet-based transcriptome aggregation and annotation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> cerberus
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#transcriptome-reference-generation">Transcriptome reference generation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#extracting-triplet-features-from-gtfs">Extracting triplet features from GTFs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#aggregating-tsss-and-tess-across-multiple-sources">Aggregating TSSs and TESs across multiple sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#aggregating-ics-across-multiple-sources">Aggregating ICs across multiple sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#generating-a-cerberus-reference-in-h5-format">Generating a cerberus reference in h5 format</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#transcriptome-annnotation">Transcriptome annnotation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#assigning-isoform-triplets-to-a-transcriptome">Assigning isoform triplets to a transcriptome</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#update-counts-matrix-with-cerberus-ids">Update counts matrix with cerberus IDs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#update-gtf-with-cerberus-ids">Update GTF with cerberus IDs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#calculating-gene-triplets">Calculating gene triplets</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-from-cerberus-sources">Calculating gene triplets from cerberus sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-from-a-list-of-transcriptomes">Calculating gene triplets from a list of transcriptomes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-based-on-isoforms-expressed-in-a-sample">Calculating gene triplets based on isoforms expressed in a sample</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-from-custom-subset-files">Calculating gene triplets from custom subset files</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="cli_api.html">CLI API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">cerberus</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Tutorials</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/tutorials.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tutorials">
+<h1>Tutorials<a class="headerlink" href="#tutorials" title="Permalink to this heading"></a></h1>
+</section>
+<section id="transcriptome-reference-generation">
+<h1>Transcriptome reference generation<a class="headerlink" href="#transcriptome-reference-generation" title="Permalink to this heading"></a></h1>
+<p id="ref-gen">The first steps of cerberus are to generate a reference set of transcript start
+sites (TSSs), intron chains (ICs), and transcript end sites (TESs). TSSs and TESs
+can either be added from GTFs or BED files. ICs can be added from GTFs.</p>
+<a class="reference internal image-reference" href="_images/cerberus_pipeline_ref_gen.png"><img alt="_images/cerberus_pipeline_ref_gen.png" src="_images/cerberus_pipeline_ref_gen.png" style="width: 800px;" /></a>
+<section id="extracting-triplet-features-from-gtfs">
+<h2>Extracting triplet features from GTFs<a class="headerlink" href="#extracting-triplet-features-from-gtfs" title="Permalink to this heading"></a></h2>
+<p id="gtf-feats">To generate BED files for the TSSs and TESs from a GTF file, use <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">gtf_to_bed</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus gtf_to_bed <span class="se">\</span>
+    --gtf <span class="o">{</span>gtf<span class="o">}</span> <span class="se">\</span>
+    --mode <span class="o">{</span>wildcards.mode<span class="o">}</span> <span class="se">\</span>
+    --dist <span class="o">{</span>params.dist<span class="o">}</span> <span class="se">\</span>
+    --slack <span class="o">{</span>params.slack<span class="o">}</span> <span class="se">\</span>
+    -o <span class="o">{</span>output.bed<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Output file format:</strong></p>
+<p>To generate tab-separated files for the ICs from a GTF file, use <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">gtf_to_ics</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus gtf_to_ics <span class="se">\</span>
+    --gtf <span class="o">{</span>input.gtf<span class="o">}</span> <span class="se">\</span>
+    -o <span class="o">{</span>output.ics<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Output file format:</strong></p>
+</section>
+<section id="aggregating-tsss-and-tess-across-multiple-sources">
+<h2>Aggregating TSSs and TESs across multiple sources<a class="headerlink" href="#aggregating-tsss-and-tess-across-multiple-sources" title="Permalink to this heading"></a></h2>
+<p id="agg-bed">cerberus can aggregate information to support the existence or creation of TSS or TES
+regions across multiple bed files. To perform this aggregation, use <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ends</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus agg_ends <span class="se">\</span>
+    --input <span class="o">{</span>input.cfg<span class="o">}</span> <span class="se">\</span>
+    --mode <span class="o">{</span>mode<span class="o">}</span> <span class="se">\</span>
+    --slack <span class="o">{</span>params.slack<span class="o">}</span> <span class="se">\</span>
+    -o <span class="o">{</span>output.bed<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Notes on behavior:</strong></p>
+<ul class="simple">
+<li><p>TSSs / TESs will be numbered from 1…n for each gene based on</p>
+<ul>
+<li><p>MANE status, appris_principal status, and basic_set status of TSS / TES (if tags are present in GTF used to call regions)</p></li>
+<li><p>Order of BED files in config file (earlier BED files will yield lower numbers)</p></li>
+</ul>
+</li>
+<li><p>BED files without gene IDs cannot be used to initialize new TSS / TES regions</p></li>
+<li><p>After a region is initialized, the boundaries are fixed. Regions that are considered thereafter are simply added as additional forms of support for the already-initialized regions. The reasoning behind this is to avoid “super regions” that grow as new data is added.</p></li>
+</ul>
+<p><strong>Input bed file format:</strong></p>
+<p><strong>Input config file format:</strong></p>
+<p><strong>Output file format:</strong></p>
+</section>
+<section id="aggregating-ics-across-multiple-sources">
+<h2>Aggregating ICs across multiple sources<a class="headerlink" href="#aggregating-ics-across-multiple-sources" title="Permalink to this heading"></a></h2>
+<p id="agg-ic">cerberus can aggregate information to support the existence or creation of intron chains
+across multiple datasets. To perform this aggregation, use <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ics</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus agg_ics <span class="se">\</span>
+  --input <span class="o">{</span>input.cfg<span class="o">}</span> <span class="se">\</span>
+  -o <span class="o">{</span>output.agg_ics<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Notes on behavior:</strong></p>
+<ul class="simple">
+<li><p>ICs will be numbered from 1…n for each gene based on</p>
+<ul>
+<li><p>MANE status, appris_principal status, and basic_set status of IC (if tags are present in GTF used to call intron chains)</p></li>
+<li><p>Order of IC TSV files in config file (earlier TSV files will yield lower numbers)</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>Input IC file format:</strong></p>
+<ul class="simple">
+<li><p>Output from <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">gtf_to_ics</span></code>.</p></li>
+</ul>
+<p><strong>Input config file format:</strong></p>
+<p><strong>Output file format:</strong></p>
+</section>
+<section id="generating-a-cerberus-reference-in-h5-format">
+<h2>Generating a cerberus reference in h5 format<a class="headerlink" href="#generating-a-cerberus-reference-in-h5-format" title="Permalink to this heading"></a></h2>
+<p id="write-ref">The final step of reference generation is to write an h5 representation of the TSSs, ICs, and TESs present in the input data as a series of tables in h5 format.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus write_reference <span class="se">\</span>
+    --tss <span class="o">{</span>input.tss<span class="o">}</span> <span class="se">\</span>
+    --tes <span class="o">{</span>input.tes<span class="o">}</span> <span class="se">\</span>
+    --ics <span class="o">{</span>input.ics<span class="o">}</span> <span class="se">\</span>
+    -o <span class="o">{</span>output.ref<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Input TSS / TES file format:</strong></p>
+<ul class="simple">
+<li><p>Output from <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ends</span></code>.</p></li>
+</ul>
+<p><strong>Input IC file format:</strong></p>
+<ul class="simple">
+<li><p>Output from <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ics</span></code>.</p></li>
+</ul>
+<p><strong>Output cerberus reference h5 format:</strong></p>
+</section>
+</section>
+<section id="transcriptome-annnotation">
+<h1>Transcriptome annnotation<a class="headerlink" href="#transcriptome-annnotation" title="Permalink to this heading"></a></h1>
+<p id="transcriptome-annot">After generating an h5 cerberus reference of TSSs, ICs, and TESs, you can now
+annotate any transcriptome in GTF format using the features present in your
+cerberus reference; generating <strong>isoform triplets</strong> for each transcript in your
+transcriptome. Multiple transcriptomes can be annotated using the same cerberus
+reference. You can then use this mapping to add the cerberus isoform triplets
+to preexisting GTF files and abundance matrices.</p>
+<a class="reference internal image-reference" href="_images/cerberus_pipeline_annotate_transcriptome.png"><img alt="_images/cerberus_pipeline_annotate_transcriptome.png" src="_images/cerberus_pipeline_annotate_transcriptome.png" style="width: 800px;" /></a>
+<section id="assigning-isoform-triplets-to-a-transcriptome">
+<h2>Assigning isoform triplets to a transcriptome<a class="headerlink" href="#assigning-isoform-triplets-to-a-transcriptome" title="Permalink to this heading"></a></h2>
+<p id="annot-t">Assign each transcript in a GTF file a cerberus TSS, IC, and TES. You can annotate multiple transcriptomes using the same cerberus reference.</p>
+<p><strong>Note:</strong> It is recommended that for each transcriptome you annotate, that you
+have extracted TSSs, ICs, and TESs from the transcriptome’s GTF and added
+them to the cerberus reference. Otherwise you run the risk of encountering triplet
+features that are unannotated in the cerberus reference.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus annotate_transcriptome <span class="se">\</span>
+            --gtf <span class="o">{</span>gtf<span class="o">}</span> <span class="se">\</span>
+            --h5 <span class="o">{</span>cerberus ref<span class="o">}</span> <span class="se">\</span>
+            --source <span class="o">{</span><span class="nb">source</span> name<span class="o">}</span> <span class="se">\</span>
+            -o <span class="o">{</span>cerberus annot<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Output file format:</strong></p>
+</section>
+<section id="update-counts-matrix-with-cerberus-ids">
+<h2>Update counts matrix with cerberus IDs<a class="headerlink" href="#update-counts-matrix-with-cerberus-ids" title="Permalink to this heading"></a></h2>
+<p id="replace-ab">Replace transcript IDs from your transcriptome in an abundance matrix with cerberus isoform triplets.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus replace_ab_ids <span class="se">\</span>
+            --h5 <span class="o">{</span>annot<span class="o">}</span> <span class="se">\</span>
+            --ab <span class="o">{</span>ab<span class="o">}</span> <span class="se">\</span>
+            --source <span class="o">{</span>source<span class="o">}</span> <span class="se">\</span>
+            --collapse <span class="se">\</span>
+            -o <span class="o">{</span>update_ab<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Notes on behavior:</strong></p>
+<ul class="simple">
+<li><p>Some transcripts from a transcriptome may be assigned the same triplet. Using the <code class="docutils literal notranslate"><span class="pre">--collapse</span></code> flag will deduplicate these in the abundance file and sum up the counts across each transcript with the same isoform triplet.</p></li>
+</ul>
+<p><strong>Input abundance file format:</strong></p>
+<ul class="simple">
+<li><p>Currently cerberus only works with <a class="reference external" href="https://github.com/mortazavilab/TALON/">TALON</a> abundance matrices, but we want to support other formats in the future.</p></li>
+</ul>
+</section>
+<section id="update-gtf-with-cerberus-ids">
+<h2>Update GTF with cerberus IDs<a class="headerlink" href="#update-gtf-with-cerberus-ids" title="Permalink to this heading"></a></h2>
+<p id="replace-gtf">Replace transcript IDs from your transcriptome in a GTF with cerberus isoform triplets.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus replace_gtf_ids <span class="se">\</span>
+            --h5 <span class="o">{</span>annot<span class="o">}</span> <span class="se">\</span>
+            --gtf <span class="o">{</span>gtf<span class="o">}</span> <span class="se">\</span>
+            --source <span class="o">{</span>source<span class="o">}</span> <span class="se">\</span>
+            --update_ends <span class="se">\</span>
+            --collapse <span class="se">\</span>
+            -o <span class="o">{</span>update_gtf<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Notes on behavior:</strong></p>
+<ul class="simple">
+<li><p>Some transcripts from a transcriptome may be assigned the same triplet. Using the <code class="docutils literal notranslate"><span class="pre">--collapse</span></code> flag will deduplicate these in the abundance file and sum up the counts across each transcript with the same isoform triplet.</p></li>
+<li><p>Because cerberus uses regions to represent TSSs and TESs rather than single-bp coordinates, the ends of each of your transcripts are not representable in GTF format. We circumvent this by choosing the furthest upstream boundary of the region for the TSS and the furthest downstream boundary for the TES to report in the GTF when the <code class="docutils literal notranslate"><span class="pre">--update_ends</span></code> option is used. If it is not, the original ends from your transcriptome will be used.</p></li>
+</ul>
+</section>
+</section>
+<section id="calculating-gene-triplets">
+<h1>Calculating gene triplets<a class="headerlink" href="#calculating-gene-triplets" title="Permalink to this heading"></a></h1>
+<a class="reference internal image-reference" href="_images/gene_triplets.png" id="gene-trips"><img alt="_images/gene_triplets.png" id="gene-trips" src="_images/gene_triplets.png" style="width: 400px;" /></a>
+<p>After you’ve generated your final cerberus annotation h5 file for as many
+transcriptomes as you wish with <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">annotate_transcriptome</span></code>, you can now start to
+calculate <strong>gene triplets</strong> as a metric of measuring transcriptional diversity.
+There are a few different ways of doing this.</p>
+<section id="calculating-gene-triplets-from-cerberus-sources">
+<h2>Calculating gene triplets from cerberus sources<a class="headerlink" href="#calculating-gene-triplets-from-cerberus-sources" title="Permalink to this heading"></a></h2>
+<p id="source-triplets">The most simple gene triplet is calculated from all of the isoforms present in a given transcriptome source. You can calculate and add these triplets to your CerberusAnnotation using the <code class="docutils literal notranslate"><span class="pre">cerberus.get_source_triplets()</span></code> function.</p>
+<p>In Python, import cerberus, read in your CerberusAnnotation (output from <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">annotate_transcriptome</span></code>), compute source triplets, and add them to your CerberusAnnotation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cerberus</span>
+
+<span class="n">ca</span> <span class="o">=</span> <span class="n">cerberus</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;cerberus_annot.h5&#39;</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">ca</span><span class="o">.</span><span class="n">get_source_triplets</span><span class="p">()</span>
+<span class="n">ca</span><span class="o">.</span><span class="n">add_triplets</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After adding these source triplets, you can save your updated CerberusAnnotation in h5 format. The triplets will be saved in the <code class="docutils literal notranslate"><span class="pre">ca.triplets</span></code> DataFrame slot.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ca</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;cerberus_annot_triplets.h5&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="calculating-gene-triplets-from-a-list-of-transcriptomes">
+<h2>Calculating gene triplets from a list of transcriptomes<a class="headerlink" href="#calculating-gene-triplets-from-a-list-of-transcriptomes" title="Permalink to this heading"></a></h2>
+<p id="subset-triplets">You may want to filter the isoforms used to calculate your gene triplets. For example, maybe you want to only consider isoforms that are expressed above a certain TPM level. To compute gene triplets from each gene from any arbitrary list of isoform triplets, use <code class="docutils literal notranslate"><span class="pre">cerberus.get_subset_triplets()</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cerberus</span>
+<span class="n">ca</span> <span class="o">=</span> <span class="n">cerberus</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;cerberus_annot.h5&#39;</span><span class="p">)</span>
+<span class="n">source_name</span> <span class="o">=</span> <span class="s1">&#39;highly_expressed&#39;</span>
+<span class="n">tids</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Gene[1,1,1]&#39;</span><span class="p">,</span> <span class="s1">&#39;Gene[1,2,1]&#39;</span><span class="p">]</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">ca</span><span class="o">.</span><span class="n">get_subset_triplets</span><span class="p">(</span><span class="n">tids</span><span class="p">,</span> <span class="n">source_name</span><span class="p">)</span>
+<span class="n">ca</span><span class="o">.</span><span class="n">add_triplets</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="calculating-gene-triplets-based-on-isoforms-expressed-in-a-sample">
+<h2>Calculating gene triplets based on isoforms expressed in a sample<a class="headerlink" href="#calculating-gene-triplets-based-on-isoforms-expressed-in-a-sample" title="Permalink to this heading"></a></h2>
+<p id="sample-triplets">You also may want to compute gene triplets based on a the set of isoforms expressed in a given sample. For this analysis, we use <a class="reference external" href="https://github.com/mortazavilab/swan_vis">Swan</a> to store our sample metadata and expression information:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">swan_vis</span> <span class="k">as</span> <span class="nn">swan</span>
+
+<span class="n">sg</span> <span class="o">=</span> <span class="n">swan</span><span class="o">.</span><span class="n">SwanGraph</span><span class="p">()</span>
+<span class="n">sg</span><span class="o">.</span><span class="n">add_annotation</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">annot</span><span class="p">)</span>
+<span class="n">sg</span><span class="o">.</span><span class="n">add_transcriptome</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">gtf</span><span class="p">,</span> <span class="n">include_isms</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sg</span><span class="o">.</span><span class="n">add_abundance</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">ab</span><span class="p">)</span>
+<span class="n">sg</span><span class="o">.</span><span class="n">add_abundance</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">gene_ab</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;gene&#39;</span><span class="p">)</span>
+<span class="n">sg</span><span class="o">.</span><span class="n">add_metadata</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span>
+
+<span class="n">sg</span><span class="o">.</span><span class="n">save_graph</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">prefix</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can use the expression values and metadata stored in the SwanGraph to determine which isoforms are expressed in each sample, and use <code class="docutils literal notranslate"><span class="pre">cerberus.get_expressed_triplets()</span></code> to calculate these values:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">swan_vis</span> <span class="k">as</span> <span class="nn">swan</span>
+<span class="kn">import</span> <span class="nn">cerberus</span>
+
+<span class="n">sg</span> <span class="o">=</span> <span class="n">swan</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">swan_file</span><span class="p">)</span>
+<span class="n">ca</span> <span class="o">=</span> <span class="n">cerberus</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;cerberus_annot.h5&#39;</span><span class="p">)</span>
+
+<span class="n">source_name</span> <span class="o">=</span> <span class="s1">&#39;sample_isos&#39;</span>
+<span class="n">metadata_column</span> <span class="o">=</span> <span class="s1">&#39;sample&#39;</span>
+<span class="n">min_tpm</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">ca</span><span class="o">.</span><span class="n">get_expressed_triplets</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span>
+                               <span class="n">obs_col</span><span class="o">=</span><span class="n">metadata_column</span><span class="p">,</span>
+                               <span class="n">min_tpm</span><span class="o">=</span><span class="n">min_tpm</span><span class="p">,</span>
+                               <span class="n">source</span><span class="o">=</span><span class="n">source_name</span><span class="p">)</span>
+<span class="n">ca</span><span class="o">.</span><span class="n">add_triplets</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="calculating-gene-triplets-from-custom-subset-files">
+<h2>Calculating gene triplets from custom subset files<a class="headerlink" href="#calculating-gene-triplets-from-custom-subset-files" title="Permalink to this heading"></a></h2>
+<p id="custom-subset-triplets">In the cases where the above gene triplet calculation functions don’t fulfill your exact needs, cerberus supports adding triplets for individual samples using a tab-separated isoform subset file. <strong>Coming soon</strong></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="cerberus: triplet-based transcriptome aggregation and annotation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cli_api.html" class="btn btn-neutral float-right" title="CLI API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Fairlie Reese.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
