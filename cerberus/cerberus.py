@@ -393,6 +393,8 @@ def agg_2_ends(bed1, bed2,
                add_ends,
                mode):
     """
+    Aggregate ends from 2 sets of bed regions.
+
     Parameters:
         bed1 (pyranges PyRanges): Bed PyRanges object for existing ends
         bed2 (pyranges PyRanges): Bed PyRanges object for new ends
@@ -402,6 +404,12 @@ def agg_2_ends(bed1, bed2,
             to call them the same end
         add_ends (bool): Whether to initialize new regions from bed2
         mode (str): {'tss', 'tes'}
+
+    Returns:
+        df (pandas DataFrame): Bed regions aggregated according to the
+            input parameters
+        m_source (pandas DataFrame): Record of how each bed region from bed2
+            was handled (ie was it assigned to a cerberus region or not)
     """
     source1 = bed1.df.source.unique().tolist()[0]
     source2 = bed2.df.source.unique().tolist()[0]
@@ -1497,8 +1505,6 @@ def read_cerberus_ends(bed_file, mode,
         drop_cols.append(mode)
     df.drop(drop_cols, axis=1, inplace=True)
 
-    # pdb.set_trace()
-
     df.rename({'ThickStart': 'source',
                'ThickEnd': 'novelty'}, axis=1, inplace=True)
 
@@ -1812,8 +1818,6 @@ def aggregate_ends(beds, sources, add_ends, refs, slack, mode):
         bed['id'] = [i for i in range(len(bed.index))]
         bed = pr.PyRanges(bed)
 
-        # pdb.set_trace()
-
         # first bed; just accept all these ends
         if len(df.index) == 0:
 
@@ -2004,14 +2008,12 @@ def assign_triplets(gtf_df, tss, ic, tes, gene_source, t_map):
                axis=1, inplace=True)
     # pdb.set_trace()
 
-    print('fixing issue that you need to debug later...')
-    print('these are sirvs / erccs')
-    print('and monoexonic transcripts')
-    for beep in ['tss', 'tes', 'ic']:
-        # pdb.set_trace()
-        print('# affected transcripts w/ null {}: {}'.format(beep,len(df.loc[df[beep].isnull()].index)))
-        # df[beep] = df[beep].fillna('0')
-        df = df.loc[~df[beep].isnull()]
+    # print('fixing issue that you need to debug later...')
+    # print('these are sirvs / erccs')
+    # print('and monoexonic transcripts')
+    # for beep in ['tss', 'tes', 'ic']:
+    #     print('# affected transcripts w/ null {}: {}'.format(beep,len(df.loc[df[beep].isnull()].index)))
+    #     df = df.loc[~df[beep].isnull()]
 
     df['transcript_triplet'] = '['+df.tss.astype(int).astype(str)+','+\
                                    df.ic.astype(int).astype(str)+','+\
@@ -2083,6 +2085,8 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
                   tss_slack, tes_slack,
                   verbosity, tmp_dir,
                   keep_tmp):
+    """
+    """
 
     # parse config files and check if the input files exist
     gtfs, gtf_add_ends, gtf_sources = parse_gtf_config(ref_gtf)
@@ -2333,8 +2337,6 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
     g_df = df.loc[df.Feature!='gene', ['gene_id', 'gene_name']].drop_duplicates()
     df = df.merge(g_df, how='left', on='gene_id', suffixes=('_old', ''))
     df.drop('gene_name_old', axis=1, inplace=True)
-
-    # pdb.set_trace()
 
     # update the ends of each transcript based on the end it was assigned to
     if update_ends:
