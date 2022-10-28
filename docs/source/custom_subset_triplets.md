@@ -1,0 +1,1 @@
+In the cases where the above gene triplet calculation functions don't fulfill your exact needs, cerberus supports adding triplets for individual samples using a tab-separated isoform subset file. **Coming soon**
