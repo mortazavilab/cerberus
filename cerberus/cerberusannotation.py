@@ -183,14 +183,16 @@ class CerberusAnnotation():
 
             trip_df = pd.concat([trip_df, df])
 
-        # add splicing ratio
+        # add splicing ratio and compute simplex coords
         trip_df = compute_splicing_ratio(trip_df)
+        trip_df = compute_simplex_coords(trip_df)
+        trip_df = assign_sector(trip_df)
 
         # rename gid col
         trip_df.rename({'gene_id': 'gid'}, axis=1, inplace=True)
 
         trip_df = self.add_sg_info(trip_df, **kwargs)
-        
+
         return trip_df
 
     def get_expressed_triplets(self, sg, obs_col, min_tpm,
@@ -216,7 +218,7 @@ class CerberusAnnotation():
         gb = obs_col
 
         # get sample, transcript level TPM values and format
-        t_df = swan.calc_tpm(sg.adata, obs_col='dataset')
+        t_df = swan.calc_tpm(sg.adata, obs_col='dataset', how='max')
         t_df = t_df.sparse.to_dense()
         t_df = t_df.merge(sg.adata.obs[gb], how='left', left_index=True, right_index=True)
         t_df.reset_index(drop=True, inplace=True)
@@ -274,7 +276,11 @@ class CerberusAnnotation():
             trip_df.set_index(['gene_id', gb], inplace=True)
             trip_df = trip_df.merge(g_df, how='left', left_index=True, right_index=True)
 
+        # compute splicing ratio and simplex coords
         trip_df = compute_splicing_ratio(trip_df)
+        trip_df = compute_simplex_coords(trip_df)
+        trip_df = assign_sector(trip_df)
+
         trip_df.reset_index(inplace=True)
         trip_df = self.add_sg_info(trip_df, sg)
 
@@ -299,7 +305,11 @@ class CerberusAnnotation():
                      'tes_id': 'n_tes',
                      'transcript_id': 'n_iso'}, axis=1, inplace=True)
         df.reset_index(inplace=True)
+
+        # compute splicing ratio and simplex coords
         df = compute_splicing_ratio(df)
+        df = compute_simplex_coords(df)
+        df = assign_sector(df)
 
         df = self.add_sg_info(df, **kwargs)
 
@@ -395,6 +405,7 @@ class CerberusAnnotation():
         size_dict['linewidth2'] = 2
 
         # marker sizes
+        size_dict['big_source_marker'] = 200
         size_dict['big_marker'] = 100
         size_dict['small_marker'] = 20
         size_dict['marker_max'] = 300
@@ -453,7 +464,7 @@ class CerberusAnnotation():
             # temp['tes_ratio'] = temp.n_tes/temp.total
             # temp['spl_ratio'] = temp[top]/temp.total
 
-            temp = compute_simplex_coords(temp, top)
+            # temp = compute_simplex_coords(temp, top)
 
             c['a'] = 'tss_ratio'
             c['b'] = 'spl_ratio'
@@ -609,18 +620,22 @@ class CerberusAnnotation():
           size_dict (dict of floats): Sizes for different plotted features
           order_marker_sizes (bool): Order markers based on their sizes such
             that the smallest markers are on top
-        hue (str): Column in self.triplets to color each point by
-        cmap (str): Colormap to use for hue
-        marker_style (str): Column in self.triplets to use to plot different
-            shapes of markers
-        mmap (dict): Dictionary mapping marker styles to different column values
-            in self.triplets[marker_style]
-        size (str): Column in self.triplets to use to control size of markers
-        log_size (bool): Log marker sizes
-        alpha (float): Alpha value for plotted markers
-        legend (bool): Include legend
+            hue (str): Column in self.triplets to color each point by
+            cmap (str): Colormap to use for hue
+            marker_style (str): Column in self.triplets to use to plot different
+                shapes of markers
+            mmap (dict): Dictionary mapping marker styles to different column values
+                in self.triplets[marker_style]
+            size (str): Column in self.triplets to use to control size of markers
+            log_size (bool): Log marker sizes
+            alpha (float): Alpha value for plotted markers
+            legend (bool): Include legend
 
-        **kwargs
+            **kwargs
+
+        Returns:
+            figure :
+            tax :
         """
 
         def scale_col(points, counts, col,
@@ -641,7 +656,8 @@ class CerberusAnnotation():
             min_scaled = min(vals)
 
             # replace nans w/ big marker size
-            vals = [size_dict['big_marker'] if np.isnan(v) else v for v in vals]
+            # vals = [size_dict['big_marker'] if np.isnan(v) else v for v in vals]
+            vals = [size_dict['big_source_marker'] if np.isnan(v) else v for v in vals]
 
             return vals, min_val, max_val, min_scaled, max_scaled
 
@@ -1043,7 +1059,28 @@ def subset_df(df, subset):
         df = df.loc[df[col].isin(val)]
     return df
 
-def compute_simplex_coords(df, spl_col):
+def assign_sector(df):
+    """
+    Assign each gene triplet a sector that reflects its behavior
+
+    Parameters:
+        df (pandas DataFrame): DataFrame with simplex coordinates and n_iso
+
+    Returns:
+        df (pandas DataFrame): DataFrame with sector listed
+    """
+    df['sector'] = 'simple'
+
+    df.loc[df.tss_ratio > 0.5, 'sector'] = 'tss'
+    df.loc[df.tes_ratio > 0.5, 'sector'] = 'tes'
+    df.loc[df.spl_ratio > 0.5, 'sector'] = 'splicing'
+
+    # mixed genes
+    df.loc[(df.sector=='simple')&(df.n_iso>1), 'sector'] = 'mixed'
+
+    return df
+
+def compute_simplex_coords(df, spl_col='splicing_ratio'):
     """
     Compute simplex coordinates from gene triplets
 
@@ -1063,6 +1100,53 @@ def compute_simplex_coords(df, spl_col):
     df.drop('total', axis=1, inplace=True)
 
     return df
+
+def simplex_dist_pts(a, b, how='js'):
+    """
+    Compute the distance between two points on a simplex
+
+    Parameters:
+        a (np.array): Coords of pt a
+        b (np.array): Coords of pt b
+        how (str): How to calculate distance. {'jensenshannon'}
+
+    Returns:
+        dist (float): Distance b/w a and b using distance metric
+    """
+    if how == 'js':
+        dist = scipy.spatial.distance.jensenshannon(a,b)
+    return dist
+
+def simplex_dist(x, suff_a=None, suff_b=None, **kwargs):
+    """
+    From a series, compute the distance between two points
+
+    Parameters:
+        x (pandas Series): Row-wise pandas series
+        suff_a (str): Suffix for point set a (ie if column is 'tss_ratio_det'),
+            provide '_det' as `suff_a`
+        suff_b (str): Suffix for point set b
+
+    Returns:
+        dist (list of float): List of distances between point set a and point
+            set b for each point
+    """
+    def get_pt(x, suff):
+        tss = 'tss_ratio'
+        ic = 'spl_ratio'
+        tes = 'tes_ratio'
+        if suff:
+            tss = '{}{}'.format(tss, suff)
+            ic = '{}{}'.format(ic, suff)
+            tes = '{}{}'.format(tes, suff)
+        pt = [x[tss], x[ic], x[tes]]
+        return pt
+
+    a = get_pt(x, suff_a)
+    b = get_pt(x, suff_b)
+    dist = simplex_dist_pts(a,b, **kwargs)
+
+    return dist
 
 def compute_splicing_ratio(df):
     """
