@@ -754,27 +754,43 @@ def merge_ends(ends, ref, mode):
         direction = 'upstream'
     elif mode == 'tes':
         direction = 'downstream'
-        # pdb.set_trace()
 
     # limit to relevant columns
     ends = ends[['Chromosome', 'Start', 'End', 'Strand',
                  'gene_id', 'transcript_id']]
+
+
 
     # get only the relevant columns and deduplicate
     ends = ends.df
     t_ends = ends.copy(deep=True)
     ends.drop('transcript_id', axis=1, inplace=True)
     ends.drop_duplicates(inplace=True)
+    ends['temp_id'] = [i for i in range(len(ends.index))] # id to track which ends get assigned
+    ends_back = ends.copy(deep=True)
+    end_ids = ends.temp_id.unique().tolist()
     ends = pr.PyRanges(ends)
 
     # find closest interval in ref
     ends = ends.nearest(ref,
                         strandedness=None,
                         how=direction)
-    # pdb.set_trace()
+
+    ends = ends.df
+
+    # fix ends that didn't get assigned for whatever reason above
+    # only fix monoexonic guys?
+    end_ids_2 = ends.temp_id.unique().tolist()
+    missing_ends = list(set(end_ids)-set(end_ids_2))
+    print(f'# missing ends: {len(missing_ends)}')
+    ends_back = ends_back.loc[ends_back.temp_id.isin(missing_ends)]
+    ends_back = pr.PyRanges(ends_back)
+    ends_back = ends_back.nearest(ref,
+                             strandedness=None) # find the nearest end w/o dir.
+    ends_back = ends_back.as_df()
+    ends = pd.concat([ends, ends_back])
 
     # fix the ends with mismatching gene ids - this part can be slow :(
-    ends = ends.df
     fix_ends = ends.loc[ends.gene_id != ends.gene_id_b]
     fix_ends = fix_ends[['Chromosome', 'Start', 'End', 'Strand',
                          'gene_id']]
@@ -793,7 +809,6 @@ def merge_ends(ends, ref, mode):
 
         if i % 100 == 0:
             print('Processed {} / {} genes'.format(i, len(fix_ends.gene_id.unique().tolist())))
-    # pdb.set_trace()
 
     # merge back in to get transcript ids
     t_ends = t_ends.merge(ends, how='left',
@@ -2014,7 +2029,6 @@ def assign_triplets(gtf_df, tss, ic, tes, gene_source, t_map):
     # for beep in ['tss', 'tes', 'ic']:
     #     print('# affected transcripts w/ null {}: {}'.format(beep,len(df.loc[df[beep].isnull()].index)))
     #     df = df.loc[~df[beep].isnull()]
-
     df['transcript_triplet'] = '['+df.tss.astype(int).astype(str)+','+\
                                    df.ic.astype(int).astype(str)+','+\
                                    df.tes.astype(int).astype(str)+']'
