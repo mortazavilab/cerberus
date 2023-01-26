@@ -2238,7 +2238,8 @@ def annotate_transcriptome(gtf, h5, source, gene_source, o):
     write_h5(ic, tss, tes, o,
         tss_map=tss_map,
         tes_map=tes_map,
-        m=df)
+        m=df,
+        triplets=triplets)
 
 def replace_ab_ids(ab, h5, source, agg, o):
     """
