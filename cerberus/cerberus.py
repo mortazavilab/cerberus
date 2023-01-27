@@ -1179,10 +1179,11 @@ def write_h5(ic, tss, tes, oname,
         m = pd.DataFrame()
     else:
         # print('you also need to fix this')
-        for c in ['tss_first_sd_issue', 'tes_last_sa_issue']:
-            # print('# issues w/ {} nan issue: {}'.format(c, len(m.loc[m[c].isnull()].index)))
-            m.loc[m[c].isnull(), c] = True
-            m[c] = m[c].astype('str')
+        if 'tss_first_sd_issue' in m.columns.tolist() and 'tes_last_sa_issue' in m.columns.tolist():
+            for c in ['tss_first_sd_issue', 'tes_last_sa_issue']:
+                # print('# issues w/ {} nan issue: {}'.format(c, len(m.loc[m[c].isnull()].index)))
+                m.loc[m[c].isnull(), c] = True
+                m[c] = m[c].astype('str')
     m.to_hdf(oname, 'map', mode='a', format='table')
 
     if not isinstance(triplets, pd.DataFrame):
