@@ -1,6 +1,13 @@
+
 *.snakemake/
 *.DS*
 test_output
+test*
+*tsv
+*h5
+configs
+dummy
+workflow
 *bed
 *gtf
 Canx_triplet*
