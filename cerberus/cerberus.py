@@ -2314,7 +2314,11 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
         if not update_ends:
             raise ValueError('Must update ends to aggregate transcripts')
 
-    df = pr.read_gtf(gtf, duplicate_attr=True).df
+    try:
+        df = pr.read_gtf(gtf, duplicate_attr=True).df
+    except:
+        df = pr.read_gtf(gtf).df
+
     entry_types = ['gene', 'transcript', 'exon']
     df = df.loc[df.Feature.isin(entry_types)]
     df = sort_gtf(df)
