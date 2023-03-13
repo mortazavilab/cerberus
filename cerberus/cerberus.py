@@ -2062,8 +2062,18 @@ def gtf_to_ics(gtf, o):
     df = get_ics_from_gtf(gtf)
     df.to_csv(o, index=False, sep='\t')
 
-def agg_ends(input, mode, slack, o):
+def agg_ends_config(input, mode, slack, o):
     beds, add_ends, refs, sources = parse_agg_ends_config(input)
+    agg_ends(beds, add_ends, refs, sources,
+             mode, slack, o)
+
+def agg_ends(beds,
+             add_ends,
+             refs,
+             sources,
+             mode,
+             slack,
+             o):
     bed, source_map = aggregate_ends(beds, sources, add_ends, refs, slack, mode)
     bed = pr.PyRanges(bed)
     source_map = pr.PyRanges(source_map)
@@ -2071,8 +2081,11 @@ def agg_ends(input, mode, slack, o):
     o2 = get_source_map_fname(o)
     source_map.to_bed(o2)
 
-def agg_ics(input, o):
+def agg_ics_config(input, o):
     ics, refs, sources = parse_agg_ics_config(input)
+    agg_ics(ics, refs, sources, o)
+
+def agg_ics(ics, refs, sources, o):
     ic = aggregate_ics(ics, sources, refs)
     ic.to_csv(o, sep='\t', index=False)
 

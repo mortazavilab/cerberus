@@ -54,7 +54,7 @@ def gtf_to_ics_command(gtf, o):
             help='Output file name',
             required=True)
 def agg_ends_command(input, mode, slack, o):
-    return agg_ends(input, mode, slack, o)
+    return agg_ends_config(input, mode, slack, o)
 
 @cli.command(name='agg_ics')
 @click.option('--input',
@@ -65,7 +65,7 @@ def agg_ends_command(input, mode, slack, o):
               help='Output file name',
               required=True)
 def agg_ics_command(input, o):
-    return agg_ics(input, o)
+    return agg_ics_config(input, o)
 
 # turn output from agg_ends and agg_ics into a cerberus ref
 @cli.command(name='write_reference')
