@@ -1415,7 +1415,11 @@ def get_transcript_ref(fname):
         df (pandas DataFrame): DataFrame of only transcript entries
             with tags parsed out
     """
-    df = pr.read_gtf(fname, duplicate_attr=True).df
+    try:
+        df = pr.read_gtf(fname, duplicate_attr=True).df
+    except:
+        df = pr.read_gtf(fname).df
+
     df = df.loc[df.Feature == 'transcript']
 
     # for some transcripts, there are no tags. replace w/ empty strings
