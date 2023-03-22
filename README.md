@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/476075546.svg)](https://zenodo.org/badge/latestdoi/476075546)
+
 # <img align="center" alt="Cerberus logo" width="50" src="docs/html/\_images/cerberus_logo.png"> Cerberus
 
 Cerberus is a set of tools designed to characterize and enhance transcriptome annotations. Currently Cerberus can do the following:
