@@ -1,14 +1,22 @@
-# cerberus
+# <img align="center" alt="Cerberus logo" width="50" src="docs/html/\_images/cerberus_logo.png"> Cerberus
 
-Cerberus is a set of tools designed to characterize and enhance transcriptome annotations. Currently cerberus can do the following:
-* represent transcript start sites (TSSs) and transcript end sites (TESs) as bed regions rather than single base pair ends
-* integrate intron chains from multiple transcriptome annotations (GTFs) to create a transcriptome of the union of them all
-* integrate TSSs and TESs from multiple GTFs as well as from outside BED sources to create end annotations from the union of them all
-* number intron chains, TSSs, and TESs found by their priority in a reference GTF
-* use the enhanced intron chain and 5'/3' end sets to annotate an existing GTF transcriptome and to modify the GTF and corresponding abundance matrices to reflect the new naming scheme / identities of the transcripts
-* Compute gene triplets for different sets of isoforms for each gene based on their
+Cerberus is a set of tools designed to characterize and enhance transcriptome annotations. Currently Cerberus can do the following:
+* Represent transcript start sites (TSSs) and transcript end sites (TESs) as bed regions rather than single base pair ends
+* Integrate intron chains from multiple transcriptome annotations (GTFs) to create a transcriptome of the union of them all
+* Integrate TSSs and TESs from multiple GTFs as well as from outside BED sources to create end annotations from the union of them all
+* Number intron chains, TSSs, and TESs found by their priority in a reference GTF
+* Use the enhanced intron chain and 5'/3' end sets to annotate an existing GTF transcriptome with transcript triplets and to modify the GTF and corresponding abundance matrices to reflect the new naming scheme / identities of the transcripts
+* Compute gene triplets for different sets of isoforms for each gene based on the TSSs, ICs, and TESs used among the isoforms of the gene
+* Generate plots (see examples below) to visualize gene triplets on the gene structure simplex
+* Compute centroids of gene triplet coordinate distributions
+* Compute pairwise gene structure simplex distances between pairs of gene triplets
 
-Please visit the [cerberus website](https://fairliereese.github.io/cerberus/html/index.html) for documentation.
+<img align="center" alt="Density gene structure simplex" width="300" src="img/simplex_1.png">
+<img align="center" alt="Scatter gene structure simplex" width="300" src="img/simplex_2.png">
+
+
+
+Please visit the [Cerberus website](https://fairliereese.github.io/cerberus/html/index.html) for documentation.
 
 **Note:** Cerberus is under active development and the documentation is currently incomplete. Please feel free to open an issue or email me ( freese {at} uci.edu ) if you're interested in using it!
 
