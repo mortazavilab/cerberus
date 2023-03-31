@@ -239,8 +239,9 @@ class CerberusAnnotation():
 
         # limit only to isoforms that are in the subset set
         if isinstance(subset, pd.DataFrame):
-            temp = t_df.melt(id_vars=['tid', 'gene_id'], var_name=gb, value_name='detected')
+            temp = t_df.copy(deep=True)
             temp['gene_id'] = get_stable_gid(temp, 'gene_id')
+            temp = temp.melt(id_vars=['tid', 'gene_id'], var_name=gb, value_name='detected')
             subset['gene_id'] = get_stable_gid(subset, 'gid')
             subset = subset[['gene_id', gb, 'tid']]
             temp = temp.merge(subset, how='inner', on=['gene_id', gb, 'tid'])
