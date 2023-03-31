@@ -2300,6 +2300,8 @@ def replace_ab_ids(ab, h5, source, agg, o):
 
 def fix_prob_col_dtypes(df):
     for c in ['tss_first_sd_issue', 'tes_last_sa_issue']:
+        if c not in df.columns:
+            df[c] = 'False'
         m = {'False': False, 'True': True}
         df[c] = df[c].map(m)
         df[c] = df[c].fillna(True)
@@ -2350,6 +2352,7 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
     # restrict to source
     check_source(m_df, source)
     m_df = m_df.loc[m_df.source == source]
+    m_df.drop('source', axis=1, inplace=True)
 
     # temporary fix for problematic transcripts
     # pdb.set_trace()
