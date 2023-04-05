@@ -744,11 +744,17 @@ class CerberusAnnotation():
                                                                      markers)
 
             for point, color, size, label, marker in zip(points, colors, sizes, labels, markers):
+                # if marker == 'x':
+                    # import pdb; pdb.set_trace()
+                if marker == 'x':
+                    linewidths=None
+                else:
+                    linewidths=0
                 tax.scatter([point], vmin=vmin, vmax=vmax,
                         s=size, c=color,
                         marker=marker,label=label,
                         alpha=alpha, zorder=3,
-                        linewidths=0,
+                        linewidths=linewidths,
                         edgecolors=None)
         else:
             tax.scatter(points, vmin=vmin, vmax=vmax,
