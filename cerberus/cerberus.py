@@ -245,6 +245,7 @@ def number_gtf_ends(bed, gtf, mode):
         temp = pr.PyRanges(gr_gtf.features.tss().df[cols])
     elif mode == 'tes':
         temp = pr.PyRanges(gr_gtf.features.tes().df[cols])
+
     bed = bed.join(temp,
                strandedness='same',
                how='left',
@@ -1457,7 +1458,7 @@ def split_cerberus_id(df, mode):
         df (pandas DataFrame): DataFrame with gene id and feature
             number added
     """
-    df[['gene_id', mode]] = df.Name.str.split('_', expand=True)
+    df[['gene_id', mode]] = df.Name.str.rsplit('_', n=1, expand=True)
     df[mode] = df[mode].astype(int)
 
     return df

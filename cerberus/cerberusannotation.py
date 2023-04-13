@@ -1084,7 +1084,6 @@ def assign_sector(df):
 
     # mixed genes
     df.loc[(df.sector=='simple')&(df.n_iso>1), 'sector'] = 'mixed'
-
     return df
 
 def compute_simplex_coords(df, spl_col='splicing_ratio'):
