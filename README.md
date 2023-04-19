@@ -20,7 +20,7 @@ Cerberus is a set of tools designed to characterize and enhance transcriptome an
 
 Please visit the [Cerberus website](https://fairliereese.github.io/cerberus/html/index.html) for documentation.
 
-**Note:** Cerberus is under active development and the documentation is currently incomplete. Please feel free to open an issue or email me ( freese {at} uci.edu ) if you're interested in using it!
+**Note:** Cerberus is under active development. Please feel free to open an issue or email me ( freese {at} uci.edu ) if you're interested in using it!
 
 <!-- # CLI documentation
 
