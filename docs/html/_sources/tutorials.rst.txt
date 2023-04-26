@@ -43,30 +43,30 @@ Transcriptome annnotation
 
 .. _transcriptome_annot:
 
-After generating an h5 cerberus reference of TSSs, ICs, and TESs, you can now
+After generating an h5 Cerverys reference of TSSs, ICs, and TESs, you can now
 annotate any transcriptome in GTF format using the features present in your
-cerberus reference; generating **isoform triplets** for each transcript in your
-transcriptome. Multiple transcriptomes can be annotated using the same cerberus
-reference. You can then use this mapping to add the cerberus isoform triplets
+Cerberus reference; generating **transcript triplets** for each transcript in your
+transcriptome. Multiple transcriptomes can be annotated using the same Cerberus
+reference. You can then use this mapping to add the Cerberus transcript triplets
 to preexisting GTF files and abundance matrices.
 
 .. image:: cerberus_pipeline_annotate_transcriptome.png
    :width: 800
 
-Assigning isoform triplets to a transcriptome
+Assigning transcript triplets to a transcriptome
 ---------------------------------------------
 .. _annot_t:
 
 .. mdinclude:: annot_t.md
 
-Update counts matrix with cerberus IDs
+Update counts matrix with Cerberus IDs
 --------------------------------------
 
 .. _replace_ab:
 
 .. mdinclude:: replace_ab.md
 
-Update GTF with cerberus IDs
+Update GTF with Cerberus IDs
 --------------------------------------
 
 .. _replace_gtf:
@@ -81,12 +81,12 @@ Calculating gene triplets
 .. image:: gene_triplets.png
    :width: 400
 
-After you've generated your final cerberus annotation h5 file for as many
+After you've generated your final Cerberus annotation h5 file for as many
 transcriptomes as you wish with ``cerberus annotate_transcriptome``, you can now start to
 calculate **gene triplets** as a metric of measuring transcriptional diversity.
 There are a few different ways of doing this.
 
-Calculating gene triplets from cerberus sources
+Calculating gene triplets from Cerberus sources
 ------------------------------------------------
 .. _source_triplets:
 
@@ -98,7 +98,7 @@ Calculating gene triplets from a list of transcriptomes
 
 .. mdinclude:: subset_triplets.md
 
-Calculating gene triplets based on isoforms expressed in a sample
+Calculating gene triplets based on transcripts expressed in a sample
 -----------------------------------------------------------------
 .. _sample_triplets:
 

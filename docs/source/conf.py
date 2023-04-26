@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'cerberus'
-copyright = '2022, Fairlie Reese'
+copyright = '2023, Fairlie Reese'
 author = 'Fairlie Reese'
 release = '0.1'
 
@@ -19,7 +19,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
               'sphinx.ext.ifconfig', 'sphinx.ext.viewcode',
               'sphinx.ext.inheritance_diagram',
               'sphinx.ext.autosummary', 'sphinx.ext.duration',
-              'm2r2',
+              'm2r2', 'sphinx_toolbox.collapse',
               ]
 templates_path = ['_templates']
 exclude_patterns = []

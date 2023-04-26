@@ -1569,8 +1569,6 @@ def read_bed(bed_file, mode):
         df (pandas DataFrame): DataFrame representation of bed file
     """
 
-    print(bed_file)
-
     df = pr.read_bed(bed_file).df
 
     # bed files without strands but with a column that the
@@ -1829,7 +1827,6 @@ def aggregate_ends(beds, sources, add_ends, refs, slack, mode):
         # read in bed file and do some formatting
         bed = read_bed(bed_fname, mode)
         bed = bed.df
-        # pdb.set_trace()
         bed['source'] = source
         if ref:
             nov = 'Known'
@@ -1846,7 +1843,7 @@ def aggregate_ends(beds, sources, add_ends, refs, slack, mode):
                 raise Exception('Must add ends from first bed file')
 
             if 'gene_id' not in bed.df.columns and 'Strand' not in bed.df.columns:
-                raise Exception('First bed must contain Strand and gene_id columns')
+                raise Exception('First bed must contain strand and gene_id columns')
 
             df = bed.df
 

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>&lt;no title&gt; &mdash; cerberus 0.1 documentation</title>
@@ -28,11 +28,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> cerberus
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            cerberus
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -59,8 +63,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>&lt;no title&gt;</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">&lt;no title&gt;</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/write_ref.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -71,22 +75,261 @@
            <div itemprop="articleBody">
              
   <p>The final step of reference generation is to write an h5 representation of the TSSs, ICs, and TESs present in the input data as a series of tables in h5 format.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus write_reference <span class="se">\</span>
-    --tss <span class="o">{</span>input.tss<span class="o">}</span> <span class="se">\</span>
-    --tes <span class="o">{</span>input.tes<span class="o">}</span> <span class="se">\</span>
-    --ics <span class="o">{</span>input.ics<span class="o">}</span> <span class="se">\</span>
-    -o <span class="o">{</span>output.ref<span class="o">}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Usage: cerberus write_reference [OPTIONS]
+
+Options:
+
+  --tss TEXT  TSS bed file output from `agg_ends`  [required]
+  --tes TEXT  TES bed file output from `agg_ends`  [required]
+  --ics TEXT  IC tsv file output from `agg_ics`  [required]
+  -o TEXT     Output .h5 file name
+  --help      Show this message and exit.
 </pre></div>
 </div>
 <p><strong>Input TSS / TES file format:</strong></p>
 <ul class="simple">
 <li><p>Output from <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ends</span></code>.</p></li>
 </ul>
+<table class="docutils align-default" id="cerberus-agg-bed-format">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Start</p></th>
+<th class="head"><p>Stop</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Score</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>Sources</p></th>
+<th class="head"><p>Novelty</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><p>169794989</p></td>
+<td><p>169795129</p></td>
+<td><p>ENSG00000000460_1</p></td>
+<td><p>.</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>v40,v29,encode</p></td>
+<td><p>Known</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><p>300</p></td>
+<td><p>400</p></td>
+<td><p>ENSG00000000460_2</p></td>
+<td><p>.</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>encode</p></td>
+<td><p>Novel</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">ThickStart</span></code> column is used to indicate the sources, defined in the config file, for each region. Sources are comma-separated if there was more than one form of support for the region.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">ThickEnd</span></code> column is used to indicate the novelty of the region. Regions not supported by one of the sources used as references will be <code class="docutils literal notranslate"><span class="pre">Novel</span></code>, others will be <code class="docutils literal notranslate"><span class="pre">Known</span></code>.</p></li>
+</ul>
 <p><strong>Input IC file format:</strong></p>
 <ul class="simple">
 <li><p>Output from <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ics</span></code>.</p></li>
 </ul>
+<table class="docutils align-default" id="cerberus-agg-ic-format">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>Coordinates</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>source</p></th>
+<th class="head"><p>novelty</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>ENSG00000000460_1</p></td>
+<td><p>v40,v29</p></td>
+<td><p>Known</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>54-87</p></td>
+<td><p>ENSG00000000460_2</p></td>
+<td><p>encode</p></td>
+<td><p>NIC</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>Coordinates is a <code class="docutils literal notranslate"><span class="pre">-</span></code>-separated list of the internal splice sites used</p></li>
+<li><p>Monoexonic transcripts are assigned the coordinate <code class="docutils literal notranslate"><span class="pre">-</span></code></p></li>
+<li><p>Sources are comma-separated if there was more than one form of support for the intron chain.</p></li>
+<li><p>Novelty of the intron chain is determined with respect to the sources used as references. Those supported are <code class="docutils literal notranslate"><span class="pre">Known</span></code>. Others are assigned a <a class="reference external" href="https://github.com/ConesaLab/SQANTI3/wiki/SQANTI3-isoform-classification:-categories-and-subcategories">SQANTI novelty category</a> (ISM, NIC, NNC, and Unspliced).</p></li>
+</ul>
 <p><strong>Output cerberus reference h5 format:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CerberusAnnotation()</span></code> object saved in h5 format.</p></li>
+<li><p>Can be read in in Python using</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cerberus</span>
+<span class="n">ca</span> <span class="o">=</span> <span class="n">cerberus</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="o">&lt;</span><span class="n">ref</span> <span class="n">name</span><span class="o">&gt;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>TSS / TES regions accessible using:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ca</span><span class="o">.</span><span class="n">tss</span>
+<span class="n">ca</span><span class="o">.</span><span class="n">tes</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Start</p></th>
+<th class="head"><p>End</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>novelty</p></th>
+<th class="head"><p>source</p></th>
+<th class="head"><p>gene_id</p></th>
+<th class="head"><p>tss/tes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><p>169794989</p></td>
+<td><p>169795129</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>ENSG00000000460_1</p></td>
+<td><p>v40,v29</p></td>
+<td><p>Known</p></td>
+<td><p>ENSG00000000460</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><p>169795358</p></td>
+<td><p>169795459</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>ENSG00000000460_2</p></td>
+<td><p>encode</p></td>
+<td><p>Novel</p></td>
+<td><p>ENSG00000000460</p></td>
+<td><p>2</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>BED-inspired with a few added columns</p></li>
+</ul>
+<p>Because end matching is less precise than intron chain matching, the Cerberus reference h5 also store the mapping between each input TSS / TES and what region in the reference (ie from <code class="docutils literal notranslate"><span class="pre">ca.tss</span></code> or <code class="docutils literal notranslate"><span class="pre">ca.tes</span></code>), if any, the input region matched too.</p>
+<p>These maps are stored in:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ca</span><span class="o">.</span><span class="n">tss_map</span>
+<span class="n">ca</span><span class="o">.</span><span class="n">tes_map</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Start</p></th>
+<th class="head"><p>End</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>source</p></th>
+<th class="head"><p>Name</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><p>169794989</p></td>
+<td><p>169795129</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>v40</p></td>
+<td><p>ENSG00000000460_1</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><p>169795358</p></td>
+<td><p>169795459</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>encode</p></td>
+<td><p>ENSG00000000460_2</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>Each BED entry from BED files input to <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ends</span></code> will have an entry here.</p></li>
+<li><p>Original coordinates are reported in the <code class="docutils literal notranslate"><span class="pre">Chromosome</span></code>, <code class="docutils literal notranslate"><span class="pre">Start</span></code>, <code class="docutils literal notranslate"><span class="pre">End</span></code>, and <code class="docutils literal notranslate"><span class="pre">Strand</span></code> columns.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Source</span></code> column has source name as defined in <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ends</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Name</span></code> column includes the final ID for the Cerberus end region that is in the TSS or TES table.</p></li>
+<li><p>If the region was not included in the final reference, the <code class="docutils literal notranslate"><span class="pre">Name</span></code> column will be <code class="docutils literal notranslate"><span class="pre">NaN</span></code>.</p></li>
+</ul>
+<p>Intron chains accessible using:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ca</span><span class="o">.</span><span class="n">ic</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>Coordinates</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>source</p></th>
+<th class="head"><p>novelty</p></th>
+<th class="head"><p>gene_id</p></th>
+<th class="head"><p>ic</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>ENSG00000000460_1</p></td>
+<td><p>v40,v29</p></td>
+<td><p>Known</p></td>
+<td><p>ENSG0000000046</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>54-87</p></td>
+<td><p>ENSG00000000460_2</p></td>
+<td><p>encode</p></td>
+<td><p>NIC</p></td>
+<td><p>ENSG0000000046</p></td>
+<td><p>2</p></td>
+</tr>
+</tbody>
+</table>
 
 
            </div>
@@ -96,7 +339,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Fairlie Reese.</p>
+    <p>&#169; Copyright 2023, Fairlie Reese.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

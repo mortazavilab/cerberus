@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tutorials &mdash; cerberus 0.1 documentation</title>
@@ -30,11 +30,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> cerberus
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            cerberus
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -50,15 +54,15 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#transcriptome-annnotation">Transcriptome annnotation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#assigning-isoform-triplets-to-a-transcriptome">Assigning isoform triplets to a transcriptome</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#update-counts-matrix-with-cerberus-ids">Update counts matrix with cerberus IDs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#update-gtf-with-cerberus-ids">Update GTF with cerberus IDs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#assigning-transcript-triplets-to-a-transcriptome">Assigning transcript triplets to a transcriptome</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#update-counts-matrix-with-cerberus-ids">Update counts matrix with Cerberus IDs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#update-gtf-with-cerberus-ids">Update GTF with Cerberus IDs</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#calculating-gene-triplets">Calculating gene triplets</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-from-cerberus-sources">Calculating gene triplets from cerberus sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-from-cerberus-sources">Calculating gene triplets from Cerberus sources</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-from-a-list-of-transcriptomes">Calculating gene triplets from a list of transcriptomes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-based-on-isoforms-expressed-in-a-sample">Calculating gene triplets based on isoforms expressed in a sample</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-based-on-transcripts-expressed-in-a-sample">Calculating gene triplets based on transcripts expressed in a sample</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-from-custom-subset-files">Calculating gene triplets from custom subset files</a></li>
 </ul>
 </li>
@@ -78,8 +82,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Tutorials</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Tutorials</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/tutorials.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -101,32 +105,121 @@ can either be added from GTFs or BED files. ICs can be added from GTFs.</p>
 <section id="extracting-triplet-features-from-gtfs">
 <h2>Extracting triplet features from GTFs<a class="headerlink" href="#extracting-triplet-features-from-gtfs" title="Permalink to this heading"></a></h2>
 <p id="gtf-feats">To generate BED files for the TSSs and TESs from a GTF file, use <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">gtf_to_bed</span></code>.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus gtf_to_bed <span class="se">\</span>
-    --gtf <span class="o">{</span>gtf<span class="o">}</span> <span class="se">\</span>
-    --mode <span class="o">{</span>wildcards.mode<span class="o">}</span> <span class="se">\</span>
-    --dist <span class="o">{</span>params.dist<span class="o">}</span> <span class="se">\</span>
-    --slack <span class="o">{</span>params.slack<span class="o">}</span> <span class="se">\</span>
-    -o <span class="o">{</span>output.bed<span class="o">}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Usage</span><span class="p">:</span> <span class="n">cerberus</span> <span class="n">gtf_to_bed</span> <span class="p">[</span><span class="n">OPTIONS</span><span class="p">]</span>
+
+<span class="n">Options</span><span class="p">:</span>
+  <span class="o">--</span><span class="n">gtf</span> <span class="n">TEXT</span>       <span class="n">GTF</span> <span class="n">file</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+  <span class="o">--</span><span class="n">mode</span> <span class="n">TEXT</span>      <span class="n">Choose</span> <span class="n">tss</span> <span class="ow">or</span> <span class="n">tes</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+  <span class="o">-</span><span class="n">o</span> <span class="n">TEXT</span>          <span class="n">Output</span> <span class="n">file</span> <span class="n">name</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+
+  <span class="o">--</span><span class="n">dist</span> <span class="n">INTEGER</span>   <span class="n">Distance</span> <span class="p">(</span><span class="n">bp</span><span class="p">)</span> <span class="n">to</span> <span class="n">extend</span> <span class="n">regions</span> <span class="n">on</span> <span class="n">either</span> <span class="n">side</span>  <span class="p">[</span><span class="n">default</span><span class="p">:</span>
+                   <span class="mi">50</span><span class="p">]</span>
+
+  <span class="o">--</span><span class="n">slack</span> <span class="n">INTEGER</span>  <span class="n">Distance</span> <span class="n">allowable</span> <span class="k">for</span> <span class="n">merging</span> <span class="n">regions</span>  <span class="p">[</span><span class="n">default</span><span class="p">:</span> <span class="mi">50</span><span class="p">]</span>
+  <span class="o">--</span><span class="n">help</span>           <span class="n">Show</span> <span class="n">this</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span><span class="o">.</span>
 </pre></div>
 </div>
 <p><strong>Output file format:</strong></p>
+<table class="docutils align-default" id="cerberus-bed-format">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Start</p></th>
+<th class="head"><p>Stop</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Score</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>ThickStart</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><p>169804296</p></td>
+<td><p>169804436</p></td>
+<td><p>ENSG00000000460_2</p></td>
+<td><p>.</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>cerberus</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><p>169807786</p></td>
+<td><p>169807887</p></td>
+<td><p>ENSG00000000460_4</p></td>
+<td><p>.</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>cerberus</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">ThickStart</span></code> column is used to indicate the source of the data</p></li>
+</ul>
 <p>To generate tab-separated files for the ICs from a GTF file, use <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">gtf_to_ics</span></code>.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus gtf_to_ics <span class="se">\</span>
-    --gtf <span class="o">{</span>input.gtf<span class="o">}</span> <span class="se">\</span>
-    -o <span class="o">{</span>output.ics<span class="o">}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Usage</span><span class="p">:</span> <span class="n">cerberus</span> <span class="n">gtf_to_ics</span> <span class="p">[</span><span class="n">OPTIONS</span><span class="p">]</span>
+
+
+<span class="n">Options</span><span class="p">:</span>
+  <span class="o">--</span><span class="n">gtf</span> <span class="n">TEXT</span>  <span class="n">GTF</span> <span class="n">file</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+  <span class="o">-</span><span class="n">o</span> <span class="n">TEXT</span>     <span class="n">Output</span> <span class="n">file</span> <span class="n">name</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+  <span class="o">--</span><span class="n">help</span>      <span class="n">Show</span> <span class="n">this</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span><span class="o">.</span>
 </pre></div>
 </div>
 <p><strong>Output file format:</strong></p>
+<table class="docutils align-default" id="cerberus-ic-format">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>Coordinates</p></th>
+<th class="head"><p>Name</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>ENSG00000000460_1</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>54-87</p></td>
+<td><p>ENSG00000000460_2</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>Coordinates is a <code class="docutils literal notranslate"><span class="pre">-</span></code>-separated list of the internal splice sites used</p></li>
+<li><p>Monoexonic transcripts are assigned the coordinate <code class="docutils literal notranslate"><span class="pre">-</span></code></p></li>
+</ul>
 </section>
 <section id="aggregating-tsss-and-tess-across-multiple-sources">
 <h2>Aggregating TSSs and TESs across multiple sources<a class="headerlink" href="#aggregating-tsss-and-tess-across-multiple-sources" title="Permalink to this heading"></a></h2>
-<p id="agg-bed">cerberus can aggregate information to support the existence or creation of TSS or TES
+<p id="agg-bed">Cerberus can aggregate information to support the existence or creation of TSS or TES
 regions across multiple bed files. To perform this aggregation, use <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ends</span></code>.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus agg_ends <span class="se">\</span>
-    --input <span class="o">{</span>input.cfg<span class="o">}</span> <span class="se">\</span>
-    --mode <span class="o">{</span>mode<span class="o">}</span> <span class="se">\</span>
-    --slack <span class="o">{</span>params.slack<span class="o">}</span> <span class="se">\</span>
-    -o <span class="o">{</span>output.bed<span class="o">}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Usage</span><span class="p">:</span> <span class="n">cerberus</span> <span class="n">agg_ends</span> <span class="p">[</span><span class="n">OPTIONS</span><span class="p">]</span>
+
+<span class="n">Options</span><span class="p">:</span>
+  <span class="o">--</span><span class="nb">input</span> <span class="n">TEXT</span>     <span class="n">Path</span> <span class="n">to</span> <span class="n">config</span> <span class="n">file</span><span class="o">.</span> <span class="n">Each</span> <span class="n">line</span> <span class="n">contains</span> <span class="n">file</span> <span class="n">path</span><span class="p">,</span> <span class="n">whether</span>
+                   <span class="n">to</span> <span class="n">add</span> <span class="n">ends</span> <span class="p">(</span><span class="kc">True</span> <span class="o">/</span> <span class="kc">False</span><span class="p">),</span> <span class="n">whether</span> <span class="n">to</span> <span class="n">use</span> <span class="k">as</span> <span class="n">a</span> <span class="n">reference</span><span class="p">,</span>
+                   <span class="n">source</span> <span class="n">name</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+
+  <span class="o">--</span><span class="n">mode</span> <span class="n">TEXT</span>      <span class="n">Choose</span> <span class="n">tss</span> <span class="ow">or</span> <span class="n">tes</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+  <span class="o">--</span><span class="n">slack</span> <span class="n">INTEGER</span>  <span class="n">Distance</span> <span class="p">(</span><span class="n">bp</span><span class="p">)</span> <span class="n">allowable</span> <span class="k">for</span> <span class="n">merging</span> <span class="n">regions</span>  <span class="p">[</span><span class="n">default</span><span class="p">:</span> <span class="mi">20</span><span class="p">]</span>
+  <span class="o">-</span><span class="n">o</span> <span class="n">TEXT</span>          <span class="n">Output</span> <span class="n">file</span> <span class="n">name</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+  <span class="o">--</span><span class="n">help</span>           <span class="n">Show</span> <span class="n">this</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span><span class="o">.</span>
 </pre></div>
 </div>
 <p><strong>Notes on behavior:</strong></p>
@@ -140,17 +233,137 @@ regions across multiple bed files. To perform this aggregation, use <code class=
 <li><p>BED files without gene IDs cannot be used to initialize new TSS / TES regions</p></li>
 <li><p>After a region is initialized, the boundaries are fixed. Regions that are considered thereafter are simply added as additional forms of support for the already-initialized regions. The reasoning behind this is to avoid “super regions” that grow as new data is added.</p></li>
 </ul>
-<p><strong>Input bed file format:</strong></p>
+<p><strong>Input BED file format:</strong></p>
+<ul class="simple">
+<li><p>Generally, BED files follow the <a class="reference external" href="https://useast.ensembl.org/info/website/upload/bed.html">BED file specifications</a></p></li>
+<li><p>If you have gene ids in your BED file, they must be in the <code class="docutils literal notranslate"><span class="pre">name</span></code> field (4th column), and must be <code class="docutils literal notranslate"><span class="pre">_</span></code> separated with additional text that makes the name unique. Additionally, the <code class="docutils literal notranslate"><span class="pre">thickStart</span></code> (7th) column must  contain the string <code class="docutils literal notranslate"><span class="pre">cerberus</span></code> to indicate to Cerberus how to parse the gene ids. This is how the files output from <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">gtf_to_bed</span></code> are automatically formatted.</p></li>
+</ul>
+<table class="docutils align-default" id="id1">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Start</p></th>
+<th class="head"><p>Stop</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Score</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>ThickStart</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><p>169804296</p></td>
+<td><p>169804436</p></td>
+<td><p>ENSG00000000460_2</p></td>
+<td><p>.</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>cerberus</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><p>169807786</p></td>
+<td><p>169807887</p></td>
+<td><p>ENSG00000000460_4</p></td>
+<td><p>.</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>cerberus</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">ThickStart</span></code> column is used to indicate the source of the data</p></li>
+</ul>
 <p><strong>Input config file format:</strong></p>
+<ul class="simple">
+<li><p>Comma-separated</p></li>
+<li><p>No header</p></li>
+<li><p>First BED must have <code class="docutils literal notranslate"><span class="pre">True</span></code> add ends setting</p></li>
+<li><p>BED files with <code class="docutils literal notranslate"><span class="pre">True</span></code> add ends setting must have gene ids and strand</p></li>
+<li><p>Recommended to use <code class="docutils literal notranslate"><span class="pre">True</span></code> add ends setting for GTFs that you are planning to annotate</p></li>
+</ul>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>BED file path</p></th>
+<th class="head"><p>Reference</p></th>
+<th class="head"><p>Add ends</p></th>
+<th class="head"><p>Source name</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>path/to/bed/v40_tss.bed</p></td>
+<td><p>True</p></td>
+<td><p>True</p></td>
+<td><p>v40</p></td>
+</tr>
+<tr class="row-odd"><td><p>path/to/bed/encode_tss.bed</p></td>
+<td><p>False</p></td>
+<td><p>True</p></td>
+<td><p>encode</p></td>
+</tr>
+</tbody>
+</table>
 <p><strong>Output file format:</strong></p>
+<table class="docutils align-default" id="cerberus-agg-bed-format">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Start</p></th>
+<th class="head"><p>Stop</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Score</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>Sources</p></th>
+<th class="head"><p>Novelty</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><p>169794989</p></td>
+<td><p>169795129</p></td>
+<td><p>ENSG00000000460_1</p></td>
+<td><p>.</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>v40,v29,encode</p></td>
+<td><p>Known</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><p>300</p></td>
+<td><p>400</p></td>
+<td><p>ENSG00000000460_2</p></td>
+<td><p>.</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>encode</p></td>
+<td><p>Novel</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">ThickStart</span></code> column is used to indicate the sources, defined in the config file, for each region. Sources are comma-separated if there was more than one form of support for the region.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">ThickEnd</span></code> column is used to indicate the novelty of the region. Regions not supported by one of the sources used as references will be <code class="docutils literal notranslate"><span class="pre">Novel</span></code>, others will be <code class="docutils literal notranslate"><span class="pre">Known</span></code>.</p></li>
+</ul>
 </section>
 <section id="aggregating-ics-across-multiple-sources">
 <h2>Aggregating ICs across multiple sources<a class="headerlink" href="#aggregating-ics-across-multiple-sources" title="Permalink to this heading"></a></h2>
-<p id="agg-ic">cerberus can aggregate information to support the existence or creation of intron chains
+<p id="agg-ic">Cerberus can aggregate information to support the existence or creation of intron chains
 across multiple datasets. To perform this aggregation, use <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ics</span></code>.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus agg_ics <span class="se">\</span>
-  --input <span class="o">{</span>input.cfg<span class="o">}</span> <span class="se">\</span>
-  -o <span class="o">{</span>output.agg_ics<span class="o">}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Usage</span><span class="p">:</span> <span class="n">cerberus</span> <span class="n">agg_ics</span> <span class="p">[</span><span class="n">OPTIONS</span><span class="p">]</span>
+
+<span class="n">Options</span><span class="p">:</span>
+
+  <span class="o">--</span><span class="nb">input</span> <span class="n">TEXT</span>  <span class="n">Path</span> <span class="n">to</span> <span class="n">config</span> <span class="n">file</span><span class="o">.</span> <span class="n">Each</span> <span class="n">line</span> <span class="n">contains</span> <span class="n">file</span> <span class="n">path</span><span class="p">,</span> <span class="n">whether</span> <span class="n">to</span>
+                <span class="n">use</span> <span class="k">as</span> <span class="n">a</span> <span class="n">reference</span><span class="p">,</span> <span class="n">source</span> <span class="n">name</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+
+  <span class="o">-</span><span class="n">o</span> <span class="n">TEXT</span>       <span class="n">Output</span> <span class="n">file</span> <span class="n">name</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+  <span class="o">--</span><span class="n">help</span>        <span class="n">Show</span> <span class="n">this</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span><span class="o">.</span>
 </pre></div>
 </div>
 <p><strong>Notes on behavior:</strong></p>
@@ -166,64 +379,385 @@ across multiple datasets. To perform this aggregation, use <code class="docutils
 <ul class="simple">
 <li><p>Output from <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">gtf_to_ics</span></code>.</p></li>
 </ul>
+<table class="docutils align-default" id="id2">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>Coordinates</p></th>
+<th class="head"><p>Name</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>ENSG00000000460_1</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>54-87</p></td>
+<td><p>ENSG00000000460_2</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>Coordinates is a <code class="docutils literal notranslate"><span class="pre">-</span></code>-separated list of the internal splice sites used</p></li>
+<li><p>Monoexonic transcripts are assigned the coordinate <code class="docutils literal notranslate"><span class="pre">-</span></code></p></li>
+</ul>
 <p><strong>Input config file format:</strong></p>
+<ul class="simple">
+<li><p>Comma-separated</p></li>
+<li><p>No header</p></li>
+<li><p>BED files with <code class="docutils literal notranslate"><span class="pre">True</span></code> add ends setting must have gene ids and strand</p></li>
+<li><p>Recommended to use <code class="docutils literal notranslate"><span class="pre">True</span></code> add ends setting for GTFs that you are planning to annotate</p></li>
+</ul>
 <p><strong>Output file format:</strong></p>
+<table class="docutils align-default" id="cerberus-agg-ic-format">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>Coordinates</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>source</p></th>
+<th class="head"><p>novelty</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>ENSG00000000460_1</p></td>
+<td><p>v40,v29</p></td>
+<td><p>Known</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>54-87</p></td>
+<td><p>ENSG00000000460_2</p></td>
+<td><p>encode</p></td>
+<td><p>NIC</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>Coordinates is a <code class="docutils literal notranslate"><span class="pre">-</span></code>-separated list of the internal splice sites used</p></li>
+<li><p>Monoexonic transcripts are assigned the coordinate <code class="docutils literal notranslate"><span class="pre">-</span></code></p></li>
+<li><p>Sources are comma-separated if there was more than one form of support for the intron chain.</p></li>
+<li><p>Novelty of the intron chain is determined with respect to the sources used as references. Those supported are <code class="docutils literal notranslate"><span class="pre">Known</span></code>. Others are assigned a <a class="reference external" href="https://github.com/ConesaLab/SQANTI3/wiki/SQANTI3-isoform-classification:-categories-and-subcategories">SQANTI novelty category</a> (ISM, NIC, NNC, and Unspliced).</p></li>
+</ul>
 </section>
 <section id="generating-a-cerberus-reference-in-h5-format">
 <h2>Generating a cerberus reference in h5 format<a class="headerlink" href="#generating-a-cerberus-reference-in-h5-format" title="Permalink to this heading"></a></h2>
 <p id="write-ref">The final step of reference generation is to write an h5 representation of the TSSs, ICs, and TESs present in the input data as a series of tables in h5 format.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus write_reference <span class="se">\</span>
-    --tss <span class="o">{</span>input.tss<span class="o">}</span> <span class="se">\</span>
-    --tes <span class="o">{</span>input.tes<span class="o">}</span> <span class="se">\</span>
-    --ics <span class="o">{</span>input.ics<span class="o">}</span> <span class="se">\</span>
-    -o <span class="o">{</span>output.ref<span class="o">}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Usage: cerberus write_reference [OPTIONS]
+
+Options:
+
+  --tss TEXT  TSS bed file output from `agg_ends`  [required]
+  --tes TEXT  TES bed file output from `agg_ends`  [required]
+  --ics TEXT  IC tsv file output from `agg_ics`  [required]
+  -o TEXT     Output .h5 file name
+  --help      Show this message and exit.
 </pre></div>
 </div>
 <p><strong>Input TSS / TES file format:</strong></p>
 <ul class="simple">
 <li><p>Output from <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ends</span></code>.</p></li>
 </ul>
+<table class="docutils align-default" id="id3">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Start</p></th>
+<th class="head"><p>Stop</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Score</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>Sources</p></th>
+<th class="head"><p>Novelty</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><p>169794989</p></td>
+<td><p>169795129</p></td>
+<td><p>ENSG00000000460_1</p></td>
+<td><p>.</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>v40,v29,encode</p></td>
+<td><p>Known</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><p>300</p></td>
+<td><p>400</p></td>
+<td><p>ENSG00000000460_2</p></td>
+<td><p>.</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>encode</p></td>
+<td><p>Novel</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">ThickStart</span></code> column is used to indicate the sources, defined in the config file, for each region. Sources are comma-separated if there was more than one form of support for the region.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">ThickEnd</span></code> column is used to indicate the novelty of the region. Regions not supported by one of the sources used as references will be <code class="docutils literal notranslate"><span class="pre">Novel</span></code>, others will be <code class="docutils literal notranslate"><span class="pre">Known</span></code>.</p></li>
+</ul>
 <p><strong>Input IC file format:</strong></p>
 <ul class="simple">
 <li><p>Output from <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ics</span></code>.</p></li>
 </ul>
+<table class="docutils align-default" id="id4">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>Coordinates</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>source</p></th>
+<th class="head"><p>novelty</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>ENSG00000000460_1</p></td>
+<td><p>v40,v29</p></td>
+<td><p>Known</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>54-87</p></td>
+<td><p>ENSG00000000460_2</p></td>
+<td><p>encode</p></td>
+<td><p>NIC</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>Coordinates is a <code class="docutils literal notranslate"><span class="pre">-</span></code>-separated list of the internal splice sites used</p></li>
+<li><p>Monoexonic transcripts are assigned the coordinate <code class="docutils literal notranslate"><span class="pre">-</span></code></p></li>
+<li><p>Sources are comma-separated if there was more than one form of support for the intron chain.</p></li>
+<li><p>Novelty of the intron chain is determined with respect to the sources used as references. Those supported are <code class="docutils literal notranslate"><span class="pre">Known</span></code>. Others are assigned a <a class="reference external" href="https://github.com/ConesaLab/SQANTI3/wiki/SQANTI3-isoform-classification:-categories-and-subcategories">SQANTI novelty category</a> (ISM, NIC, NNC, and Unspliced).</p></li>
+</ul>
 <p><strong>Output cerberus reference h5 format:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CerberusAnnotation()</span></code> object saved in h5 format.</p></li>
+<li><p>Can be read in in Python using</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cerberus</span>
+<span class="n">ca</span> <span class="o">=</span> <span class="n">cerberus</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="o">&lt;</span><span class="n">ref</span> <span class="n">name</span><span class="o">&gt;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>TSS / TES regions accessible using:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ca</span><span class="o">.</span><span class="n">tss</span>
+<span class="n">ca</span><span class="o">.</span><span class="n">tes</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Start</p></th>
+<th class="head"><p>End</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>novelty</p></th>
+<th class="head"><p>source</p></th>
+<th class="head"><p>gene_id</p></th>
+<th class="head"><p>tss/tes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><p>169794989</p></td>
+<td><p>169795129</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>ENSG00000000460_1</p></td>
+<td><p>v40,v29</p></td>
+<td><p>Known</p></td>
+<td><p>ENSG00000000460</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><p>169795358</p></td>
+<td><p>169795459</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>ENSG00000000460_2</p></td>
+<td><p>encode</p></td>
+<td><p>Novel</p></td>
+<td><p>ENSG00000000460</p></td>
+<td><p>2</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>BED-inspired with a few added columns</p></li>
+</ul>
+<p>Because end matching is less precise than intron chain matching, the Cerberus reference h5 also store the mapping between each input TSS / TES and what region in the reference (ie from <code class="docutils literal notranslate"><span class="pre">ca.tss</span></code> or <code class="docutils literal notranslate"><span class="pre">ca.tes</span></code>), if any, the input region matched too.</p>
+<p>These maps are stored in:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ca</span><span class="o">.</span><span class="n">tss_map</span>
+<span class="n">ca</span><span class="o">.</span><span class="n">tes_map</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Start</p></th>
+<th class="head"><p>End</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>source</p></th>
+<th class="head"><p>Name</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><p>169794989</p></td>
+<td><p>169795129</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>v40</p></td>
+<td><p>ENSG00000000460_1</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><p>169795358</p></td>
+<td><p>169795459</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>encode</p></td>
+<td><p>ENSG00000000460_2</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>Each BED entry from BED files input to <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ends</span></code> will have an entry here.</p></li>
+<li><p>Original coordinates are reported in the <code class="docutils literal notranslate"><span class="pre">Chromosome</span></code>, <code class="docutils literal notranslate"><span class="pre">Start</span></code>, <code class="docutils literal notranslate"><span class="pre">End</span></code>, and <code class="docutils literal notranslate"><span class="pre">Strand</span></code> columns.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Source</span></code> column has source name as defined in <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">agg_ends</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Name</span></code> column includes the final ID for the Cerberus end region that is in the TSS or TES table.</p></li>
+<li><p>If the region was not included in the final reference, the <code class="docutils literal notranslate"><span class="pre">Name</span></code> column will be <code class="docutils literal notranslate"><span class="pre">NaN</span></code>.</p></li>
+</ul>
+<p>Intron chains accessible using:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ca</span><span class="o">.</span><span class="n">ic</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Chromosome</p></th>
+<th class="head"><p>Strand</p></th>
+<th class="head"><p>Coordinates</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>source</p></th>
+<th class="head"><p>novelty</p></th>
+<th class="head"><p>gene_id</p></th>
+<th class="head"><p>ic</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>ENSG00000000460_1</p></td>
+<td><p>v40,v29</p></td>
+<td><p>Known</p></td>
+<td><p>ENSG0000000046</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p>chr1</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><p>54-87</p></td>
+<td><p>ENSG00000000460_2</p></td>
+<td><p>encode</p></td>
+<td><p>NIC</p></td>
+<td><p>ENSG0000000046</p></td>
+<td><p>2</p></td>
+</tr>
+</tbody>
+</table>
 </section>
 </section>
 <section id="transcriptome-annnotation">
 <h1>Transcriptome annnotation<a class="headerlink" href="#transcriptome-annnotation" title="Permalink to this heading"></a></h1>
-<p id="transcriptome-annot">After generating an h5 cerberus reference of TSSs, ICs, and TESs, you can now
+<p id="transcriptome-annot">After generating an h5 Cerverys reference of TSSs, ICs, and TESs, you can now
 annotate any transcriptome in GTF format using the features present in your
-cerberus reference; generating <strong>isoform triplets</strong> for each transcript in your
-transcriptome. Multiple transcriptomes can be annotated using the same cerberus
-reference. You can then use this mapping to add the cerberus isoform triplets
+Cerberus reference; generating <strong>transcript triplets</strong> for each transcript in your
+transcriptome. Multiple transcriptomes can be annotated using the same Cerberus
+reference. You can then use this mapping to add the Cerberus transcript triplets
 to preexisting GTF files and abundance matrices.</p>
 <a class="reference internal image-reference" href="_images/cerberus_pipeline_annotate_transcriptome.png"><img alt="_images/cerberus_pipeline_annotate_transcriptome.png" src="_images/cerberus_pipeline_annotate_transcriptome.png" style="width: 800px;" /></a>
-<section id="assigning-isoform-triplets-to-a-transcriptome">
-<h2>Assigning isoform triplets to a transcriptome<a class="headerlink" href="#assigning-isoform-triplets-to-a-transcriptome" title="Permalink to this heading"></a></h2>
-<p id="annot-t">Assign each transcript in a GTF file a cerberus TSS, IC, and TES. You can annotate multiple transcriptomes using the same cerberus reference.</p>
+<section id="assigning-transcript-triplets-to-a-transcriptome">
+<h2>Assigning transcript triplets to a transcriptome<a class="headerlink" href="#assigning-transcript-triplets-to-a-transcriptome" title="Permalink to this heading"></a></h2>
+<p id="annot-t">Assign each transcript in a GTF file a Cerberus TSS, IC, and TES. You can annotate multiple transcriptomes using the same Cerberus reference.</p>
 <p><strong>Note:</strong> It is recommended that for each transcriptome you annotate, that you
 have extracted TSSs, ICs, and TESs from the transcriptome’s GTF and added
-them to the cerberus reference. Otherwise you run the risk of encountering triplet
-features that are unannotated in the cerberus reference.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus annotate_transcriptome <span class="se">\</span>
-            --gtf <span class="o">{</span>gtf<span class="o">}</span> <span class="se">\</span>
-            --h5 <span class="o">{</span>cerberus ref<span class="o">}</span> <span class="se">\</span>
-            --source <span class="o">{</span><span class="nb">source</span> name<span class="o">}</span> <span class="se">\</span>
-            -o <span class="o">{</span>cerberus annot<span class="o">}</span>
+them to the Cerberus reference. Otherwise you run the risk of encountering triplet
+features that are unannotated in the Cerberus reference.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus<span class="w"> </span>annotate_transcriptome<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--gtf<span class="w"> </span><span class="o">{</span>gtf<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--h5<span class="w"> </span><span class="o">{</span>cerberus<span class="w"> </span>ref<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--source<span class="w"> </span><span class="o">{</span><span class="nb">source</span><span class="w"> </span>name<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>-o<span class="w"> </span><span class="o">{</span>cerberus<span class="w"> </span>annot<span class="o">}</span>
 </pre></div>
 </div>
 <p><strong>Output file format:</strong></p>
 </section>
 <section id="update-counts-matrix-with-cerberus-ids">
-<h2>Update counts matrix with cerberus IDs<a class="headerlink" href="#update-counts-matrix-with-cerberus-ids" title="Permalink to this heading"></a></h2>
+<h2>Update counts matrix with Cerberus IDs<a class="headerlink" href="#update-counts-matrix-with-cerberus-ids" title="Permalink to this heading"></a></h2>
 <p id="replace-ab">Replace transcript IDs from your transcriptome in an abundance matrix with cerberus isoform triplets.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus replace_ab_ids <span class="se">\</span>
-            --h5 <span class="o">{</span>annot<span class="o">}</span> <span class="se">\</span>
-            --ab <span class="o">{</span>ab<span class="o">}</span> <span class="se">\</span>
-            --source <span class="o">{</span>source<span class="o">}</span> <span class="se">\</span>
-            --collapse <span class="se">\</span>
-            -o <span class="o">{</span>update_ab<span class="o">}</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus<span class="w"> </span>replace_ab_ids<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--h5<span class="w"> </span><span class="o">{</span>annot<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--ab<span class="w"> </span><span class="o">{</span>ab<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--source<span class="w"> </span><span class="o">{</span>source<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--collapse<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>-o<span class="w"> </span><span class="o">{</span>update_ab<span class="o">}</span>
 </pre></div>
 </div>
 <p><strong>Notes on behavior:</strong></p>
@@ -236,15 +770,15 @@ features that are unannotated in the cerberus reference.</p>
 </ul>
 </section>
 <section id="update-gtf-with-cerberus-ids">
-<h2>Update GTF with cerberus IDs<a class="headerlink" href="#update-gtf-with-cerberus-ids" title="Permalink to this heading"></a></h2>
+<h2>Update GTF with Cerberus IDs<a class="headerlink" href="#update-gtf-with-cerberus-ids" title="Permalink to this heading"></a></h2>
 <p id="replace-gtf">Replace transcript IDs from your transcriptome in a GTF with cerberus isoform triplets.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus replace_gtf_ids <span class="se">\</span>
-            --h5 <span class="o">{</span>annot<span class="o">}</span> <span class="se">\</span>
-            --gtf <span class="o">{</span>gtf<span class="o">}</span> <span class="se">\</span>
-            --source <span class="o">{</span>source<span class="o">}</span> <span class="se">\</span>
-            --update_ends <span class="se">\</span>
-            --collapse <span class="se">\</span>
-            -o <span class="o">{</span>update_gtf<span class="o">}</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cerberus<span class="w"> </span>replace_gtf_ids<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--h5<span class="w"> </span><span class="o">{</span>annot<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--gtf<span class="w"> </span><span class="o">{</span>gtf<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--source<span class="w"> </span><span class="o">{</span>source<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--update_ends<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--collapse<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>-o<span class="w"> </span><span class="o">{</span>update_gtf<span class="o">}</span>
 </pre></div>
 </div>
 <p><strong>Notes on behavior:</strong></p>
@@ -257,12 +791,12 @@ features that are unannotated in the cerberus reference.</p>
 <section id="calculating-gene-triplets">
 <h1>Calculating gene triplets<a class="headerlink" href="#calculating-gene-triplets" title="Permalink to this heading"></a></h1>
 <a class="reference internal image-reference" href="_images/gene_triplets.png" id="gene-trips"><img alt="_images/gene_triplets.png" id="gene-trips" src="_images/gene_triplets.png" style="width: 400px;" /></a>
-<p>After you’ve generated your final cerberus annotation h5 file for as many
+<p>After you’ve generated your final Cerberus annotation h5 file for as many
 transcriptomes as you wish with <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">annotate_transcriptome</span></code>, you can now start to
 calculate <strong>gene triplets</strong> as a metric of measuring transcriptional diversity.
 There are a few different ways of doing this.</p>
 <section id="calculating-gene-triplets-from-cerberus-sources">
-<h2>Calculating gene triplets from cerberus sources<a class="headerlink" href="#calculating-gene-triplets-from-cerberus-sources" title="Permalink to this heading"></a></h2>
+<h2>Calculating gene triplets from Cerberus sources<a class="headerlink" href="#calculating-gene-triplets-from-cerberus-sources" title="Permalink to this heading"></a></h2>
 <p id="source-triplets">The most simple gene triplet is calculated from all of the isoforms present in a given transcriptome source. You can calculate and add these triplets to your CerberusAnnotation using the <code class="docutils literal notranslate"><span class="pre">cerberus.get_source_triplets()</span></code> function.</p>
 <p>In Python, import cerberus, read in your CerberusAnnotation (output from <code class="docutils literal notranslate"><span class="pre">cerberus</span> <span class="pre">annotate_transcriptome</span></code>), compute source triplets, and add them to your CerberusAnnotation:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cerberus</span>
@@ -289,8 +823,8 @@ There are a few different ways of doing this.</p>
 </pre></div>
 </div>
 </section>
-<section id="calculating-gene-triplets-based-on-isoforms-expressed-in-a-sample">
-<h2>Calculating gene triplets based on isoforms expressed in a sample<a class="headerlink" href="#calculating-gene-triplets-based-on-isoforms-expressed-in-a-sample" title="Permalink to this heading"></a></h2>
+<section id="calculating-gene-triplets-based-on-transcripts-expressed-in-a-sample">
+<h2>Calculating gene triplets based on transcripts expressed in a sample<a class="headerlink" href="#calculating-gene-triplets-based-on-transcripts-expressed-in-a-sample" title="Permalink to this heading"></a></h2>
 <p id="sample-triplets">You also may want to compute gene triplets based on a the set of isoforms expressed in a given sample. For this analysis, we use <a class="reference external" href="https://github.com/mortazavilab/swan_vis">Swan</a> to store our sample metadata and expression information:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">swan_vis</span> <span class="k">as</span> <span class="nn">swan</span>
 
@@ -339,7 +873,7 @@ There are a few different ways of doing this.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Fairlie Reese.</p>
+    <p>&#169; Copyright 2023, Fairlie Reese.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
