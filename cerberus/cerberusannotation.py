@@ -55,18 +55,21 @@ class CerberusAnnotation():
 
     def set_tss(self, tss):
         self.tss = tss
-        self.tss_sources = self.get_sources(self.tss)
-        self.all_sources = self.get_all_sources()
+        if isinstance(tss, pd.DataFrame):
+            self.tss_sources = self.get_sources(self.tss)
+            self.all_sources = self.get_all_sources()
 
     def set_tes(self, tes):
         self.tes = tes
-        self.tes_sources = self.get_sources(self.tes)
-        self.all_sources = self.get_all_sources()
+        if isinstance(tes, pd.DataFrame):
+            self.tes_sources = self.get_sources(self.tes)
+            self.all_sources = self.get_all_sources()
 
     def set_ic(self, ic):
         self.ic = ic
-        self.ic_sources = self.get_sources(self.ic)
-        self.all_sources = self.get_all_sources()
+        if isinstance(ic, pd.DataFrame):
+            self.ic_sources = self.get_sources(self.ic)
+            self.all_sources = self.get_all_sources()
 
 
 ################################################################################
@@ -744,8 +747,6 @@ class CerberusAnnotation():
                                                                      markers)
 
             for point, color, size, label, marker in zip(points, colors, sizes, labels, markers):
-                # if marker == 'x':
-                    # import pdb; pdb.set_trace()
                 if marker == 'x':
                     linewidths=None
                 else:
@@ -757,6 +758,8 @@ class CerberusAnnotation():
                         linewidths=linewidths,
                         edgecolors=None)
         else:
+            if len(points) == 1:
+                markers = markers[0]
             tax.scatter(points, vmin=vmin, vmax=vmax,
                         s=sizes, c=colors, cmap=cmap, marker=markers,
                         alpha=alpha, zorder=3,
@@ -1082,8 +1085,12 @@ def assign_sector(df):
     df.loc[df.tes_ratio > 0.5, 'sector'] = 'tes'
     df.loc[df.spl_ratio > 0.5, 'sector'] = 'splicing'
 
-    # mixed genes
-    df.loc[(df.sector=='simple')&(df.n_iso>1), 'sector'] = 'mixed'
+    # mixed genes -- look at the tss, tes, ic counts. if any one
+    # is over 1, there's at least 2 isoforms and therefore mixed
+    df.loc[(df.sector=='simple')&(df.n_tss>1), 'sector'] = 'mixed'
+    df.loc[(df.sector=='simple')&(df.n_tes>1), 'sector'] = 'mixed'
+    df.loc[(df.sector=='simple')&(df.n_ic>1), 'sector'] = 'mixed'
+
     return df
 
 def compute_simplex_coords(df, spl_col='splicing_ratio'):

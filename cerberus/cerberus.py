@@ -1162,24 +1162,48 @@ def write_h5(ic, tss, tes, oname,
         df[cols] = df[cols].astype('object')
         return df
 
-    ic.to_hdf(oname, 'ic', mode='w')
-    tss.to_hdf(oname, 'tss', mode='a', format='table')
-    tes.to_hdf(oname, 'tes', mode='a', format='table')
+    def check_and_write(df, key, oname,
+                        convert_cats=False,
+                        first_write=False):
+        """
+        Check if df is a DataFrame and write to output.
+        """
+        if not isinstance(df, pd.DataFrame):
+            df = pd.DataFrame(data=[])
+        if convert_cats:
+            df = cat_to_obj(df)
+        if first_write:
+            mode = 'w'
+        else:
+            mode = 'a'
+        df.to_hdf(oname, key, mode=mode, format='table')
 
-    if not isinstance(tss_map, pd.DataFrame):
-        tss_map = pd.DataFrame()
-    tss_map = cat_to_obj(tss_map)
-    tss_map.to_hdf(oname, 'tss_map', mode='a', format='table')
+    check_and_write(ic, 'ic', oname, first_write=True)
+    check_and_write(tss, 'tss', oname)
+    check_and_write(tes, 'tes', oname)
 
-    if not isinstance(tes_map, pd.DataFrame):
-        tes_map = pd.DataFrame()
-    tes_map = cat_to_obj(tes_map)
-    tes_map.to_hdf(oname, 'tes_map', mode='a', format='table')
+    check_and_write(tss_map, 'tss_map', oname, convert_cats=True)
+    check_and_write(tes_map, 'tes_map', oname, convert_cats=True)
+    check_and_write(tes_map, 'tes_map', oname, convert_cats=True)
+    check_and_write(triplets, 'triplets', oname, convert_cats=True)
+
+    # ic.to_hdf(oname, 'ic', mode='w')
+    # tss.to_hdf(oname, 'tss', mode='a', format='table')
+    # tes.to_hdf(oname, 'tes', mode='a', format='table')
+
+    # if not isinstance(tss_map, pd.DataFrame):
+    #     tss_map = pd.DataFrame()
+    # tss_map = cat_to_obj(tss_map)
+    # tss_map.to_hdf(oname, 'tss_map', mode='a', format='table')
+    #
+    # if not isinstance(tes_map, pd.DataFrame):
+    #     tes_map = pd.DataFrame()
+    # tes_map = cat_to_obj(tes_map)
+    # tes_map.to_hdf(oname, 'tes_map', mode='a', format='table')
 
     if not isinstance(m, pd.DataFrame):
         m = pd.DataFrame()
     else:
-        # print('you also need to fix this')
         if 'tss_first_sd_issue' in m.columns.tolist() and 'tes_last_sa_issue' in m.columns.tolist():
             for c in ['tss_first_sd_issue', 'tes_last_sa_issue']:
                 # print('# issues w/ {} nan issue: {}'.format(c, len(m.loc[m[c].isnull()].index)))
@@ -1187,10 +1211,10 @@ def write_h5(ic, tss, tes, oname,
                 m[c] = m[c].astype('str')
     m.to_hdf(oname, 'map', mode='a', format='table')
 
-    if not isinstance(triplets, pd.DataFrame):
-        triplets = pd.DataFrame()
-    triplets = cat_to_obj(triplets)
-    triplets.to_hdf(oname, 'triplets', mode='a', format='table')
+    # if not isinstance(triplets, pd.DataFrame):
+    #     triplets = pd.DataFrame()
+    # triplets = cat_to_obj(triplets)
+    # triplets.to_hdf(oname, 'triplets', mode='a', format='table')
 
 def write_h5_to_tsv(h5, opref):
     """
@@ -1378,13 +1402,6 @@ def read_h5(h5, as_pyranges=True):
         triplets (pandas DataFrame): Triplets DF
     """
 
-    ic = pd.read_hdf(h5, key='ic')
-    tss = pd.read_hdf(h5, key='tss')
-    tes = pd.read_hdf(h5, key='tes')
-
-    # turn NaN coords into empty strings
-    ic.loc[ic.Coordinates.isnull(), 'Coordinates'] = ''
-
     def read_empty_h5(h5, key, as_pyranges=False):
         try:
             df = pd.read_hdf(h5, key=key)
@@ -1393,6 +1410,17 @@ def read_h5(h5, as_pyranges=True):
         except:
             df = None
         return df
+
+    # ic = pd.read_hdf(h5, key='ic')
+    # tss = pd.read_hdf(h5, key='tss')
+    # tes = pd.read_hdf(h5, key='tes')
+    ic = read_empty_h5(h5, 'ic')
+    tss = read_empty_h5(h5, 'tss')
+    tes = read_empty_h5(h5, 'tes')
+
+    if isinstance(ic, pd.DataFrame):
+        # turn NaN coords into empty strings
+        ic.loc[ic.Coordinates.isnull(), 'Coordinates'] = ''
 
     m = read_empty_h5(h5, 'map', as_pyranges=False)
     tss_map = read_empty_h5(h5, 'tss_map', as_pyranges=as_pyranges)
