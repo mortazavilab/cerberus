@@ -245,7 +245,7 @@ def replace_gtf_ids_command(h5, gtf, source, update_ends, collapse, o):
 @click.option('--gene_name_col',
             help='Attribute name in GTF w/ gene name',
             required=False,
-            default='gene_name')
+            default=None)
 @click.option('-o',
             help='Output file name',
             required=True)

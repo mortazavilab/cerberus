@@ -1198,19 +1198,29 @@ def get_triplets_from_gtf(fname,
 
     # read in gtf and rename columns
     df = pr.read_gtf(fname, duplicate_attr=True)
-    g_df = df.as_df()[[gene_id_col, gene_name_col]].drop_duplicates()
-    g_df.rename({gene_id_col:'gene_id', gene_name_col:'gene_name'}, axis=1, inplace=True)
+    if not gene_name_col:
+        cols = [gene_id_col]
+    else:
+        cols = [gene_id_col, gene_name_col]
+    g_df = df.as_df()[cols].drop_duplicates()
+    if not gene_name_col:
+        gene_name_col = 'gene_name'
+        g_df[gene_name_col] = g_df[gene_id_col]
+    g_df.rename({gene_id_col:'gene_id',
+                 gene_name_col:'gene_name'},
+                 axis=1, inplace=True)
 
     # get triplet features from the gtf
     tss = df.features.tss().as_df()
     tes = df.features.tes().as_df()
     ic = get_ic(df)
 
-    m = {gene_id_col:'gene_id',
-         gene_name_col:'gene_name'}
+    m = {gene_id_col:'gene_id'}
     tss.rename(m, axis=1, inplace=True)
     tes.rename(m, axis=1, inplace=True)
     ic.rename(m, axis=1, inplace=True)
+
+    import pdb; pdb.set_trace()
 
     # limit to just the unique triplet features per gene
     tss = tss[['gene_id', 'Start']].drop_duplicates()
