@@ -886,8 +886,6 @@ class CerberusAnnotation():
             if density_vmax:
                 max_val = density_vmax
 
-            print(min_val)
-            print(max_val)
             norm = plt.Normalize(vmin=min_val, vmax=max_val)
             sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
             sm._A = []
@@ -1023,13 +1021,6 @@ def flatten(list_of_lists):
     if isinstance(list_of_lists[0], list):
         return flatten(list_of_lists[0]) + flatten(list_of_lists[1:])
     return list_of_lists[:1] + flatten(list_of_lists[1:])
-
-def count_instances(df, mode):
-    count_col = 'n_{}'.format(mode)
-    df = df[['gene_id', 'Name']].groupby('gene_id').count().reset_index()
-    df = df.rename({'Name': count_col}, axis=1)
-    df[count_col] = df[count_col].astype(int)
-    return df
 
 def subset_df_on_gene(df, gene):
     """
@@ -1175,6 +1166,102 @@ def compute_splicing_ratio(df):
     """
     df['splicing_ratio'] = df.n_ic/((df.n_tes+df.n_tss)/2)
     return df
+
+def count_instances(df, mode):
+    count_col = 'n_{}'.format(mode)
+    df = df[['gene_id', 'Name']].groupby('gene_id').count().reset_index()
+    df = df.rename({'Name': count_col}, axis=1)
+    df[count_col] = df[count_col].astype(int)
+    return df
+
+def get_triplets_from_gtf(fname,
+                          source,
+                          gene_id_col='gene_id',
+                          gene_name_col='gene_name'):
+    """
+    Compute gene triplets directly from a GTF. Useful for those
+    who already have a final transcriptome wishing to use Cerberus'
+    visualization tools.
+
+    Parameters:
+        fname (str): Path to GTF file
+        source (str): Source name to provide these gene triplets
+        gene_id_col (str): Name of attribute in GTF to pull gene id from
+            Default: 'gene_id'
+        gene_name_col (str): Name of attribute in GTF to pull gene name from
+            Default: 'gene_name'
+
+    Returns:
+        trip_df (pandas DataFrame): Pandas DataFrame formatted for direct
+            compatibility with CerberusAnnotation objects
+    """
+
+    # read in gtf and rename columns
+    df = pr.read_gtf(fname, duplicate_attr=True)
+    g_df = df.as_df()[[gene_id_col, gene_name_col]].drop_duplicates()
+    g_df.rename({gene_id_col:'gene_id', gene_name_col:'gene_name'}, axis=1, inplace=True)
+
+    # get triplet features from the gtf
+    tss = df.features.tss().as_df()
+    tes = df.features.tes().as_df()
+    ic = get_ic(df)
+
+    m = {gene_id_col:'gene_id',
+         gene_name_col:'gene_name'}
+    tss.rename(m, axis=1, inplace=True)
+    tes.rename(m, axis=1, inplace=True)
+    ic.rename(m, axis=1, inplace=True)
+
+    # limit to just the unique triplet features per gene
+    tss = tss[['gene_id', 'Start']].drop_duplicates()
+    tes = tes[['gene_id', 'Start']].drop_duplicates()
+    ic = ic[['gene_id', 'ic']].drop_duplicates()
+
+    # rename stuff
+    tss.rename({'Start':'Name'}, axis=1, inplace=True)
+    tes.rename({'Start':'Name'}, axis=1, inplace=True)
+    ic.rename({'ic':'Name'}, axis=1, inplace=True)
+
+    # get counts for each thing
+    tss = count_instances(tss, 'tss')
+    tes = count_instances(tes, 'tes')
+    ic = count_instances(ic, 'ic')
+
+    # create a table
+    trip_df = tss.merge(tes, how='outer', on='gene_id')
+    trip_df = trip_df.merge(ic, how='outer', on='gene_id')
+    trip_df['source'] = source
+
+    # add splicing ratio and compute simplex coords
+    trip_df = compute_splicing_ratio(trip_df)
+    trip_df = compute_simplex_coords(trip_df)
+    trip_df = assign_sector(trip_df)
+
+    # rename gid col
+    trip_df.rename({'gene_id': 'gid'}, axis=1, inplace=True)
+
+    # add gene name
+    if gene_name_col:
+        trip_df = trip_df.merge(g_df[['gene_id', 'gene_name']], how='left', left_on='gid', right_on='gene_id')
+        trip_df.drop('gene_id', axis=1, inplace=True)
+        trip_df.rename({'gene_name': 'gname'}, axis=1, inplace=True)
+
+    return trip_df
+
+def gtf_to_triplets(gtf,
+                    source,
+                    gene_id_col,
+                    gene_name_col,
+                    o):
+
+    trip_df = get_triplets_from_gtf(gtf, source,
+                                    gene_id_col,
+                                    gene_name_col)
+
+    # write triplets to a new CerberusAnnotation obj
+    ca = CerberusAnnotation()
+    ca.add_triplets(trip_df, source=source)
+    ca.write(o)
 
 def read(h5):
     ca = CerberusAnnotation()

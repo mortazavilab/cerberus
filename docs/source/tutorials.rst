@@ -104,6 +104,13 @@ Calculating gene triplets based on transcripts expressed in a sample
 
 .. mdinclude:: sample_triplets.md
 
+Calculating gene triplets directly from a GTF
+-----------------------------------------------------------------
+.. _gtf_to_triplets:
+
+.. mdinclude:: gtf_to_triplets.md
+
+
 Calculating gene triplets from custom subset files
 --------------------------------------------------
 

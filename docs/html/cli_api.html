@@ -58,6 +58,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#cerberus-replace-ab-ids">cerberus replace_ab_ids</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#cerberus-replace-gtf-ids">cerberus replace_gtf_ids</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#cerberus-write-reference">cerberus write_reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cerberus-gtf-to-triplets">cerberus gtf_to_triplets</a></li>
 </ul>
 </li>
 </ul>
@@ -249,6 +250,22 @@ Options:
   --ics TEXT  IC tsv file output from `agg_ics`  [required]
   -o TEXT     Output .h5 file name
   --help      Show this message and exit.
+</pre></div>
+</div>
+</section>
+<section id="cerberus-gtf-to-triplets">
+<h2>cerberus gtf_to_triplets<a class="headerlink" href="#cerberus-gtf-to-triplets" title="Permalink to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Usage</span><span class="p">:</span> <span class="n">cerberus</span> <span class="n">gtf_to_triplets</span> <span class="p">[</span><span class="n">OPTIONS</span><span class="p">]</span>
+
+<span class="n">Options</span><span class="p">:</span>
+  <span class="o">--</span><span class="n">gtf</span> <span class="n">TEXT</span>            <span class="n">GTF</span> <span class="n">file</span> <span class="n">to</span> <span class="n">replace</span> <span class="n">ids</span> <span class="ow">in</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+  <span class="o">--</span><span class="n">source</span> <span class="n">TEXT</span>         <span class="n">name</span> <span class="n">of</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">cerberus</span> <span class="nb">object</span> <span class="n">to</span> <span class="nb">map</span> <span class="kn">from</span>
+                        <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+
+  <span class="o">--</span><span class="n">gene_id_col</span> <span class="n">TEXT</span>    <span class="n">Attribute</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">GTF</span> <span class="n">w</span><span class="o">/</span> <span class="n">gene</span> <span class="nb">id</span>
+  <span class="o">--</span><span class="n">gene_name_col</span> <span class="n">TEXT</span>  <span class="n">Attribute</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">GTF</span> <span class="n">w</span><span class="o">/</span> <span class="n">gene</span> <span class="n">name</span>
+  <span class="o">-</span><span class="n">o</span> <span class="n">TEXT</span>               <span class="n">Output</span> <span class="n">file</span> <span class="n">name</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+  <span class="o">--</span><span class="n">help</span>                <span class="n">Show</span> <span class="n">this</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span><span class="o">.</span>
 </pre></div>
 </div>
 </section>

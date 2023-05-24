@@ -1,5 +1,6 @@
 import click
 from cerberus.cerberus import *
+from cerberus.cerberusannotation import *
 
 @click.group()
 def cli():
@@ -227,6 +228,29 @@ def replace_ab_ids_command(h5, ab, source, collapse, o):
               required=True)
 def replace_gtf_ids_command(h5, gtf, source, update_ends, collapse, o):
     replace_gtf_ids(h5, gtf, source, update_ends, collapse, o)
+
+###### replace transcript ids of an annotated transcriptome
+###### with cerberus triplet ids in gtf
+@cli.command(name='gtf_to_triplets')
+@click.option('--gtf',
+              help='GTF file to replace ids in',
+              required=True)
+@click.option('--source',
+            help='name of source in cerberus object to map from',
+            required=True)
+@click.option('--gene_id_col',
+              help='Attribute name in GTF w/ gene id',
+              required=False,
+              default='gene_id')
+@click.option('--gene_name_col',
+            help='Attribute name in GTF w/ gene name',
+            required=False,
+            default='gene_name')
+@click.option('-o',
+            help='Output file name',
+            required=True)
+def gtf_to_triplets_command(gtf, source, gene_id_col, gene_name_col, o):
+    gtf_to_triplets(gtf, source, gene_id_col, gene_name_col, o)
 
 #
 # @cli.command(name='h5_to_tsv')

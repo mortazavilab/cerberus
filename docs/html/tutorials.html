@@ -22,7 +22,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="CLI API" href="cli_api.html" />
-    <link rel="prev" title="cerberus: triplet-based transcriptome aggregation and annotation" href="index.html" /> 
+    <link rel="prev" title="Cerberus: triplet-based transcriptome aggregation and annotation" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -63,6 +63,10 @@
 <li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-from-cerberus-sources">Calculating gene triplets from Cerberus sources</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-from-a-list-of-transcriptomes">Calculating gene triplets from a list of transcriptomes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-based-on-transcripts-expressed-in-a-sample">Calculating gene triplets based on transcripts expressed in a sample</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-directly-from-a-gtf">Calculating gene triplets directly from a GTF</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#cerberus-gtf-to-triplets">cerberus gtf_to_triplets</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#calculating-gene-triplets-from-custom-subset-files">Calculating gene triplets from custom subset files</a></li>
 </ul>
 </li>
@@ -856,6 +860,27 @@ There are a few different ways of doing this.</p>
 </pre></div>
 </div>
 </section>
+<section id="calculating-gene-triplets-directly-from-a-gtf">
+<h2>Calculating gene triplets directly from a GTF<a class="headerlink" href="#calculating-gene-triplets-directly-from-a-gtf" title="Permalink to this heading"></a></h2>
+<p id="gtf-to-triplets">In cases where you already have a finalized transcriptome and don’t wish to use the Cerberus tools to generate your transcriptome, you have the option to generate summary gene triplets directly from a GTF using a command line tool.</p>
+<section id="cerberus-gtf-to-triplets">
+<h3>cerberus gtf_to_triplets<a class="headerlink" href="#cerberus-gtf-to-triplets" title="Permalink to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Usage</span><span class="p">:</span> <span class="n">cerberus</span> <span class="n">gtf_to_triplets</span> <span class="p">[</span><span class="n">OPTIONS</span><span class="p">]</span>
+
+<span class="n">Options</span><span class="p">:</span>
+  <span class="o">--</span><span class="n">gtf</span> <span class="n">TEXT</span>            <span class="n">GTF</span> <span class="n">file</span> <span class="n">to</span> <span class="n">replace</span> <span class="n">ids</span> <span class="ow">in</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+  <span class="o">--</span><span class="n">source</span> <span class="n">TEXT</span>         <span class="n">name</span> <span class="n">of</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">cerberus</span> <span class="nb">object</span> <span class="n">to</span> <span class="nb">map</span> <span class="kn">from</span>
+                        <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+
+  <span class="o">--</span><span class="n">gene_id_col</span> <span class="n">TEXT</span>    <span class="n">Attribute</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">GTF</span> <span class="n">w</span><span class="o">/</span> <span class="n">gene</span> <span class="nb">id</span>
+  <span class="o">--</span><span class="n">gene_name_col</span> <span class="n">TEXT</span>  <span class="n">Attribute</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">GTF</span> <span class="n">w</span><span class="o">/</span> <span class="n">gene</span> <span class="n">name</span>
+  <span class="o">-</span><span class="n">o</span> <span class="n">TEXT</span>               <span class="n">Output</span> <span class="n">file</span> <span class="n">name</span>  <span class="p">[</span><span class="n">required</span><span class="p">]</span>
+  <span class="o">--</span><span class="n">help</span>                <span class="n">Show</span> <span class="n">this</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>The output file will be a <code class="docutils literal notranslate"><span class="pre">CerberusAnnotation</span></code> h5 object that is directly compatible with Cereberus’ downstream plotting functions.</p>
+</section>
+</section>
 <section id="calculating-gene-triplets-from-custom-subset-files">
 <h2>Calculating gene triplets from custom subset files<a class="headerlink" href="#calculating-gene-triplets-from-custom-subset-files" title="Permalink to this heading"></a></h2>
 <p id="custom-subset-triplets">In the cases where the above gene triplet calculation functions don’t fulfill your exact needs, cerberus supports adding triplets for individual samples using a tab-separated isoform subset file. <strong>Coming soon</strong></p>
@@ -866,7 +891,7 @@ There are a few different ways of doing this.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="cerberus: triplet-based transcriptome aggregation and annotation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Cerberus: triplet-based transcriptome aggregation and annotation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="cli_api.html" class="btn btn-neutral float-right" title="CLI API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
