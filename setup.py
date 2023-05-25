@@ -10,7 +10,7 @@ requirements = [
     'tqdm',
     'click',
     'pandas>=1.3',
-    'pyranges>=0.0.71',
+    'pyranges>=0.0.125',
     'matplotlib',
     'lapa'
 ]
@@ -21,10 +21,10 @@ test_requirements = ['pytest']
 
 setup(
     name='cerberus',
-    version='0.0.idk',
+    version='0.0.1',
 
-    author="M. Hasan Çelik, Fairlie Reese",
-    author_email='muhammedhasancelik@gmail.com, fairlie.reese@gmail.com',
+    author="Fairlie Reese",
+    author_email='fairlie.reese@gmail.com',
     url='https://github.com/mortazavilab/cerberus',
 
     keywords=['genomics', 'long read RNA-seq'],
