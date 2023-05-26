@@ -1220,8 +1220,6 @@ def get_triplets_from_gtf(fname,
     tes.rename(m, axis=1, inplace=True)
     ic.rename(m, axis=1, inplace=True)
 
-    import pdb; pdb.set_trace()
-
     # limit to just the unique triplet features per gene
     tss = tss[['gene_id', 'Start']].drop_duplicates()
     tes = tes[['gene_id', 'Start']].drop_duplicates()
