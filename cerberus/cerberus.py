@@ -5,7 +5,27 @@ import h5py
 import numpy as np
 import os
 import multiprocessing
+import logging
+import sys
 from pandarallel import pandarallel
+
+def _init_logger():
+    # https://coralogix.com/blog/python-logging-best-practices-tips/
+    logger = logging.getLogger('Cerberus')
+    logger.setLevel(logging.DEBUG)
+    # logger.setLevel(logging.INFO)
+
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setLevel(logging.DEBUG)
+    # handler.setLevel(logging.INFO)
+
+    formatter = logging.Formatter(
+           '%(created)f:%(levelname)s:%(name)s:%(module)s:%(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+_init_logger()
+_logger = logging.getLogger('Cerberus')
 
 ##### helper functions #####
 
@@ -580,7 +600,6 @@ def agg_2_ends(bed1, bed2,
         # m_source = m_source.merge(temp, how='outer', on=merge_cols)
         m_source = pd.concat([m_source, temp])
         m_source['source'] = source2
-        # print(len(m_source[merge_cols].drop_duplicates()))
 
     # update dtypes and final formatting
     m_source.drop('id', axis=1, inplace=True)
@@ -669,44 +688,45 @@ def get_ic_novelty(df):
     ref.drop_duplicates(inplace=True)
 
     nov = df.loc[df.novelty == 'Novel'].copy(deep=True)
-    nov = get_ss_from_ic(nov)
 
-    # pdb.set_trace()
+    # only have to assign ic novelty types if there are any novel transcripts
+    if not nov.empty:
+        nov = get_ss_from_ic(nov)
 
-    # unspliced -- no splice sites
-    ics = nov.loc[nov.coord == '', 'Name'].unique().tolist()
-    df.loc[df.Name.isin(ics), 'novelty'] = 'Unspliced'
-    nov = nov.loc[~nov.Name.isin(ics)]
+        # unspliced -- no splice sites
+        ics = nov.loc[nov.coord == '', 'Name'].unique().tolist()
+        df.loc[df.Name.isin(ics), 'novelty'] = 'Unspliced'
+        nov = nov.loc[~nov.Name.isin(ics)]
 
-    # NNC -- 1+ splice sites aren't annotated
-    temp = nov.merge(ref, on=['Chromosome', 'Strand', 'gene_id',
-                              'coord', 'ss_type'],
-                     how='left')
-    ics = temp.loc[temp.novelty_y.isnull(), 'Name'].unique().tolist()
-    df.loc[df.Name.isin(ics), 'novelty'] = 'NNC'
-    nov = nov.loc[~nov.Name.isin(ics)]
+        # NNC -- 1+ splice sites aren't annotated
+        temp = nov.merge(ref, on=['Chromosome', 'Strand', 'gene_id',
+                                  'coord', 'ss_type'],
+                         how='left')
+        ics = temp.loc[temp.novelty_y.isnull(), 'Name'].unique().tolist()
+        df.loc[df.Name.isin(ics), 'novelty'] = 'NNC'
+        nov = nov.loc[~nov.Name.isin(ics)]
 
-    # assume NIC at first
-    ics = nov.Name.unique().tolist()
-    df.loc[df.Name.isin(ics), 'novelty'] = 'NIC'
+        # assume NIC at first
+        ics = nov.Name.unique().tolist()
+        df.loc[df.Name.isin(ics), 'novelty'] = 'NIC'
 
-    # check for substring occurrence of coordinates in
-    # reference intron chains from same gene
-    ref = df.loc[df.novelty == 'Known'].copy(deep=True)
-    ref.drop(['Name', 'ic', 'source', 'novelty'], axis=1, inplace=True)
-    nov = df.loc[df.novelty == 'NIC'].copy(deep=True)
-    nov = nov.merge(ref, on=['Chromosome', 'Strand', 'gene_id'], how='left',
-                    suffixes=('', '_ref'))
-    t = multiprocessing.cpu_count()
-    if t == 1:
-        nov['ISM'] = nov.apply(lambda x: str(x.Coordinates) in \
-                               str(x.Coordinates_ref), axis=1)
-    else:
-        pandarallel.initialize(nb_workers=t, verbose=0)
-        nov['ISM'] = nov.parallel_apply(lambda x: str(x.Coordinates) in \
-                               str(x.Coordinates_ref), axis=1)
-    ics = nov.loc[nov.ISM, 'Name'].unique().tolist()
-    df.loc[df.Name.isin(ics), 'novelty'] = 'ISM'
+        # check for substring occurrence of coordinates in
+        # reference intron chains from same gene
+        ref = df.loc[df.novelty == 'Known'].copy(deep=True)
+        ref.drop(['Name', 'ic', 'source', 'novelty'], axis=1, inplace=True)
+        nov = df.loc[df.novelty == 'NIC'].copy(deep=True)
+        nov = nov.merge(ref, on=['Chromosome', 'Strand', 'gene_id'], how='left',
+                        suffixes=('', '_ref'))
+        t = multiprocessing.cpu_count()
+        if t == 1:
+            nov['ISM'] = nov.apply(lambda x: str(x.Coordinates) in \
+                                   str(x.Coordinates_ref), axis=1)
+        else:
+            pandarallel.initialize(nb_workers=t, verbose=0)
+            nov['ISM'] = nov.parallel_apply(lambda x: str(x.Coordinates) in \
+                                   str(x.Coordinates_ref), axis=1)
+        ics = nov.loc[nov.ISM, 'Name'].unique().tolist()
+        df.loc[df.Name.isin(ics), 'novelty'] = 'ISM'
 
     return df
 
@@ -783,7 +803,7 @@ def merge_ends(ends, ref, mode):
     # only fix monoexonic guys?
     end_ids_2 = ends.temp_id.unique().tolist()
     missing_ends = list(set(end_ids)-set(end_ids_2))
-    print(f'# missing ends: {len(missing_ends)}')
+    # print(f'# missing ends: {len(missing_ends)}')
     ends_back = ends_back.loc[ends_back.temp_id.isin(missing_ends)]
     ends_back = pr.PyRanges(ends_back)
     ends_back = ends_back.nearest(ref,
@@ -809,7 +829,7 @@ def merge_ends(ends, ref, mode):
         ends = pd.concat([ends, gene_ends])
 
         if i % 100 == 0:
-            print('Processed {} / {} genes'.format(i, len(fix_ends.gene_id.unique().tolist())))
+            _logger.info('Processed {} / {} genes'.format(i, len(fix_ends.gene_id.unique().tolist())))
 
     # merge back in to get transcript ids
     t_ends = t_ends.merge(ends, how='left',
@@ -1004,9 +1024,9 @@ def update_transcript_ends(df, mode, strand):
     df.loc[inds, old_col] = df.loc[inds, new_col]
 
     # convert float dtypes
-    print('removing problematic things ...')
+    # print('removing problematic things ...')
     for feat in ['Start', 'End']:
-        print('{} entries w/ null {}'.format(len(df.loc[df[feat].isnull()].index),feat))
+        # print('{} entries w/ null {}'.format(len(df.loc[df[feat].isnull()].index),feat))
         df = df.loc[~df[feat].isnull()]
     df.Start = df.Start.astype(int)
     df.End = df.End.astype(int)
@@ -1340,7 +1360,6 @@ def check_files(files, sources):
         files (list of str): List of file paths
         sources (list of str): List of sources
     """
-    print(files)
 
     for f in files:
         if not os.path.exists(f):
@@ -1884,7 +1903,7 @@ def aggregate_ends(beds, sources, add_ends, refs, slack, mode):
 
             if 'gene_id' not in bed.df.columns or 'Strand' not in bed.df.columns:
                 if add:
-                    print('Cannot add new ends from {} because '+\
+                    _logger.warning('Cannot add new ends from {} because '+\
                           'it does not contain gene_id information.'.format(source))
 
             # add missing columns but keep track of what information we'll be
@@ -1993,7 +2012,7 @@ def assign_triplets(gtf_df, tss, ic, tes, gene_source, t_map):
     df.rename({'ic': 'Coordinates'}, axis=1, inplace=True)
 
     df = merge_ics(df, ic)
-    print('merged ic')
+    _logger.info('Merged ics')
 
     ### ends ###
     for mode, ref in zip(['tss', 'tes'], [tss, tes]):
@@ -2003,7 +2022,7 @@ def assign_triplets(gtf_df, tss, ic, tes, gene_source, t_map):
             ends = gtf_df.features.tes()
 
         t_ends = merge_ends(ends, ref, mode)
-        print('merge ends')
+        _logger.info('Merged ends')
 
         # merge with ic ids
         df = df.merge(t_ends, how='left', on='transcript_id')
@@ -2121,7 +2140,7 @@ def write_reference(tss_fname, tes_fname, ic_fname, o):
             map_fname = get_source_map_fname(fname)
             df = read_cerberus_source_map(map_fname)
         except:
-            raise Warning('Could not find matching source map file for {} '.format(fname),
+            _logger.warning('Could not find matching source map file for {} '.format(fname)+
                           'Resulting entry in reference will be empty.')
             return None
         return df
@@ -2165,19 +2184,19 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
     for gtf, source in zip(gtfs, gtf_sources):
 
         if verbosity > 0:
-            print('Finding TSSs from {}'.format(source))
+            _logger.info('Finding TSSs from {}'.format(source))
 
         tss_fname = '{}/{}_tss.bed'.format(tmp_dir, source)
         gtf_to_bed(gtf, 'tss', tss_fname, gtf_tss_dist, gtf_tss_slack)
 
         if verbosity > 0:
-            print('Finding TESs from {}'.format(source))
+            _logger.info('Finding TESs from {}'.format(source))
 
         tes_fname = '{}/{}_tes.bed'.format(tmp_dir, source)
         gtf_to_bed(gtf, 'tes', tes_fname, gtf_tes_dist, gtf_tes_slack)
 
         if verbosity > 0:
-            print('Finding intron chains from {}'.format(source))
+            _logger.info('Finding intron chains from {}'.format(source))
 
         ic_fname = '{}/{}_ic.tsv'.format(tmp_dir, source)
         ic = gtf_to_ics(gtf, ic_fname)
@@ -2195,7 +2214,7 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
     tss_sources = gtf_sources + tss_sources
 
     if verbosity > 0:
-        print('Aggregating TSSs')
+        _logger.info('Aggregating TSSs')
 
     tss, tss_map = aggregate_ends(tss_beds,
                                   tss_sources,
@@ -2208,7 +2227,7 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
     tes_sources = gtf_sources + tes_sources
 
     if verbosity > 0:
-        print('Aggregating TESs')
+        _logger.info('Aggregating TESs')
 
     tes, tes_map = aggregate_ends(tes_beds,
                                   tes_sources,
@@ -2218,7 +2237,7 @@ def gen_reference(ref_gtf, o, ref_tss, ref_tes,
 
     # aggregate ics
     if verbosity > 0:
-        print('Aggregating intron chains')
+        _logger.info('Aggregating intron chains')
 
     ics = aggregate_ics(ics, gtf_sources)
 
@@ -2386,7 +2405,7 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
     rm_tids = m_df.loc[(m_df.tss_first_sd_issue)|(m_df.tes_last_sa_issue), 'original_transcript_id'].tolist()
     df = df.loc[~df.transcript_id.isin(rm_tids)]
 
-    print('Adding cerberus transcript ids...')
+    _logger.info('Adding Cerberus transcript ids')
     # pdb.set_trace()
     m_df.drop(['transcript_triplet', 'gene_id'], axis=1, inplace=True)
     df.drop(['gene_name'], axis=1, inplace=True)
@@ -2406,12 +2425,12 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
 
     # update the ends of each transcript based on the end it was assigned to
     if update_ends:
-        print('Updating ends of transcripts...')
+        _logger.info('Updating ends of transcripts...')
         df = update_gtf_ends(df, tss, tes)
 
     # deduplicate transcripts with the same triplets
     if agg:
-        print('Deduplicating transcripts...')
+        _logger.info('Deduplicating transcripts...')
         df = agg_gtf(df)
 
     # df.drop(['transcript_id', 'transcript_name'], axis=1, inplace=True)
