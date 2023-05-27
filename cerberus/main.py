@@ -163,13 +163,13 @@ def gen_reference_command(ref_gtf, o,
               help='GTF file',
               required=True)
 @click.option('--h5',
-            help='cerberus reference from gen_reference',
+            help='Cerberus reference from gen_reference',
             required=True)
 @click.option('--source',
               help='Name of GTF source',
               required=True)
 @click.option('--gene_source',
-              help='Source that is already in cerberus object to use gene names from',
+              help='Source that is already in Cerberus object to use gene names from',
               default=None,
               required=False)
 @click.option('-o',
