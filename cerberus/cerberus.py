@@ -1204,7 +1204,7 @@ def write_h5(ic, tss, tes, oname,
 
     check_and_write(tss_map, 'tss_map', oname, convert_cats=True)
     check_and_write(tes_map, 'tes_map', oname, convert_cats=True)
-    check_and_write(tes_map, 'tes_map', oname, convert_cats=True)
+    # check_and_write(tes_map, 'tes_map', oname, convert_cats=True)
     check_and_write(triplets, 'triplets', oname, convert_cats=True)
 
     # ic.to_hdf(oname, 'ic', mode='w')
@@ -2378,6 +2378,10 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
         df = pr.read_gtf(gtf, duplicate_attr=True).df
     except:
         df = pr.read_gtf(gtf).df
+
+    # add gene id as gene name if it's not in there
+    if 'gene_name' not in df.columns:
+        df['gene_name'] = df['gene_id']
 
     entry_types = ['gene', 'transcript', 'exon']
     df = df.loc[df.Feature.isin(entry_types)]
