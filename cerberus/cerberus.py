@@ -2382,6 +2382,8 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
     # add gene id as gene name if it's not in there
     if 'gene_name' not in df.columns:
         df['gene_name'] = df['gene_id']
+    if 'transcript_name' not in df.columns:
+        df['transcript_name'] = df['transcript_id']
 
     entry_types = ['gene', 'transcript', 'exon']
     df = df.loc[df.Feature.isin(entry_types)]
