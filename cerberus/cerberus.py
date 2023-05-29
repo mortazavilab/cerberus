@@ -2412,9 +2412,8 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
     df = df.loc[~df.transcript_id.isin(rm_tids)]
 
     _logger.info('Adding Cerberus transcript ids')
-    # pdb.set_trace()
     m_df.drop(['transcript_triplet', 'gene_id'], axis=1, inplace=True)
-    df.drop(['gene_name'], axis=1, inplace=True)
+    df.drop('gene_name', axis=1, inplace=True)
     df = df.merge(m_df, how='left',
                     left_on=['transcript_name', 'transcript_id'],
                     right_on=['original_transcript_name', 'original_transcript_id'],
