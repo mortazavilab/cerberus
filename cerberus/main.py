@@ -252,13 +252,13 @@ def replace_gtf_ids_command(h5, gtf, source, update_ends, collapse, o):
 def gtf_to_triplets_command(gtf, source, gene_id_col, gene_name_col, o):
     gtf_to_triplets(gtf, source, gene_id_col, gene_name_col, o)
 
-#
-# @cli.command(name='h5_to_tsv')
-# @click.option('--h5',
-#               help='h5 transcriptome file output from cerberus assign-triplets',
-#               required=True)
-# @click.option('--opref',
-#               help='output file prefix',
-#               required=True)
-# def h5_to_tsv(h5, opref):
-#     write_h5_to_tsv(h5, opref)
+
+@cli.command(name='h5_to_tsv')
+@click.option('--h5',
+              help='h5 transcriptome file output from cerberus write_reference or annotate_transcriptome',
+              required=True)
+@click.option('--opref',
+              help='output file prefix',
+              required=True)
+def h5_to_tsv(h5, opref):
+    write_h5_to_tsv(h5, opref)

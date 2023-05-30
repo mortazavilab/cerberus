@@ -781,7 +781,6 @@ def merge_ends(ends, ref, mode):
                  'gene_id', 'transcript_id']]
 
 
-
     # get only the relevant columns and deduplicate
     ends = ends.df
     t_ends = ends.copy(deep=True)
