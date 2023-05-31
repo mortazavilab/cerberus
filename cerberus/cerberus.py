@@ -2100,9 +2100,9 @@ def assign_triplets(gtf_df, tss, ic, tes, gene_source, t_map):
     # print('fixing issue that you need to debug later...')
     # print('these are sirvs / erccs')
     # print('and monoexonic transcripts')
-    # for beep in ['tss', 'tes', 'ic']:
+    for beep in ['tss', 'tes', 'ic']:
     #     print('# affected transcripts w/ null {}: {}'.format(beep,len(df.loc[df[beep].isnull()].index)))
-    #     df = df.loc[~df[beep].isnull()]
+        df = df.loc[~df[beep].isnull()]
     df['transcript_triplet'] = '['+df.tss.astype(int).astype(str)+','+\
                                    df.ic.astype(int).astype(str)+','+\
                                    df.tes.astype(int).astype(str)+']'
