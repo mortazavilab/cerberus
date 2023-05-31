@@ -9,6 +9,9 @@ import logging
 import sys
 from pandarallel import pandarallel
 
+END_NOVS = ['Known', 'Novel']
+IC_NOVS = ['Known', 'ISM', 'NIC', 'NNC', 'Unspliced']
+
 def _init_logger():
     # https://coralogix.com/blog/python-logging-best-practices-tips/
     logger = logging.getLogger('Cerberus')
@@ -1580,6 +1583,9 @@ def read_cerberus_ends(bed_file, mode,
     order = [o for o in order if o in df.columns]
     df = df[order]
 
+    # if novelty already in there, ensure they are correct categories
+    #
+
     return df
 
 def read_cerberus_source_map(fname):
@@ -1632,6 +1638,15 @@ def read_bed(bed_file, mode):
         elif 'lapa' in df.ThickStart.tolist():
             df = read_cerberus_ends(bed_file, mode,
                                     add_gid=True, add_num=True)
+
+    # # has this file had novelty called already?
+    # if 'novelty' in df.columns:
+    #     # make sure that the values are correct
+    #     # if not, remove column and recompute
+    #     # same for the source, which will be overwritten by
+    #     if len(set(END_NOVS)-set(df.columns.unique())) != 0:
+    #         df.drop('novelty', axis=1, inplace=True)
+    #     else:
 
     df = pr.PyRanges(df)
     return df
@@ -1873,12 +1888,17 @@ def aggregate_ends(beds, sources, add_ends, refs, slack, mode):
         # read in bed file and do some formatting
         bed = read_bed(bed_fname, mode)
         bed = bed.df
-        bed['source'] = source
-        if ref:
-            nov = 'Known'
-        else:
-            nov = 'Novel'
-        bed['novelty'] = nov
+
+        # only mess with the source / novelty if we're dealing with
+        # a bed that Cerberus hasn't generated
+        if source != 'cerberus':
+            bed['source'] = source
+            if ref:
+                nov = 'Known'
+            else:
+                nov = 'Novel'
+            bed['novelty'] = nov
+
         bed['id'] = [i for i in range(len(bed.index))]
         bed = pr.PyRanges(bed)
 
@@ -1947,12 +1967,14 @@ def aggregate_ics(ics, sources, refs):
     df = pd.DataFrame()
     for ic, source, ref in zip(ics, sources, refs):
         temp = read_ic_ref(ic)
-        temp['source'] = source
-        if ref:
-            nov = 'Known'
-        else:
-            nov = 'Novel'
-        temp['novelty'] = nov
+
+        if source != 'cerberus':
+            temp['source'] = source
+            if ref:
+                nov = 'Known'
+            else:
+                nov = 'Novel'
+            temp['novelty'] = nov
 
         # start with priority 1
         if len(df.index) == 0:
@@ -1961,7 +1983,8 @@ def aggregate_ics(ics, sources, refs):
             df = agg_2_ics(df, temp)
 
     # determine ic novelty for novel ics
-    df = get_ic_novelty(df)
+    if source != 'cerberus':
+        df = get_ic_novelty(df)
 
     # drop gene id and ic number as they are captured in name
     df.drop(['gene_id', 'ic'], axis=1, inplace=True)

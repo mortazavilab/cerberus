@@ -42,7 +42,8 @@ def gtf_to_ics_command(gtf, o):
 @click.option('--input',
               help='Path to config file. Each line contains '+\
                    'file path, whether to add ends (True / False), '+\
-                   'whether to use as a reference, source name',
+                   'whether to use as a reference, source name ("cerberus" '+\
+                   'if from a previous Cerberus run)',
               required=True)
 @click.option('--mode',
             help='Choose tss or tes',
@@ -60,7 +61,8 @@ def agg_ends_command(input, mode, slack, o):
 @cli.command(name='agg_ics')
 @click.option('--input',
               help='Path to config file. Each line contains '+\
-                   'file path, whether to use as a reference, source name',
+                   'file path, whether to use as a reference, source name ("cerberus" '+\
+                   'if from a previous Cerberus run)',
               required=True)
 @click.option('-o',
               help='Output file name',
