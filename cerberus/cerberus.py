@@ -1988,8 +1988,8 @@ def aggregate_ics(ics, sources, refs):
             df = agg_2_ics(df, temp)
 
     # determine ic novelty for novel ics
-    if source != 'cerberus':
-        df = get_ic_novelty(df)
+    # if source != 'cerberus':
+    df = get_ic_novelty(df)
 
     # drop gene id and ic number as they are captured in name
     df.drop(['gene_id', 'ic'], axis=1, inplace=True)
