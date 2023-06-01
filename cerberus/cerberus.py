@@ -1192,17 +1192,20 @@ def write_h5(ic, tss, tes, oname,
         """
         if not isinstance(df, pd.DataFrame):
             df = pd.DataFrame(data=[])
+        # import pdb; pdb.set_trace()
         if convert_cats:
             df = cat_to_obj(df)
         if first_write:
             mode = 'w'
         else:
             mode = 'a'
-        df.to_hdf(oname, key, mode=mode, format='table')
+        # df.to_hdf(oname, key, mode=mode, format='table')
+        df.to_hdf(oname, key, mode=mode, format='fixed')
 
-    check_and_write(ic, 'ic', oname, first_write=True)
-    check_and_write(tss, 'tss', oname)
-    check_and_write(tes, 'tes', oname)
+    check_and_write(ic, 'ic', oname, convert_cats=True, first_write=True)
+
+    check_and_write(tss, 'tss', oname, convert_cats=True)
+    check_and_write(tes, 'tes', oname, convert_cats=True)
 
     check_and_write(tss_map, 'tss_map', oname, convert_cats=True)
     check_and_write(tes_map, 'tes_map', oname, convert_cats=True)
@@ -1424,7 +1427,7 @@ def read_h5(h5, as_pyranges=True):
     """
 
     def read_empty_h5(h5, key, as_pyranges=False):
-        if not os.path.exists(f):
+        if not os.path.exists(h5):
             raise Exception('File {} does not exist'.format(f))
         try:
             df = pd.read_hdf(h5, key=key)
