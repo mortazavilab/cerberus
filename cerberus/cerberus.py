@@ -1973,6 +1973,10 @@ def aggregate_ics(ics, sources, refs):
     for ic, source, ref in zip(ics, sources, refs):
         temp = read_ic_ref(ic)
 
+        # if we're dealing with a new ic file,
+        # update the ic novelty and source name
+        # otherwise, retain the labels already given
+        # in the ics file
         if source != 'cerberus':
             temp['source'] = source
             if ref:

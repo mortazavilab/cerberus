@@ -55,6 +55,7 @@ class CerberusAnnotation():
 
     def set_tss(self, tss):
         self.tss = tss
+        import pdb; pdb.set_trace()
         if isinstance(tss, pd.DataFrame):
             self.tss_sources = self.get_sources(self.tss)
             self.all_sources = self.get_all_sources()
@@ -1016,11 +1017,12 @@ def flatten(list_of_lists):
     Returns:
         (list): Flattened array
     """
-    if len(list_of_lists) == 0:
-        return list_of_lists
-    if isinstance(list_of_lists[0], list):
-        return flatten(list_of_lists[0]) + flatten(list_of_lists[1:])
-    return list_of_lists[:1] + flatten(list_of_lists[1:])
+    return [i for sublist in list_of_lists for i in sublist]
+    # if len(list_of_lists) == 0:
+    #     return list_of_lists
+    # if isinstance(list_of_lists[0], list):
+    #     return flatten(list_of_lists[0]) + flatten(list_of_lists[1:])
+    # return list_of_lists[:1] + flatten(list_of_lists[1:])
 
 def subset_df_on_gene(df, gene):
     """
