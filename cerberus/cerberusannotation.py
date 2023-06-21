@@ -55,7 +55,6 @@ class CerberusAnnotation():
 
     def set_tss(self, tss):
         self.tss = tss
-        import pdb; pdb.set_trace()
         if isinstance(tss, pd.DataFrame):
             self.tss_sources = self.get_sources(self.tss)
             self.all_sources = self.get_all_sources()
