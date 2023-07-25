@@ -73,6 +73,80 @@ class CerberusAnnotation():
 
 
 ################################################################################
+########################## Adding support ######################################
+################################################################################
+    def add_bed(self,
+                bed,
+                add,
+                ref,
+                source,
+                mode,
+                slack):
+        """
+        Add features or incorporate them as forms of support to an
+        existing CerberusAnnotation.
+
+        Parameters:
+            bed (str): BED file path
+            add (bool): Incorporate non-overlapping regions as new annotated
+                regions. Requires that BED file has a gene ID columns
+            ref (bool): Use regions from BED file as reference regions to define
+                region novelty
+            source (str): Name of BED source
+            mode (str): {'tss', 'tes'}
+            slack (int): Distance that regions can be to be considered overlapping
+        """
+
+        if mode == 'tss':
+            df = self.tss.copy(deep=True)
+            m_source = self.tss_map.copy(deep=True)
+            sources = self.tss_sources
+        elif mode == 'tes':
+            df = self.tes.copy(deep=True)
+            m_source = self.tes_map.copy(deep=True)
+            sources = self.tes_sources
+        df['id'] = [i for i in range(len(df.index))]
+        df = pr.PyRanges(df)
+
+        if source in sources:
+            raise Exception(f'{mode.upper()} source {source} already in CerberusAnnotation.')
+
+        if len(self.tss) > 0:
+            first_add = False
+        else:
+            first_add = True
+
+        bed, gid, strand = get_agg_ends_bed(bed,
+                                            add,
+                                            ref,
+                                            source,
+                                            mode,
+                                            first_add)
+        df, temp = agg_2_ends(df, bed,
+                        strand, gid,
+                        slack, add, mode)
+
+        # drop unnecessary columns and reorder those that are already there
+        # drop_cols = ['id']
+        # df.drop(drop_cols, axis=1, inplace=True)
+        order = ['Chromosome', 'Start', 'End', 'Strand',
+                 'Name', 'source', 'novelty']
+        df = df[order]
+        df = split_cerberus_id(df, mode)
+        # import pdb; pdb.set_trace()
+
+
+        # update ends and source map in ca
+        if mode == 'tss':
+            self.tss = df
+            self.tss_map = pd.concat([m_source, temp])
+            self.tss_sources.append(source)
+        elif mode == 'tes':
+            self.tes = df
+            self.tes_map = pd.concat([m_source, temp])
+            self.tes_sources.append(source)
+
+################################################################################
 ############### Pertaining to triplet computations #############################
 ################################################################################
 

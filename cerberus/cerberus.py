@@ -629,8 +629,6 @@ def agg_2_ics(ic1, ic2):
     max_c = '{}_max'.format(mode)
     new_c = '{}_new'.format(mode)
 
-    # pdb.set_trace()
-
     # if we have more than 1 set of ics, merge on chrom, strand,
     # ic coords, and gene id
     ic1 = ic1.merge(ic2,
@@ -1864,6 +1862,60 @@ def get_ics_from_gtf(gtf):
 
     return ic
 
+def get_agg_ends_bed(bed_fname,
+                     add,
+                     ref,
+                     source,
+                     mode,
+                     first_add):
+    """
+    Read in BED file for agg_ends
+
+    Parameters:
+        first_add (bool): Whether this is the first bed file being added
+    """
+
+    # read in bed file and do some formatting
+    bed = read_bed(bed_fname, mode)
+    bed = bed.df
+
+    # only mess with the source / novelty if we're dealing with
+    # a bed that Cerberus hasn't generated
+    # pdb.set_trace()
+    if source != 'cerberus':
+        bed['source'] = source
+        if ref:
+            nov = 'Known'
+        else:
+            nov = 'Novel'
+        bed['novelty'] = nov
+
+    bed['id'] = [i for i in range(len(bed.index))]
+    bed = pr.PyRanges(bed)
+
+    # raise errors for incompatible first add settings
+    if first_add:
+
+        if not add:
+            raise Exception('Must add ends from first bed file')
+
+        if 'gene_id' not in bed.df.columns and 'Strand' not in bed.df.columns:
+            raise Exception('First bed must contain strand and gene_id columns')
+
+    # raise errors for incompatible settings when add == True
+    else:
+        if 'gene_id' not in bed.df.columns or 'Strand' not in bed.df.columns:
+            if add:
+                _logger.warning(f'Cannot add new ends from {bed_fname} because '+\
+                      'it does not contain gene_id information.'.format(source))
+
+    # add missing columns but keep track of what information we'll be
+    # able to merge on
+    bed, gid, strand = format_agg_2_ends_bed(bed, mode)
+
+
+    return bed, gid, strand
+
 def aggregate_ends(beds, sources, add_ends, refs, slack, mode):
     """
     Aggregate ends from more than one bed source.
@@ -1890,33 +1942,41 @@ def aggregate_ends(beds, sources, add_ends, refs, slack, mode):
     i = 0
     for bed_fname, source, add, ref in zip(beds, sources, add_ends, refs):
 
-        # read in bed file and do some formatting
-        bed = read_bed(bed_fname, mode)
-        bed = bed.df
-
-        # only mess with the source / novelty if we're dealing with
-        # a bed that Cerberus hasn't generated
-        if source != 'cerberus':
-            bed['source'] = source
-            if ref:
-                nov = 'Known'
-            else:
-                nov = 'Novel'
-            bed['novelty'] = nov
-
-        bed['id'] = [i for i in range(len(bed.index))]
-        bed = pr.PyRanges(bed)
+        # # read in bed file and do some formatting
+        # bed = read_bed(bed_fname, mode)
+        # bed = bed.df
+        #
+        # # only mess with the source / novelty if we're dealing with
+        # # a bed that Cerberus hasn't generated
+        # if source != 'cerberus':
+        #     bed['source'] = source
+        #     if ref:
+        #         nov = 'Known'
+        #     else:
+        #         nov = 'Novel'
+        #     bed['novelty'] = nov
+        #
+        # bed['id'] = [i for i in range(len(bed.index))]
+        # bed = pr.PyRanges(bed)
+        # bed = get_agg_ends_bed(bed_fname, source, mode, ref)
 
         # first bed; just accept all these ends
-        if len(df.index) == 0:
+        print(f'Adding ends from{bed_fname}.')
+        if i == 0:
 
-            if not add:
-                raise Exception('Must add ends from first bed file')
+            bed, gid, strand = get_agg_ends_bed(bed_fname,
+                                                add,
+                                                ref,
+                                                source,
+                                                mode,
+                                                True)
+            # if not add:
+            #     raise Exception('Must add ends from first bed file')
+            #
+            # if 'gene_id' not in bed.df.columns and 'Strand' not in bed.df.columns:
+            #     raise Exception('First bed must contain strand and gene_id columns')
 
-            if 'gene_id' not in bed.df.columns and 'Strand' not in bed.df.columns:
-                raise Exception('First bed must contain strand and gene_id columns')
-
-            df = bed.df
+            df = bed.as_df()
 
             # source map
             m_source = df[['Chromosome', 'Start', 'End', 'Strand',
@@ -1924,15 +1984,23 @@ def aggregate_ends(beds, sources, add_ends, refs, slack, mode):
 
         # more than one bed; merge and reconcile ends
         else:
+            # import pdb; pdb.set_trace()
 
-            if 'gene_id' not in bed.df.columns or 'Strand' not in bed.df.columns:
-                if add:
-                    _logger.warning('Cannot add new ends from {} because '+\
-                          'it does not contain gene_id information.'.format(source))
+            # if 'gene_id' not in bed.df.columns or 'Strand' not in bed.df.columns:
+            #     if add:
+            #         _logger.warning('Cannot add new ends from {} because '+\
+            #               'it does not contain gene_id information.'.format(source))
 
             # add missing columns but keep track of what information we'll be
             # able to merge on
-            bed, gid, strand = format_agg_2_ends_bed(bed, mode)
+            # bed, gid, strand = format_agg_2_ends_bed(bed, mode)
+            # df = pr.PyRanges(df)
+            bed, gid, strand = get_agg_ends_bed(bed_fname,
+                                                add,
+                                                ref,
+                                                source,
+                                                mode,
+                                                False)
             df = pr.PyRanges(df)
             df, temp = agg_2_ends(df, bed,
                             strand, gid,
@@ -1940,7 +2008,8 @@ def aggregate_ends(beds, sources, add_ends, refs, slack, mode):
 
             # update source map
             m_source = pd.concat([m_source, temp])
-            i += 1
+        # import pdb; pdb.set_trace()
+        i += 1
 
     # drop unnecessary columns and reorder those that are already there
     drop_cols = ['id', mode, 'gene_id']
