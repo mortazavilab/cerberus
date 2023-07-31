@@ -1426,7 +1426,7 @@ def read_h5(h5, as_pyranges=True):
 
     def read_empty_h5(h5, key, as_pyranges=False):
         if not os.path.exists(h5):
-            raise Exception('File {} does not exist'.format(f))
+            raise Exception('File {} does not exist'.format(h5))
         try:
             df = pd.read_hdf(h5, key=key)
             if as_pyranges:
