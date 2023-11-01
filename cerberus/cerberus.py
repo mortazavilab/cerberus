@@ -883,32 +883,45 @@ def agg_ab(df):
     gb_cols = ['gene_ID', 'annot_gene_id', 'annot_gene_name',
                'gene_novelty', 'annot_transcript_name',
                'annot_transcript_id']
+    gb_cols = list(set(gb_cols)&set(df.columns))
+
+    # how are we going to aggregate more complex features across the transcripts?
+    agg_dict = {'transcript_ID': ','.join}
 
     # handle properties which won't always correspond across the transcripts
     # these are all subject to change
-    nov_rank, rank_nov = get_nov_ranks()
-    df['nov_rank'] = df.transcript_novelty.map(nov_rank)
-    df.drop('transcript_novelty', axis=1, inplace=True)
+    if 'transcript_novelty' in df.columns:
+        nov_rank, rank_nov = get_nov_ranks()
+        df['nov_rank'] = df.transcript_novelty.map(nov_rank)
+        df.drop('transcript_novelty', axis=1, inplace=True)
+        agg_dict['nov_rank'] = 'min'
 
-    ism_rank, rank_ism = get_ism_ranks()
-    df['ism_rank'] = df.ISM_subtype.map(ism_rank)
-    df.drop('ISM_subtype', axis=1, inplace=True)
+    if 'ISM_subtype' in df.columns:
+        ism_rank, rank_ism = get_ism_ranks()
+        df['ism_rank'] = df.ISM_subtype.map(ism_rank)
+        df.drop('ISM_subtype', axis=1, inplace=True)
+        agg_dict['ism_rank'] = 'min'
+
+    if 'n_exons' in df.columns:
+        agg_dict['n_exons'] = 'mean'
+
+    if 'length' in df.columns:
+        agg_dict['length'] = 'mean'
 
     df['transcript_ID'] = df.transcript_ID.astype(str)
-    agg_dict = {'transcript_ID': ','.join,
-                'n_exons': 'mean',
-                'length': 'mean',
-                'nov_rank': 'min',
-                'ism_rank': 'min'}
     cols = gb_cols + list(agg_dict.keys())
     for c in list(set(df.columns)-set(cols)):
         agg_dict[c] = 'sum'
 
     df = df.groupby(gb_cols).agg(agg_dict).reset_index()
-    df['transcript_novelty'] = df.nov_rank.map(rank_nov)
-    df.drop(['nov_rank'], axis=1, inplace=True)
-    df['ISM_subtype'] = df.ism_rank.map(rank_ism)
-    df.drop(['ism_rank'], axis=1, inplace=True)
+
+    if 'nov_rank' in df.columns:
+        df['transcript_novelty'] = df.nov_rank.map(rank_nov)
+        df.drop(['nov_rank'], axis=1, inplace=True)
+
+    if 'ism_rank' in df.columns:
+        df['ISM_subtype'] = df.ism_rank.map(rank_ism)
+        df.drop(['ism_rank'], axis=1, inplace=True)
 
     return df
 
@@ -2120,7 +2133,6 @@ def assign_triplets(gtf_df, tss, ic, tes, gene_source, t_map):
             ends = gtf_df.features.tss()
         elif mode == 'tes':
             ends = gtf_df.features.tes()
-
         t_ends = merge_ends(ends, ref, mode)
         _logger.info('Merged ends')
 
@@ -2412,7 +2424,7 @@ def replace_ab_ids(ab, h5, source, agg, o):
     Parameters:
         ab (str): Path to TALON abundance file
         h5 (str): Path to h5 annotation (output from assign)
-        source (str): Name of source in transcript map to pull fromå
+        source (str): Name of source in transcript map to pull from
         agg (bool): Aggregate / collapse transcripts with the same triplets
             and sum up their count values
         o (str): Output file name
@@ -2435,10 +2447,13 @@ def replace_ab_ids(ab, h5, source, agg, o):
     if agg:
         df = agg_ab(df)
 
+
     # reorder columns
     c1 = get_non_dataset_cols()
     c2 = get_dataset_cols(df)
-    df = df[c1+c2]
+    cols = c1+c2
+    cols = [c for c in cols if c in df.columns.tolist()]
+    df = df[cols]
 
     # write to file
     df.to_csv(o, sep='\t', index=False)
