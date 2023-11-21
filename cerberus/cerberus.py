@@ -1482,7 +1482,7 @@ def get_transcript_ref(fname):
             with tags parsed out
     """
     try:
-        df = pr.read_gtf(fname, duplicate_attr=True).df
+        df = pr.read_gtf(fname, duplicate_attr=True, rename_attr=True).df
     except:
         df = pr.read_gtf(fname).df
 
