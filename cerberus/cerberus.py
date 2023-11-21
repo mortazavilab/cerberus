@@ -1849,7 +1849,7 @@ def get_ics_from_gtf(gtf):
     t_df = t_df[['transcript_id', 'MANE_Select', 'basic_set', 'appris_principal']]
 
     # get unique intron chains from gtf
-    df = pr.read_gtf(gtf)
+    df = pr.read_gtf(gtf, rename_attr=True, duplicate_attr=True)
     df = df.df
     df = add_stable_gid(df)
     df = pr.PyRanges(df)
