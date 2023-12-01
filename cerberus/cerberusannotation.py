@@ -76,7 +76,7 @@ class CerberusAnnotation():
 ########################## Adding support ######################################
 ################################################################################
 
-    def add_ics(ca,
+    def add_ics(self,
                 ic,
                 ref,
                 source):
@@ -91,8 +91,8 @@ class CerberusAnnotation():
             source (str): Name of BED source
         """
 
-        df = ca.ic.copy(deep=True)
-        sources = ca.ic_sources
+        df = self.ic.copy(deep=True)
+        sources = self.ic_sources
         df['id'] = [i for i in range(len(df.index))]
 
         if source in sources:
@@ -103,7 +103,7 @@ class CerberusAnnotation():
         else:
             first_add = True
 
-        temp = cerberus.read_ic_ref(ic)
+        temp = read_ic_ref(ic)
 
         # if we're dealing with a new ic file,
         # update the ic novelty and source name
@@ -117,18 +117,18 @@ class CerberusAnnotation():
                 nov = 'Novel'
             temp['novelty'] = nov
 
-        df = cerberus.agg_2_ics(df, temp)
+        df = agg_2_ics(df, temp)
 
         # determine ic novelty for novel ics
         # if source != 'cerberus':
-        df = cerberus.get_ic_novelty(df)
+        df = get_ic_novelty(df)
 
         # drop gene id and ic number as they are captured in name
         df.drop(['gene_id', 'ic'], axis=1, inplace=True)
 
         # update ics in ca
-        ca.ic = df
-        ca.ic_sources.append(source)
+        self.ic = df
+        self.ic_sources.append(source)
 
     def add_bed(self,
                 bed,
