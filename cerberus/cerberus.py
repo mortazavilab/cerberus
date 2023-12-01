@@ -2174,6 +2174,8 @@ def assign_triplets(gtf_df, tss, ic, tes, gene_source, t_map):
         else:
             gtf_df['gene_name'] = gtf_df['gene_id']
             gtf_df['transcript_name'] = gtf_df['transcript_id']
+    if 'transcript_name' not in gtf_df.columns:
+        gtf_df['transcript_name'] = gtf_df['transcript_id']
 
     gtf_df = gtf_df[['gene_id', 'gene_name',
                  'transcript_id', 'transcript_name']]
