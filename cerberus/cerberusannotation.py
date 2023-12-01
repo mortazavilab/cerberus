@@ -75,6 +75,61 @@ class CerberusAnnotation():
 ################################################################################
 ########################## Adding support ######################################
 ################################################################################
+
+    def add_ics(ca,
+                ic,
+                ref,
+                source):
+        """
+        Add features or incorporate them as forms of support to an
+        existing CerberusAnnotation.
+
+        Parameters:
+            ic (str): IC TSV file path
+            ref (bool): Use regions from IC file as reference regions to define
+                region novelty
+            source (str): Name of BED source
+        """
+
+        df = ca.ic.copy(deep=True)
+        sources = ca.ic_sources
+        df['id'] = [i for i in range(len(df.index))]
+
+        if source in sources:
+            raise Exception(f'IC source {source} already in CerberusAnnotation.')
+
+        if len(df) > 0:
+            first_add = False
+        else:
+            first_add = True
+
+        temp = cerberus.read_ic_ref(ic)
+
+        # if we're dealing with a new ic file,
+        # update the ic novelty and source name
+        # otherwise, retain the labels already given
+        # in the ics file
+        if source != 'cerberus':
+            temp['source'] = source
+            if ref:
+                nov = 'Known'
+            else:
+                nov = 'Novel'
+            temp['novelty'] = nov
+
+        df = cerberus.agg_2_ics(df, temp)
+
+        # determine ic novelty for novel ics
+        # if source != 'cerberus':
+        df = cerberus.get_ic_novelty(df)
+
+        # drop gene id and ic number as they are captured in name
+        df.drop(['gene_id', 'ic'], axis=1, inplace=True)
+
+        # update ics in ca
+        ca.ic = df
+        ca.ic_sources.append(source)
+
     def add_bed(self,
                 bed,
                 add,
@@ -134,7 +189,6 @@ class CerberusAnnotation():
         df = df[order]
         df = split_cerberus_id(df, mode)
         # import pdb; pdb.set_trace()
-
 
         # update ends and source map in ca
         if mode == 'tss':
@@ -342,6 +396,7 @@ class CerberusAnnotation():
 
         # add gene tpm and format
         if sg is not None:
+            import pdb; pdb.set_trace()
             g_df = swan.calc_tpm(sg.gene_adata, obs_col=gb)
             g_df = g_df.sparse.to_dense()
             g_df = g_df.T
