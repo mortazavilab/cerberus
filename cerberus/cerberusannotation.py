@@ -396,7 +396,7 @@ class CerberusAnnotation():
 
         # add gene tpm and format
         if sg is not None:
-            import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             g_df = swan.calc_tpm(sg.gene_adata, obs_col=gb)
             g_df = g_df.sparse.to_dense()
             g_df = g_df.T
