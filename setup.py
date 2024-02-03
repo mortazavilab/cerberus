@@ -8,11 +8,10 @@ with open('README.md') as readme_file:
 requirements = [
     'setuptools',
     'tqdm',
-    'click',
+    'click==8.1.3',
     'pandas>=1.3',
     'pyranges>=0.0.125',
     'matplotlib',
-    'lapa'
 ]
 
 setup_requirements = ['pytest-runner', ]
