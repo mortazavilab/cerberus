@@ -1636,7 +1636,6 @@ def read_bed(bed_file, mode):
     Returns:
         df (pandas DataFrame): DataFrame representation of bed file
     """
-
     df = pr.read_bed(bed_file).df
 
     # bed files without strands but with a column that the
@@ -2525,6 +2524,7 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
     # temporary fix for problematic transcripts
     # pdb.set_trace()
     m_df = fix_prob_col_dtypes(m_df)
+
     rm_tids = m_df.loc[(m_df.tss_first_sd_issue)|(m_df.tes_last_sa_issue), 'original_transcript_id'].tolist()
     df = df.loc[~df.transcript_id.isin(rm_tids)]
 
@@ -2535,6 +2535,7 @@ def replace_gtf_ids(h5, gtf, source, update_ends, agg, o):
                     left_on=['transcript_name', 'transcript_id'],
                     right_on=['original_transcript_name', 'original_transcript_id'],
                     suffixes=('', '_cerberus'))
+
     df.drop(['transcript_id', 'transcript_name'], axis=1, inplace=True)
     df.rename({'transcript_id_cerberus': 'transcript_id',
                'transcript_name_cerberus': 'transcript_name'},
