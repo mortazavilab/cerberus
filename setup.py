@@ -12,6 +12,10 @@ requirements = [
     'pandas>=1.3',
     'pyranges>=0.0.125',
     'matplotlib',
+    'pandarallel',
+    'sparse',
+    'python-ternary',
+    'pytables'
 ]
 
 setup_requirements = ['pytest-runner', ]
