@@ -624,7 +624,6 @@ def agg_2_ics(ic1, ic2):
         df (pandas DataFrame): DataFrame with merged and
             renamed intron chains
     """
-
     mode = 'ic'
     max_c = '{}_max'.format(mode)
     new_c = '{}_new'.format(mode)
@@ -634,11 +633,40 @@ def agg_2_ics(ic1, ic2):
     ic1 = ic1.merge(ic2,
                   on=['Chromosome', 'Strand', 'Coordinates', 'gene_id'],
                   how='outer', suffixes=('', '_new'))
+
+    def update_csv_str_fields(df, col):
+        """
+        Update comma-separated string fields in merged dataframes
+
+        Parameters:
+            df (pandas DataFrame)
+            col (str): Column name to pull from. Updated column inferred
+                to be {col}_new.
+        """
+        new_col = f'{col}_new'
+        na_inds = df.loc[df[col].isnull()].index
+        df.loc[na_inds, col] = df.loc[na_inds, new_col]
+        df.loc[na_inds, new_col] = np.nan
+        assert len(df.loc[df[col].isnull()].index) == 0
+        df[col] = df[col].str.cat(df[new_col].fillna(''), sep=',').str.replace(',,',',').str.rstrip(',')
+        return df
+
+
+
+
     # https://stackoverflow.com/questions/62681371/python-combining-names-with-missing-values/62681510#62681510
-    ic1['source'] = ic1[['source', 'source_new']].stack().groupby(level=0).agg(','.join)
+    # first set all nan sources to source_new and all source_news to nan (in those rows)
+    ic1 = update_csv_str_fields(ic1, 'source')
+    ic1 = update_csv_str_fields(ic1, 'novelty')
+
+    # na_inds = ic1.loc[ic1.source.isnull()].index
+    # ic1.loc[na_inds, 'source'] = ic1.loc[na_inds, 'source_new']
+    # ic1.loc[na_inds, 'source_new'] = np.nan
+    # assert len(ic1.loc[ic1.source.isnull()].index) == 0
+    # ic1['source'] = ic1.source.str.cat(ic1.source_new.fillna(''), sep=',').str.replace(',,',',').str.rstrip(',')
 
     # update novelty types
-    ic1['novelty'] = ic1[['novelty', 'novelty_new']].stack().groupby(level=0).agg(','.join)
+    # ic1['novelty'] = ic1[['novelty', 'novelty_new']].stack().groupby(level=0).agg(','.join)
     ic1 = update_novelty(ic1)
 
     # get new ic numbers for duplicate entries
