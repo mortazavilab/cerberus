@@ -1,0 +1,25 @@
+name: cerberus
+channels:
+- conda-forge
+- bioconda
+dependencies:
+- python=3.9.0
+- sorted_nearest=0.0.33
+- pip
+- pip:
+- pandas
+- scipy
+- numpy<=1.23
+- seaborn
+- matplotlib
+- tqdm
+- click
+- pybigwig
+- bamread>=0.0.10
+- pyranges>=0.0.71
+- lapa
+- pandarallel
+- swan_vis
+- ternary
+- sklearn
+- sparse
