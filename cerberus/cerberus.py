@@ -744,18 +744,20 @@ def get_ic_novelty(df):
         ref = df.loc[df.novelty == 'Known'].copy(deep=True)
         ref.drop(['Name', 'ic', 'source', 'novelty'], axis=1, inplace=True)
         nov = df.loc[df.novelty == 'NIC'].copy(deep=True)
-        nov = nov.merge(ref, on=['Chromosome', 'Strand', 'gene_id'], how='left',
-                        suffixes=('', '_ref'))
-        t = multiprocessing.cpu_count()
-        if t == 1:
-            nov['ISM'] = nov.apply(lambda x: str(x.Coordinates) in \
-                                   str(x.Coordinates_ref), axis=1)
-        else:
-            pandarallel.initialize(nb_workers=t, verbose=0)
-            nov['ISM'] = nov.parallel_apply(lambda x: str(x.Coordinates) in \
-                                   str(x.Coordinates_ref), axis=1)
-        ics = nov.loc[nov.ISM, 'Name'].unique().tolist()
-        df.loc[df.Name.isin(ics), 'novelty'] = 'ISM'
+
+        if not nov.empty:
+            nov = nov.merge(ref, on=['Chromosome', 'Strand', 'gene_id'], how='left',
+                            suffixes=('', '_ref'))
+            t = multiprocessing.cpu_count()
+            if t == 1:
+                nov['ISM'] = nov.apply(lambda x: str(x.Coordinates) in \
+                                       str(x.Coordinates_ref), axis=1)
+            else:
+                pandarallel.initialize(nb_workers=t, verbose=0)
+                nov['ISM'] = nov.parallel_apply(lambda x: str(x.Coordinates) in \
+                                       str(x.Coordinates_ref), axis=1)
+            ics = nov.loc[nov.ISM, 'Name'].unique().tolist()
+            df.loc[df.Name.isin(ics), 'novelty'] = 'ISM'
 
     return df
 
@@ -2001,7 +2003,7 @@ def aggregate_ends(beds, sources, add_ends, refs, slack, mode):
         # bed = get_agg_ends_bed(bed_fname, source, mode, ref)
 
         # first bed; just accept all these ends
-        print(f'Adding ends from{bed_fname}.')
+        print(f'Adding ends from {bed_fname}.')
         if i == 0:
 
             bed, gid, strand = get_agg_ends_bed(bed_fname,
@@ -2024,7 +2026,6 @@ def aggregate_ends(beds, sources, add_ends, refs, slack, mode):
 
         # more than one bed; merge and reconcile ends
         else:
-            # import pdb; pdb.set_trace()
 
             # if 'gene_id' not in bed.df.columns or 'Strand' not in bed.df.columns:
             #     if add:

@@ -1,5 +1,4 @@
 from cerberus.cerberus import *
-import swan_vis as swan
 import sparse
 import pandas as pd
 import ternary
@@ -216,6 +215,8 @@ class CerberusAnnotation():
         Returns:
             df (pandas DataFrame): DF with SwanGraph t_df info added
         """
+        import swan_vis as swan
+
         if sg is not None:
             temp = sg.t_df[['gid', 'gname']].copy(deep=True)
             df.rename({'gene_id': 'gid'}, axis=1, inplace=True)
@@ -345,7 +346,7 @@ class CerberusAnnotation():
             trips (pandas DataFrame): DF w/ # tss, ic, tes expressed in each
                 category
         """
-
+        import swan_vis as swan
         gb = obs_col
 
         # get sample, transcript level TPM values and format
@@ -588,6 +589,7 @@ class CerberusAnnotation():
         # if we have a list of allowed sources, limit to those entries
         if subset:
             temp = subset_df(temp, subset)
+
 
         # scale and assign which columns to use
         c = dict()
