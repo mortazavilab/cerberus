@@ -854,7 +854,7 @@ def merge_ends(ends, ref, mode):
         gene_refs = pr.PyRanges(gene_refs)
         gene_ends = gene_ends.nearest(gene_refs,
                                       strandedness=None,
-                                      how='direction')
+                                      how=direction)
         gene_ends = gene_ends.df
         ends = pd.concat([ends, gene_ends])
 
