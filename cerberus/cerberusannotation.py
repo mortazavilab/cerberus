@@ -215,9 +215,10 @@ class CerberusAnnotation():
         Returns:
             df (pandas DataFrame): DF with SwanGraph t_df info added
         """
-        import swan_vis as swan
 
         if sg is not None:
+            import swan_vis as swan
+
             temp = sg.t_df[['gid', 'gname']].copy(deep=True)
             df.rename({'gene_id': 'gid'}, axis=1, inplace=True)
             temp.rename({'gid':'gene_id'}, axis=1, inplace=True)
