@@ -4,7 +4,10 @@ import pandas as pd
 import ternary
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from sklearn import preprocessing
+try:
+    from sklearn import preprocessing
+except:
+    from scikit_learn import preprocessing
 from collections import defaultdict
 import matplotlib.ticker as tck
 
@@ -737,7 +740,7 @@ class CerberusAnnotation():
                      size_dict,
                      order_marker_sizes=False,
                      hue=None,
-                     cmap='magma',
+                     cmap=None,
                      marker_style=None,
                      mmap=None,
                      size=None,
@@ -812,11 +815,21 @@ class CerberusAnnotation():
         vmax = 1
         plotted = False
 
+
         # get color
-        if hue:
+        if hue is not None:
 
             # categorical
             if counts[hue].dtype.name == 'object':
+
+                # import pdb; pdb.set_trace()
+
+                # create categorical colors randomly
+                if cmap is None:
+                    categories = counts[hue].dropna().unique().tolist()
+                    mpl_cmap = plt.cm.get_cmap("tab20", len(categories))
+                    cmap = {cat: mpl_cmap(i) for i, cat in enumerate(categories)}
+
                 hue_type = 'cat'
                 colors = counts[hue].map(cmap).tolist()
                 if marker_style:
@@ -825,6 +838,8 @@ class CerberusAnnotation():
 
             # continuous
             else:
+                # import pdb; pdb.set_trace()
+
                 hue_type = 'cont'
                 colors, abs_min, abs_max, vmin, vmax = scale_col(points, counts, hue,
                                                                  min_size=size_dict['marker_min'],
@@ -890,8 +905,8 @@ class CerberusAnnotation():
                         linewidths=linewidths,
                         edgecolors=None)
         else:
-            if len(points) == 1:
-                markers = markers[0]
+            # if len(points) == 1:
+            markers = markers[0]
             tax.scatter(points, vmin=vmin, vmax=vmax,
                         s=sizes, c=colors, cmap=cmap, marker=markers,
                         alpha=alpha, zorder=3,
@@ -901,10 +916,29 @@ class CerberusAnnotation():
         # legend handling
         if hue_type == 'cat' and legend:
 
+            from matplotlib.lines import Line2D
+
+            # build legend handles explicitly
+            handles = [
+                Line2D(
+                    [0], [0],
+                    marker='o',
+                    linestyle='None',
+                    markerfacecolor=color,
+                    markeredgecolor=color,
+                    markersize=np.sqrt(size_dict['big_marker']),
+                    label=label
+                )
+                for label, color in cmap.items()
+            ]
+
             if density: x = 1.6
             else: x = 1.4
-            tax.legend(bbox_to_anchor=(x, 1.05),
-                    loc='upper right', prop={'size': 14})
+            tax.legend(
+                handles=handles,
+                bbox_to_anchor=(x, 1.05),
+                loc='upper right',
+                prop={'size': 14})
 
             # fix marker size
             ax = tax.get_axes()
