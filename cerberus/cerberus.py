@@ -853,8 +853,7 @@ def merge_ends(ends, ref, mode):
         gene_refs = ref.df.loc[ref.df.gene_id == gid].copy(deep=True)
         gene_refs = pr.PyRanges(gene_refs)
         gene_ends = gene_ends.nearest(gene_refs,
-                                      strandedness=None,
-                                      how=direction)
+                                      strandedness=None)
         gene_ends = gene_ends.df
         ends = pd.concat([ends, gene_ends])
 
@@ -982,7 +981,7 @@ def sort_gtf(df):
     Returns:
         df (pandas DataFrame): DF of GTF, sorted
     """
-    df['feature_rank'] = df.Feature.map({'gene':0, 'transcript':1, 'exon':2})
+    df['feature_rank'] = df.Feature.map({'gene':0, 'transcript':1, 'exon':2, 'CDS':3})
     df.feature_rank = df.feature_rank.astype(int)
 
     fwd, rev = get_stranded_gtf_dfs(df)
@@ -1485,7 +1484,7 @@ def read_h5(h5, as_pyranges=True):
     tss = read_empty_h5(h5, 'tss')
     tes = read_empty_h5(h5, 'tes')
 
-    if isinstance(ic, pd.DataFrame):
+    if isinstance(ic, pd.DataFrame) and 'Coordinates' in ic.columns.tolist():
         # turn NaN coords into empty strings
         ic.loc[ic.Coordinates.isnull(), 'Coordinates'] = ''
 
@@ -2156,7 +2155,8 @@ def assign_triplets(gtf_df, tss, ic, tes, gene_source, t_map):
     _logger.info('Merged ics')
 
     ### ends ###
-    for mode, ref in zip(['tss', 'tes'], [tss, tes]):
+    # for mode, ref in zip(['tss', 'tes'], [tss, tes]):
+    for mode, ref in zip(['tes', 'tss'], [tes, tss]):
         if mode == 'tss':
             ends = gtf_df.features.tss()
         elif mode == 'tes':

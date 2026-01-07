@@ -238,7 +238,7 @@ def replace_gtf_ids_command(h5, gtf, source, update_ends, collapse, o):
               help='GTF file to replace ids in',
               required=True)
 @click.option('--source',
-            help='name of source in cerberus object to map from',
+            help='name of source to give resultant triplets',
             required=True)
 @click.option('--gene_id_col',
               help='Attribute name in GTF w/ gene id',

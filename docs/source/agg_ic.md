@@ -29,13 +29,11 @@ Options:
 
 * Comma-separated
 * No header
-* BED files with `True` add ends setting must have gene ids and strand
-* Recommended to use `True` add ends setting for GTFs that you are planning to annotate
 
 |IC file path|Reference|Source name|
 |---|---|---|---|
-|path/to/bed/v40_tss.bed|True|True|v40|
-|path/to/bed/encode_tss.bed|False|True|encode|
+|path/to/bed/v40_ic.bed|True|v40|
+|path/to/bed/encode_ic.bed|False|encode|
 
 **Output file format:**
 

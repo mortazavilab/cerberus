@@ -1,0 +1,7 @@
+pyranges==0.0.117
+pandas==1.3.5
+click==7.1.2
+swan_vis.egg==info
+h5py==3.5.0
+numpy==1.19.2
+swan_vis==2.0

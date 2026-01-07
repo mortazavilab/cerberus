@@ -1,0 +1,57 @@
+  error: subprocess-exited-with-error
+  
+  × python setup.py bdist_wheel did not run successfully.
+  │ exit code: 1
+  ╰─> [44 lines of output]
+      /usr/local/lib/python3.11/site-packages/setuptools/_distutils/dist.py:265: UserWarning: Unknown distribution option: 'license_expression'
+        warnings.warn(msg)
+      running bdist_wheel
+      /usr/local/opt/python@3.11/bin/python3.11 /private/var/folders/ch/bc1lrgbd1fn_3gxz886mxjz00000gn/T/pip-install-kd4t03cq/llvmlite_a590f55e7be54f2bb9a1c47a631e3e8f/ffi/build.py
+      -- The C compiler identification is AppleClang 14.0.3.14030022
+      -- The CXX compiler identification is AppleClang 14.0.3.14030022
+      -- Detecting C compiler ABI info
+      -- Detecting C compiler ABI info - done
+      -- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc - skipped
+      -- Detecting C compile features
+      -- Detecting C compile features - done
+      -- Detecting CXX compiler ABI info
+      -- Detecting CXX compiler ABI info - done
+      -- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++ - skipped
+      -- Detecting CXX compile features
+      -- Detecting CXX compile features - done
+      CMake Error at CMakeLists.txt:21 (find_package):
+        Could not find a package configuration file provided by "LLVM" with any of
+        the following names:
+      
+          LLVMConfig.cmake
+          llvm-config.cmake
+      
+        Add the installation prefix of "LLVM" to CMAKE_PREFIX_PATH or set
+        "LLVM_DIR" to a directory containing one of the above files.  If "LLVM"
+        provides a separate development package or SDK, be sure it has been
+        installed.
+      
+      
+      -- Configuring incomplete, errors occurred!
+      Running: cmake -G Unix Makefiles /private/var/folders/ch/bc1lrgbd1fn_3gxz886mxjz00000gn/T/pip-install-kd4t03cq/llvmlite_a590f55e7be54f2bb9a1c47a631e3e8f/ffi
+      Traceback (most recent call last):
+        File "/private/var/folders/ch/bc1lrgbd1fn_3gxz886mxjz00000gn/T/pip-install-kd4t03cq/llvmlite_a590f55e7be54f2bb9a1c47a631e3e8f/ffi/build.py", line 209, in <module>
+          main()
+        File "/private/var/folders/ch/bc1lrgbd1fn_3gxz886mxjz00000gn/T/pip-install-kd4t03cq/llvmlite_a590f55e7be54f2bb9a1c47a631e3e8f/ffi/build.py", line 203, in main
+          main_posix('.dylib')
+        File "/private/var/folders/ch/bc1lrgbd1fn_3gxz886mxjz00000gn/T/pip-install-kd4t03cq/llvmlite_a590f55e7be54f2bb9a1c47a631e3e8f/ffi/build.py", line 189, in main_posix
+          try_cmake(here_dir, build_dir, generator)
+        File "/private/var/folders/ch/bc1lrgbd1fn_3gxz886mxjz00000gn/T/pip-install-kd4t03cq/llvmlite_a590f55e7be54f2bb9a1c47a631e3e8f/ffi/build.py", line 127, in try_cmake
+          subprocess.check_call(args)
+        File "/usr/local/Cellar/python@3.11/3.11.3/Frameworks/Python.framework/Versions/3.11/lib/python3.11/subprocess.py", line 413, in check_call
+          raise CalledProcessError(retcode, cmd)
+      subprocess.CalledProcessError: Command '['cmake', '-G', 'Unix Makefiles', '/private/var/folders/ch/bc1lrgbd1fn_3gxz886mxjz00000gn/T/pip-install-kd4t03cq/llvmlite_a590f55e7be54f2bb9a1c47a631e3e8f/ffi']' returned non-zero exit status 1.
+      error: command '/usr/local/opt/python@3.11/bin/python3.11' failed with exit code 1
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+  ERROR: Failed building wheel for llvmlite
+
+[notice] A new release of pip is available: 24.3.1 -> 25.3
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+ERROR: ERROR: Failed to build installable wheels for some pyproject.toml based projects (llvmlite)
