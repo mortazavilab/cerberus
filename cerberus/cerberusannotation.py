@@ -621,8 +621,9 @@ class CerberusAnnotation():
 
         # density
         if density:
-            if 'hue' in kwargs:
-                hue = kwargs['hue']
+            if 'hue' in kwargs: hue = kwargs['hue']
+            else: hue = None
+            if hue is not None:
                 if temp[hue].dtype.name == 'object':
                     pad = 0.1
                 else:
