@@ -13,7 +13,8 @@ import matplotlib.colors as mcolors
 import matplotlib as mpl
 import cerberus
 
-SESSION_VARS = ['ca', 'ca_path', 'prev_triplet_set']
+SESSION_VARS = ['ca', 'ca_path',
+    'gnames', 'num_cols', 'all_cols']
 
 __version__ = '0.0.1'
 
@@ -53,7 +54,6 @@ def main():
 
     with tab_landing:
         render_landing_tab()
-
 
     with tab_simplex:
         if st.session_state.ca is None:
