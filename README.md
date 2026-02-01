@@ -20,7 +20,34 @@ Cerberus is a set of tools designed to characterize and enhance transcriptome an
 
 Please visit the [Cerberus website](https://mortazavilab.github.io/cerberus/html/index.html) for documentation.
 
-**Note:** Cerberus is under active development. Please feel free to open an issue or email me ( freese {at} uci.edu ) if you're interested in using it!
+## Cerberus Docker image
+
+Cerberus' dependencies are sometimes hard to install. For this reason, we provide a [Docker image](https://github.com/users/fairliereese/packages/container/package/encode4-viewer) inside which you can run Cerberus. You can also rebuild the image from the [Dockerfile](https://github.com/fairliereese/paper_rnawg/blob/master/data_viewer/Dockerfile).
+
+```bash
+# pull the image
+docker pull ghcr.io/fairliereese/cerberus-viewer:latest
+
+# run in interactive mode to have access to Cerberus installation
+my_data_dir=<directory with your data to mount>
+docker run \
+  --rm \
+  -it \
+  -v ${my_data_dir}/data \
+  ghcr.io/fairliereese/cerberus-viewer:latest
+```
+
+Once inside the interactive Docker image, activate the environment needed for Cerberus:
+```bash
+conda activate app_env
+```
+
+Following this, you'll directly have access to all CLI Cerberus commands and the Python API.
+
+## Cerberus data viewer
+
+We also provide a [simplex data viewer](data_viewer) which users can launch to explore the TriSET triplets they compute on their data with Cerberus.
+
 
 <!-- # CLI documentation
 

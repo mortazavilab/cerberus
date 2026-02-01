@@ -61,7 +61,6 @@ def render_landing_tab():
 
     if uploaded_file is not None:
         if st.session_state.get("ca_path") != uploaded_file.name:
-            print('UWUWUUWUWUUWUWUWU')
             with tempfile.NamedTemporaryFile(delete=False, suffix=".h5") as tmp:
                 tmp.write(uploaded_file.getbuffer())
                 tmp_path = tmp.name
