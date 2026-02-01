@@ -2,6 +2,8 @@
 
 The Cerberus data viewer is written with [Streamlit](https://streamlit.io/). It can be run locally or using the Cerberus Docker image.
 
+
+
 ## Option 1: Running locally
 
 From this folder, run the following:
@@ -28,3 +30,5 @@ docker run --rm \
 ```
 
 Open the [Cerberus viewer](http://localhost:8501) in your web browser.
+
+# <img align="center" alt="Cerberus simplex data viewer" width="50" src="cerberus_viewer_screenshot.png"> Cerberus

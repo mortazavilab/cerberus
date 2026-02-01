@@ -49,10 +49,8 @@ def main():
         "Simplex view",
     ])
 
-    tab_landing, tab_simplex_view, tab_swan_view, = st.tabs(["Home", "Simplex view", "Transcript structure / expression view"])
-
     from tabs.simplex_tab import render_simplex_tab
-    from tabs.swan_tab import render_swan_tab
+    from tabs.landing_tab import render_landing_tab
 
     with tab_landing:
         render_landing_tab()
