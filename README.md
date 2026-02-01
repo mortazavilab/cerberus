@@ -22,11 +22,11 @@ Please visit the [Cerberus website](https://mortazavilab.github.io/cerberus/html
 
 ## Cerberus Docker image
 
-Cerberus' dependencies are sometimes hard to install. For this reason, we provide a [Docker image](https://github.com/users/fairliereese/packages/container/package/encode4-viewer) inside which you can run Cerberus. You can also rebuild the image from the [Dockerfile](https://github.com/fairliereese/paper_rnawg/blob/master/data_viewer/Dockerfile).
+Cerberus' dependencies are sometimes hard to install. For this reason, we provide a [Docker image](https://github.com/users/fairliereese/packages/container/package/cerberus) inside which you can run Cerberus. You can also rebuild the image from the [Dockerfile](Dockerfile).
 
 ```bash
 # pull the image
-docker pull ghcr.io/fairliereese/cerberus-viewer:latest
+docker pull ghcr.io/fairliereese/cerberus:latest
 
 # run in interactive mode to have access to Cerberus installation
 my_data_dir=<directory with your data to mount>
@@ -34,7 +34,7 @@ docker run \
   --rm \
   -it \
   -v ${my_data_dir}/data \
-  ghcr.io/fairliereese/cerberus-viewer:latest
+  ghcr.io/fairliereese/cerberus:latest
 ```
 
 Once inside the interactive Docker image, activate the environment needed for Cerberus:
