@@ -31,4 +31,4 @@ docker run --rm \
 
 Open the [Cerberus viewer](http://localhost:8501) in your web browser.
 
-# <img align="center" alt="Cerberus simplex data viewer" width="50" src="cerberus_viewer_screenshot.png"> Cerberus
+# <img align="center" alt="Cerberus simplex data viewer" width="50" src="cerberus_viewer_screenshot.png">
