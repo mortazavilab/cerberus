@@ -36,11 +36,11 @@ RUN conda run -n app_env pip wheel \
     anndata==0.9.2 \
     scanpy==1.9.8 \
     scipy==1.10.1 \
-    pyranges==0.1.4 \
     plotly \
     git+https://github.com/fairliereese/python-ternary \
     git+https://github.com/mortazavilab/swan_vis.git \
-    git+https://github.com/mortazavilab/cerberus.git
+    git+https://github.com/mortazavilab/cerberus.git \
+    git+https://github.com/fairliereese/pyranges
 
 # ------------ runtime stage---------------
 FROM continuumio/miniconda3:latest
