@@ -22,7 +22,7 @@ Please visit the [Cerberus website](https://mortazavilab.github.io/cerberus/html
 
 ## Cerberus Docker image
 
-Cerberus' dependencies are sometimes hard to install. For this reason, we provide a [Docker image](https://github.com/users/fairliereese/packages/container/package/cerberus) inside which you can run Cerberus. You can also rebuild the image from the [Dockerfile](Dockerfile).
+Cerberus' dependencies are sometimes hard to install. For this reason, we provide a [Docker image](https://github.com/users/fairliereese/packages/container/package/cerberus) inside which you can run Cerberus. You can also rebuild the image from the [Dockerfile](Dockerfile). This is the preferred way for installing and running Cerberus.
 
 ```bash
 # pull the image
